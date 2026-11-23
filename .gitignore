@@ -1,0 +1,23 @@
+node_modules/
+.cache/
+.next/
+.env*
+!.env.example
+next-env.d.ts
+*.db
+*.db-journal
+*.db.bak*
+*.tsbuildinfo
+test-results/
+playwright-report/
+.next-panic*
+
+# one-time food database build downloads
+tmp/
+
+# local Android builds and temporary build snapshots
+*.apk
+exports/apk-build-audit/
+exports/apk-build-reviewed/
+exports/apk-lan-native-config.json
+exports/NutraPlus-android-preview.json

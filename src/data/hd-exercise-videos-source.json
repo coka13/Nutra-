@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ymove",
+    "repo": "ymove-app/exercise-api",
+    "revision": "81c4c84c66ddbcf96731e74b14c55c267ab04cc3"
+  },
+  {
+    "id": "workout-free-videos",
+    "repo": "namnq/workout-free-videos",
+    "revision": "346c9709eaecfe160a0500650a5f7a43b8425762"
+  }
+]

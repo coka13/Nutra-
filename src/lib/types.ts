@@ -1,0 +1,122 @@
+import type {
+  Prisma,
+  Profile,
+  Subscription,
+  Branding,
+  Exercise,
+  Food,
+  FoodUnit,
+  ProgressRecord,
+  WaterEntry,
+  Appointment,
+  Message,
+  Notification,
+} from '@prisma/client';
+type Serialized<T> = T extends Date
+  ? string
+  : T extends Array<infer U>
+    ? Serialized<U>[]
+    : T extends object
+      ? { [K in keyof T]: Serialized<T[K]> }
+      : T;
+export type Program = Serialized<
+  Prisma.ProgramGetPayload<{ include: { exercises: { include: { exercise: true } } } }>
+>;
+export type Workout = Serialized<
+  Prisma.WorkoutSessionGetPayload<{
+    include: {
+      sets: { include: { exercise: true } };
+      program: { include: { exercises: { include: { exercise: true } } } };
+    };
+  }>
+>;
+export type MealPlanWithItems = Serialized<
+  Prisma.MealPlanGetPayload<{ include: { items: { include: { food: true } } } }>
+>;
+export type PlanItem = MealPlanWithItems['items'][number];
+export type Meal = Serialized<Prisma.MealEntryGetPayload<{ include: { food: true } }>>;
+export type Recipe = Serialized<
+  Prisma.RecipeGetPayload<{ include: { ingredients: { include: { food: true } } } }>
+>;
+export type Relationship = Serialized<
+  Prisma.CoachRelationshipGetPayload<{
+    include: {
+      coach: {
+        select: {
+          id: true;
+          name: true;
+          email: true;
+          phone: true;
+          branding: {
+            select: {
+              businessName: true;
+              color: true;
+              welcome: true;
+              logoAt: true;
+              backgroundAt: true;
+            };
+          };
+        };
+      };
+      client: { select: { id: true; name: true; email: true } };
+    };
+  }>
+>;
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  language: string;
+  theme: string;
+};
+export type State = {
+  clockAt: number;
+  user: User;
+  profile: Profile | null;
+  subscription: Subscription | null;
+  branding: Branding | null;
+  programs: Program[];
+  workouts: Workout[];
+  calendarWorkouts?: import('./workout-calendar').CalendarWorkout[];
+  meals: Meal[];
+  water: WaterEntry[];
+  progress: ProgressRecord[];
+  appointments: Serialized<Appointment>[];
+  messages: Serialized<Message>[];
+  notifications: Serialized<Notification>[];
+  relationships: Relationship[];
+  recipes: Recipe[];
+  mealPlans: MealPlanWithItems[];
+  /** meal '' = the whole menu was marked done. */
+  mealChecks: { planId: string; meal: string }[];
+  entitlements: import('./plans').Entitlements;
+  integrations: Record<string, boolean>;
+  demo: boolean;
+};
+export type FoodWithUnits = Food & { units: FoodUnit[] };
+export type Library = {
+  exercises: (Exercise & {
+    hasDemonstration?: boolean;
+    demonstration?: { mp4: string; poster: string; gif?: string } | null;
+  })[];
+  foods: FoodWithUnits[];
+};
+export type ProgramDraft = {
+  id?: string;
+  name: string;
+  description: string;
+  weeks: number; // 0 = ongoing schedule
+  days: string;
+  template: boolean;
+  assignedClientId: string | null;
+  exercises: {
+    exerciseId: string;
+    sets: number;
+    reps: number;
+    rest: number;
+    weight: number;
+    group: string;
+  }[];
+};

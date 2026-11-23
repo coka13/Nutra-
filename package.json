@@ -1,0 +1,54 @@
+{
+  "name": "nutra-plus",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack --hostname 0.0.0.0",
+    "build": "next build --webpack",
+    "start": "next start --hostname 0.0.0.0",
+    "typecheck": "next typegen --webpack && tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:api": "tsx --test tests/api.integration.ts",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate",
+    "db:migrate": "node scripts/prepare-db.mjs && prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "setup": "npm run db:generate && npm run db:migrate && npm run db:seed && npm run db:foods",
+    "admin:create": "tsx scripts/create-admin.ts",
+    "catalog:images": "node scripts/sync-exercise-images.mjs",
+    "catalog:animations": "node scripts/build-exercise-animations.mjs",
+    "catalog:smartworkout": "node scripts/sync-smartworkout.mjs",
+    "catalog:thumbnails": "node scripts/sync-exercise-thumbnails.mjs",
+    "catalog:gifs": "node scripts/build-smartworkout-gifs.mjs",
+    "catalog:videos": "node scripts/sync-hd-exercise-videos.mjs && node scripts/create-video-posters.mjs",
+    "catalog:translate": "node scripts/translate-exercise-catalog.mjs && node scripts/polish-exercise-he.mjs",
+    "catalog:foods": "tsx scripts/build-food-database.ts",
+    "db:foods": "tsx scripts/load-food-database.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.0",
+    "ffmpeg-static": "^5.3.0",
+    "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.0.0",
+    "sharp": "^0.35.5",
+    "stripe": "^23.2.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "prettier": "^3.10.1",
+    "prisma": "6.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "overrides": {
+    "effect": "^3.22.1",
+    "deepmerge-ts": "^8.0.0"
+  }
+}

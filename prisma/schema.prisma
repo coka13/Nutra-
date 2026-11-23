@@ -1,0 +1,464 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+  url = env("DATABASE_URL")
+}
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  phone String?
+  passwordHash String
+  name String
+  role String @default("INDEPENDENT")
+  language String @default("en")
+  theme String @default("light")
+  createdAt DateTime @default(now())
+  profile Profile?
+  sessions Session[]
+  programs Program[]
+  assignedPrograms Program[] @relation("AssignedPrograms")
+  assignedMealPlans MealPlan[] @relation("AssignedMealPlans")
+  workouts WorkoutSession[]
+  meals MealEntry[]
+  waters WaterEntry[]
+  progress ProgressRecord[]
+  coachLinks CoachRelationship[] @relation("Coach")
+  clientLinks CoachRelationship[] @relation("Client")
+  appointments Appointment[] @relation("AppointmentOwner")
+  invitedAppointments Appointment[] @relation("AppointmentGuest")
+  sentMessages Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Recipient")
+  notifications Notification[]
+  subscription Subscription?
+  recipes Recipe[]
+  mealPlans MealPlan[]
+  foods Food[]
+  performance ExercisePerformance[]
+  mealChecks MealPlanCheck[]
+  photos ProgressPhoto[]
+  resets PasswordReset[]
+  aiInteractions AIInteraction[]
+  branding Branding?
+  brandLogo BrandLogo?
+  brandBackground BrandBackground?
+  payments Payment[]
+  cardioActivities CardioActivity[]
+  dailySteps DailySteps[]
+}
+model Profile {
+  userId String @id
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  heightCm Float?
+  birthYear Int?
+  goal String @default("consistency")
+  experience String @default("beginner")
+  equipment String @default("bodyweight")
+  frequency Int @default(3)
+  duration Int @default(40)
+  dietary String @default("")
+  limitations String @default("")
+  units String @default("metric")
+  timezone String @default("Asia/Jerusalem")
+  adult Boolean @default(false)
+  onboarded Boolean @default(false)
+  aiConsent Boolean @default(false)
+  reminders Boolean @default(true)
+  calorieTarget Int?
+  proteinTarget Int?
+}
+model Session {
+  id String @id
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  expiresAt DateTime
+  @@index([userId])
+}
+model PasswordReset {
+  id String @id
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  expiresAt DateTime
+}
+model CoachRelationship {
+  id String @id @default(cuid())
+  coachId String
+  clientId String
+  coach User @relation("Coach",fields:[coachId],references:[id],onDelete:Cascade)
+  client User @relation("Client",fields:[clientId],references:[id],onDelete:Cascade)
+  status String @default("PENDING")
+  notes String @default("")
+  tags String @default("")
+  createdAt DateTime @default(now())
+  @@unique([coachId,clientId])
+  @@index([clientId,status])
+}
+model Exercise {
+  id String @id
+  nameEn String
+  nameHe String
+  muscle String
+  equipment String
+  difficulty String
+  instructionsEn String
+  instructionsHe String
+  performance ExercisePerformance[]
+  programExercises ProgramExercise[]
+  sets WorkoutSet[]
+}
+model CardioActivity {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  kind String
+  minutes Float
+  distanceKm Float?
+  date String
+  source String @default("manual")
+  externalId String
+  createdAt DateTime @default(now())
+  @@unique([userId,source,externalId])
+  @@index([userId,date])
+}
+model DailySteps {
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  date String
+  source String
+  steps Int
+  /// Active energy burned (kcal) reported by the health platform. NULL = not reported.
+  activeCalories Int?
+  /// Walking/running distance for the whole day (km). NULL = not reported.
+  distanceKm Float?
+  syncedAt DateTime @default(now())
+  @@id([userId,date])
+}
+model Program {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation(fields:[ownerId],references:[id],onDelete:Cascade)
+  name String
+  description String @default("")
+  weeks Int @default(4)
+  days String @default("1,3,5")
+  assignedClientId String?
+  assignedClient User? @relation("AssignedPrograms",fields:[assignedClientId],references:[id],onDelete:SetNull)
+  template Boolean @default(false)
+  createdAt DateTime @default(now())
+  exercises ProgramExercise[]
+  workouts WorkoutSession[]
+  @@index([ownerId])
+  @@index([assignedClientId])
+}
+model ProgramExercise {
+  id String @id @default(cuid())
+  programId String
+  program Program @relation(fields:[programId],references:[id],onDelete:Cascade)
+  exerciseId String
+  exercise Exercise @relation(fields:[exerciseId],references:[id])
+  position Int
+  sets Int @default(3)
+  reps Int @default(10)
+  rest Int @default(60)
+  weight Float @default(0)
+  group String @default("")
+  @@index([programId,position])
+}
+model WorkoutSession {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  programId String?
+  program Program? @relation(fields:[programId],references:[id],onDelete:SetNull)
+  name String
+  status String @default("ACTIVE")
+  startedAt DateTime @default(now())
+  finishedAt DateTime?
+  elapsedSeconds Int @default(0)
+  elapsedMilliseconds Float?
+  restUntil DateTime?
+  restRemaining Int @default(0)
+  lastResumedAt DateTime @default(now())
+  notes String @default("")
+  performance ExercisePerformance[]
+  sets WorkoutSet[]
+  @@index([userId,startedAt])
+}
+model WorkoutSet {
+  id String @id @default(cuid())
+  sessionId String
+  session WorkoutSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+  exerciseId String
+  exercise Exercise @relation(fields:[exerciseId],references:[id])
+  position Int @default(0)
+  restSeconds Int @default(60)
+  rpe Float?
+  setIndex Int
+  reps Int
+  weight Float
+  completed Boolean @default(false)
+  @@unique([sessionId,exerciseId,setIndex])
+}
+model Food {
+  id String @id @default(cuid())
+  nameEn String
+  nameHe String
+  calories Float
+  protein Float
+  carbs Float
+  fat Float
+  fiber Float @default(0)
+  source String @default("original-estimate")
+  externalId String?
+  brand String?
+  ownerId String?
+  owner User? @relation(fields:[ownerId],references:[id],onDelete:Cascade)
+  meals MealEntry[]
+  ingredients RecipeIngredient[]
+  planItems MealPlanItem[]
+  units FoodUnit[]
+  @@index([ownerId])
+  @@unique([source,externalId])
+}
+model FoodUnit {
+  id String @id @default(cuid())
+  foodId String
+  food Food @relation(fields:[foodId],references:[id],onDelete:Cascade)
+  nameHe String
+  nameEn String
+  grams Float
+  position Int @default(0)
+  @@index([foodId])
+}
+model MealEntry {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  foodId String
+  food Food @relation(fields:[foodId],references:[id])
+  grams Float
+  quantity Float?
+  unitHe String?
+  unitEn String?
+  meal String
+  date String
+  createdAt DateTime @default(now())
+  planItemId String?
+  planItem MealPlanItem? @relation(fields:[planItemId],references:[id],onDelete:SetNull)
+  @@index([userId,date])
+  @@index([planItemId])
+}
+model WaterEntry {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  ml Int
+  date String
+  @@index([userId,date])
+}
+model Recipe {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  name String
+  instructions String
+  servings Int @default(1)
+  ingredients RecipeIngredient[]
+}
+model RecipeIngredient {
+  id String @id @default(cuid())
+  recipeId String
+  recipe Recipe @relation(fields:[recipeId],references:[id],onDelete:Cascade)
+  foodId String
+  food Food @relation(fields:[foodId],references:[id])
+  grams Float
+}
+model MealPlan {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  name String
+  content String
+  menuDate String?
+  menuWeekdays String?
+  active Boolean @default(true)
+  checks MealPlanCheck[]
+  items MealPlanItem[]
+  assignedClientId String?
+  assignedClient User? @relation("AssignedMealPlans",fields:[assignedClientId],references:[id],onDelete:SetNull)
+  @@index([assignedClientId])
+}
+model MealPlanItem {
+  id String @id @default(cuid())
+  planId String
+  plan MealPlan @relation(fields:[planId],references:[id],onDelete:Cascade)
+  foodId String
+  food Food @relation(fields:[foodId],references:[id])
+  meal String
+  grams Float
+  quantity Float?
+  unitHe String?
+  unitEn String?
+  position Int @default(0)
+  entries MealEntry[]
+  @@index([planId])
+}
+model MealPlanCheck {
+  planId String
+  plan MealPlan @relation(fields:[planId],references:[id],onDelete:Cascade)
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  date String
+  meal String @default("")
+  @@id([planId,userId,date,meal])
+  @@index([userId,date])
+}
+model ProgressRecord {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  kind String
+  value Float
+  unit String
+  date String
+  note String @default("")
+  photos ProgressPhoto[]
+  @@index([userId,date])
+}
+model ExercisePerformance {
+  sessionId String
+  session WorkoutSession @relation(fields:[sessionId],references:[id],onDelete:Cascade,onUpdate:NoAction)
+  exerciseId String
+  exercise Exercise @relation(fields:[exerciseId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade,onUpdate:NoAction)
+  weight Float
+  reps Int
+  estimate Float
+  volume Float
+  finishedAt DateTime
+  @@id([sessionId,exerciseId])
+  @@index([userId,exerciseId,finishedAt],map:"performance_user_exercise")
+}
+model ProgressPhoto {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  image Bytes
+  recordId String?
+  record ProgressRecord? @relation(fields:[recordId],references:[id],onDelete:Cascade)
+  createdAt DateTime @default(now())
+  @@index([recordId])
+  @@index([userId,createdAt])
+}
+model Appointment {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation("AppointmentOwner",fields:[ownerId],references:[id],onDelete:Cascade)
+  guestId String?
+  guest User? @relation("AppointmentGuest",fields:[guestId],references:[id],onDelete:Cascade)
+  title String
+  kind String @default("MEETING")
+  startsAt DateTime
+  endsAt DateTime
+  status String @default("BOOKED")
+  notes String @default("")
+  @@index([ownerId,startsAt,endsAt])
+  @@index([guestId,startsAt])
+}
+model Message {
+  id String @id @default(cuid())
+  senderId String
+  recipientId String
+  sender User @relation("Sender",fields:[senderId],references:[id],onDelete:Cascade)
+  recipient User @relation("Recipient",fields:[recipientId],references:[id],onDelete:Cascade)
+  body String
+  createdAt DateTime @default(now())
+  readAt DateTime?
+  @@index([recipientId,createdAt])
+}
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  key String
+  detail String @default("")
+  read Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@index([userId,read])
+}
+model Subscription {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  tier String @default("FREE")
+  status String @default("ACTIVE")
+  providerId String? @unique
+  customerId String? @unique
+  currentPeriodEnd DateTime?
+  cancelAtPeriodEnd Boolean @default(false)
+}
+model Payment {
+  id String @id
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  amount Int
+  currency String
+  status String
+  invoiceUrl String?
+  createdAt DateTime @default(now())
+  @@index([userId,createdAt])
+}
+model WebhookEvent {
+  id String @id
+  type String
+  processedAt DateTime @default(now())
+}
+model Branding {
+  userId String @id
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  businessName String
+  color String @default("#16715b")
+  welcome String @default("")
+  /// Set when a logo exists; doubles as the cache-busting version of the image URL.
+  logoAt DateTime?
+  /// Set when a background image exists; doubles as the cache-busting version of its URL.
+  backgroundAt DateTime?
+}
+/// Kept apart from Branding so the image bytes are never loaded with the session user.
+model BrandLogo {
+  userId String @id
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  image Bytes
+}
+/// Kept apart from Branding so the image bytes are never loaded with the session user.
+model BrandBackground {
+  userId String @id
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  image Bytes
+}
+model AIInteraction {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  prompt String
+  response String
+  createdAt DateTime @default(now())
+}
+model AuditLog {
+  id String @id @default(cuid())
+  actorId String
+  action String
+  createdAt DateTime @default(now())
+  @@index([actorId,createdAt])
+}
+model RateLimit {
+  key String @id
+  count Int @default(1)
+  resetsAt DateTime
+}
+model FeatureFlag {
+  key String @id
+  enabled Boolean @default(false)
+}

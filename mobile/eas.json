@@ -1,0 +1,31 @@
+{
+  "build": {
+    "preview-lan": {
+      "extends": "preview",
+      "env": {
+        "EXPO_PUBLIC_NUTRI_URL": "http://192.168.10.17:3000",
+        "EXPO_PUBLIC_NUTRI_LOCAL_PREVIEW": "true",
+        "EXPO_PUBLIC_ADMOB_MODE": "test"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "environment": "production",
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "simulator": {
+      "extends": "preview",
+      "ios": {
+        "simulator": true
+      }
+    }
+  }
+}

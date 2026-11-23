@@ -1,0 +1,11 @@
+node_modules
+.cache
+mobile
+.next
+.git
+.env*
+*.db
+prisma/*.db
+prisma/*.db-*
+test-results
+playwright-report

@@ -1,0 +1,9 @@
+{
+  "language": "he",
+  "count": 2066,
+  "createdAt": "2026-11-22",
+  "method": "Build-time machine translation of public exercise text, followed by a maintained gym terminology glossary and specific name corrections.",
+  "runtimeRequests": false,
+  "sourceHash": "SHA-256 of original English name and instructions per record",
+  "reviewStatus": "Automated translation with terminology corrections; not a full human translation review."
+}
