@@ -31,12 +31,16 @@ import {
   Palette,
   Utensils,
 } from 'lucide-react';
-import { Language, translate } from '@/lib/i18n';
+import { Language, setMessageOverrides, translate } from '@/lib/i18n';
+import { SupportView } from './support-center';
 import { persistLanguage } from '@/lib/language-preference';
+import { api } from '@/lib/api-client';
+export { api } from '@/lib/api-client';
 import type { Library, State } from '@/lib/types';
 import type { CatalogPage } from '@/lib/exercise-catalog';
 import { seedCatalogPage, warmCatalogImages } from '@/lib/catalog-client';
 import { CoachDashboard } from './coach-dashboard';
+import { CoachBusiness } from './coach-business';
 import { BrandMark } from './brand-logo';
 import { CoachInvitations } from './coach-invitations';
 import { Dashboard, ProgressView } from './dashboard';
@@ -70,38 +74,18 @@ type ContextType = {
   number: (n: number) => string;
 };
 const Context = createContext<ContextType | null>(null);
+/** Which administrator-configurable ad placement a page belongs to. */
+function adPlacement(page: string) {
+  return ['nutrition', 'mealPlans', 'recipes'].includes(page)
+    ? 'nutrition'
+    : ['workouts', 'templates', 'builder', 'library', 'activity'].includes(page)
+      ? 'workouts'
+      : 'dashboard';
+}
 export function useNutri() {
   const c = useContext(Context);
-  if (!c) throw new Error('Nutri context unavailable');
+  if (!c) throw new Error('Fitura context unavailable');
   return c;
-}
-export async function api<T>(path: string, body?: unknown): Promise<T> {
-  let r: Response;
-  try {
-    r = await fetch(
-      `/api/${path}`,
-      body === undefined
-        ? { cache: 'no-store' }
-        : {
-            method: 'POST',
-            // Browsers reject keepalive bodies over 64 KB, so uploads opt out.
-            keepalive: ![
-              'progress/photos',
-              'progress/bodyweight',
-              'branding/logo',
-              'branding/background',
-              'ai/photo',
-            ].includes(path),
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          },
-    );
-  } catch {
-    throw new Error('offline');
-  }
-  const data = await r.json();
-  if (!r.ok) throw new Error(data.error || 'serverError');
-  return data;
 }
 export function localDay(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA').format(date);
@@ -123,6 +107,7 @@ export function Workspace({
     [lang, setLang] = useState<Language>(initialLanguage),
     [date, setDate] = useState(localDay()),
     [error, setError] = useState(''),
+    [libraryError, setLibraryError] = useState(''),
     [toast, setToast] = useState(''),
     [record, setRecord] = useState<{
       nameEn: string;
@@ -164,7 +149,27 @@ export function Workspace({
       delete document.documentElement.dataset.nativeAdsEligible;
     };
   }, [state?.entitlements.ads]);
-  const t = useCallback((k: string) => translate(lang, k), [lang]);
+  // Remote configuration: administrator wording overrides and ad placements.
+  const [remote, setRemote] = useState<{
+    version: number;
+    ads?: { enabled: boolean; placements: Record<string, boolean>; minIntervalSeconds: number; maxImpressionsPerDay: number };
+  } | null>(null);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/config', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((config) => {
+        if (!active || !config) return;
+        setMessageOverrides(config.translations);
+        setRemote({ version: config.version, ads: config.ads });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const t = useCallback((k: string) => translate(lang, k), [lang, remote?.version]);
   useRestAlert(
     state?.workouts.find((workout) => workout.status === 'ACTIVE')?.restUntil ?? null,
     lang,
@@ -185,10 +190,23 @@ export function Workspace({
     setError('');
   }, [date]);
   useEffect(() => {
-    Promise.all([refresh(), api<Library>('library').then(setLibrary)]).catch((e) =>
-      setError(e.message),
-    );
+    refresh().catch((e) => setError(e.message));
   }, [refresh]);
+  const libraryRequest = useRef<Promise<Library> | null>(null);
+  const loadLibrary = useCallback(async () => {
+    libraryRequest.current ??= api<Library>('library');
+    try {
+      setLibrary(await libraryRequest.current);
+      setLibraryError('');
+    } catch (cause) {
+      setLibraryError(cause instanceof Error ? cause.message : 'serverError');
+    } finally {
+      libraryRequest.current = null;
+    }
+  }, []);
+  useEffect(() => {
+    void loadLibrary();
+  }, [loadLibrary]);
   useEffect(() => {
     const timer = setInterval(
       () => {
@@ -201,11 +219,13 @@ export function Workspace({
     };
     window.addEventListener('online', sync);
     window.addEventListener('focus', sync);
+    window.addEventListener('nutri-resume', sync);
     document.addEventListener('visibilitychange', sync);
     return () => {
       clearInterval(timer);
       window.removeEventListener('online', sync);
       window.removeEventListener('focus', sync);
+      window.removeEventListener('nutri-resume', sync);
       document.removeEventListener('visibilitychange', sync);
     };
   }, [refresh, page]);
@@ -240,19 +260,44 @@ export function Workspace({
     try {
       await api('auth/logout', {});
       location.replace(document.documentElement.dataset.nativeShell ? '/phone-session' : '/auth');
-    } catch {}
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : 'serverError');
+    }
   }
+  const pendingMutations = useRef(new Map<string, Promise<unknown>>());
   async function run(path: string, body: unknown, quiet = false) {
+    const key = path + ':' + JSON.stringify(body);
+    const pending = pendingMutations.current.get(key);
+    if (pending) return pending;
+    const task = mutate(path, body, quiet);
+    pendingMutations.current.set(key, task);
+    try {
+      return await task;
+    } finally {
+      pendingMutations.current.delete(key);
+    }
+  }
+  async function mutate(path: string, body: unknown, quiet: boolean) {
     try {
       const result = await api<{ personalRecord?: boolean }>(path, body);
-      if (path !== 'auth/logout') await refresh();
+      let synced = true;
+      if (path !== 'auth/logout') {
+        // The write has succeeded. A failed read must not invite a duplicate write.
+        await refresh().catch(() => {
+          synced = false;
+        });
+      }
       if (
         path === 'foods' ||
         path === 'recipes' ||
         path === 'exercise-catalog' ||
         path === 'account/reset'
       )
-        setLibrary(await api<Library>('library'));
+        await api<Library>('library')
+          .then(setLibrary)
+          .catch(() => {
+            synced = false;
+          });
       if (result?.personalRecord) {
         const input = body as { id?: string; set?: { id: string; weight: number; reps: number } };
         const exercise = state?.workouts
@@ -266,7 +311,8 @@ export function Workspace({
         });
         navigator.vibrate?.([120, 60, 120]);
         setToast('newRecord');
-      } else if (!quiet) setToast('saved');
+      } else if (!synced) setToast('savedRefreshPending');
+      else if (!quiet) setToast('saved');
       return result;
     } catch (e) {
       const key = e instanceof Error ? e.message : 'serverError';
@@ -278,7 +324,7 @@ export function Workspace({
     return (
       <div className="loading-screen">
         <a className="brand" href="/">
-          nutra<span>+</span>
+          Fitura<span>+</span>
         </a>
         {error ? (
           <>
@@ -311,6 +357,10 @@ export function Workspace({
         ['workouts', Dumbbell],
         ['mealPlans', Utensils],
         ['calendar', CalendarDays],
+        ['packages', BookOpen],
+        ['trainingLog', Check],
+        ['clientPayments', Wallet],
+        ['businessReports', TrendingUp],
         ['assistant', Sparkles],
       ] as const)
     : ([
@@ -359,7 +409,7 @@ export function Workspace({
         <aside className={`sidebar ${mobile ? 'open' : ''}`}>
           <div className="sidebar-brand">
             <a href="/app" className="brand">
-              nutra<span>+</span>
+              Fitura<span>+</span>
               <i />
             </a>
             <button
@@ -576,7 +626,36 @@ export function Workspace({
               {state.notifications.length ? (
                 state.notifications.map((n) => (
                   <p key={n.id} className={n.read ? 'muted' : ''}>
-                    {t(n.key)}
+                    {n.key === 'announcement'
+                      ? (() => {
+                          const item = state.announcements?.find((a) => a.id === n.detail);
+                          if (!item) return t('announcement');
+                          return (
+                            <>
+                              <strong>{lang === 'he' ? item.titleHe : item.titleEn}</strong>
+                              <br />
+                              {lang === 'he' ? item.bodyHe : item.bodyEn}
+                            </>
+                          );
+                        })()
+                      : n.key === 'supportReply'
+                        ? (
+                            <button className="text-button" onClick={() => { setNotifications(false); navigate('support'); }}>
+                              {t(n.key)}
+                            </button>
+                          )
+                        : t(n.key)}
+                    {n.detail && n.key === 'twoSessionsLeft' && <small> · {n.detail}</small>}
+                    {n.key === 'clientMissed' && (
+                      <small>
+                        {' '}
+                        ·{' '}
+                        {
+                          state.relationships.find((link) => link.clientId === n.detail)?.client
+                            .name
+                        }
+                      </small>
+                    )}
                   </p>
                 ))
               ) : (
@@ -591,6 +670,14 @@ export function Workspace({
             </div>
           )}
           <main className="main-content">
+            {libraryError && (
+              <div className="integration-notice" role="alert">
+                <p>{t('libraryLoadFailed')}</p>
+                <button className="button secondary" onClick={() => void loadLibrary()}>
+                  {t('retry')}
+                </button>
+              </div>
+            )}
             {state.demo && (
               <div className="demo-label">
                 <span className="live-dot" />
@@ -608,11 +695,22 @@ export function Workspace({
                 {t('offlineWorkoutDrafts')}
               </p>
             )}
+            {state.coachStatus && state.coachStatus !== 'APPROVED' && (
+              <p className="integration-notice" role="status">
+                {t(state.coachStatus === 'PENDING' ? 'coachPendingNotice' : 'coachRestrictedNotice')}
+              </p>
+            )}
             {page === 'dashboard' ? (
               <>
                 <CoachInvitations />
                 {isCoach ? <CoachDashboard /> : <Dashboard />}
               </>
+            ) : isCoach &&
+              (page === 'packages' ||
+                page === 'trainingLog' ||
+                page === 'clientPayments' ||
+                page === 'businessReports') ? (
+              <CoachBusiness view={page} />
             ) : page === 'workouts' || page === 'templates' ? (
               <WorkoutsView />
             ) : page === 'builder' ? (
@@ -647,15 +745,28 @@ export function Workspace({
               <BrandingView />
             ) : page === 'admin' ? (
               <AdminView />
+            ) : page === 'support' ? (
+              <SupportView />
             ) : (
               <Empty text={t('notFound')} />
             )}
-            {page !== 'active' && <AdSlot />}
+            {page !== 'active' &&
+              remote?.ads?.enabled !== false &&
+              remote?.ads?.placements[adPlacement(page)] !== false && (
+                <AdSlot
+                  placement={adPlacement(page)}
+                  minIntervalSeconds={remote?.ads?.minIntervalSeconds ?? 60}
+                  maxImpressionsPerDay={remote?.ads?.maxImpressionsPerDay ?? 0}
+                />
+              )}
             <div className="app-footer">
               <span className="brand-wordmark">
-                nutra<span className="green">+</span>
+                Fitura<span className="green">+</span>
               </span>
               <span>{t('tagline')}</span>
+              <button className="text-button muted" onClick={() => navigate('support')}>
+                {t('helpSupport')}
+              </button>
             </div>
           </main>
         </div>
@@ -752,6 +863,9 @@ export function Modal({
       );
     if (!panel.current?.contains(document.activeElement)) focusable()[0]?.focus();
     const listener = (e: KeyboardEvent) => {
+      // Only the top dialog owns Escape and keyboard focus when dialogs are nested.
+      const dialogs = document.querySelectorAll('[aria-modal="true"]');
+      if (dialogs[dialogs.length - 1] !== panel.current) return;
       if (e.key === 'Escape') close.current();
       if (e.key === 'Tab') {
         const nodes = focusable(),
@@ -832,12 +946,14 @@ export function Form({
   const { t } = useNutri();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const submitting = useRef(false);
   return (
     <form
       className={className}
       onSubmit={async (e) => {
         e.preventDefault();
-        if (busy) return;
+        if (submitting.current) return;
+        submitting.current = true;
         const data = new FormData(e.currentTarget);
         setBusy(true);
         setError('');
@@ -846,6 +962,7 @@ export function Form({
         } catch (e) {
           setError(e instanceof Error ? e.message : 'serverError');
         } finally {
+          submitting.current = false;
           setBusy(false);
         }
       }}

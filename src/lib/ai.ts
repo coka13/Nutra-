@@ -1,6 +1,7 @@
 import type { PrismaClient, Profile } from '@prisma/client';
 import { catalogExercises, hasExerciseAnimation } from './free-exercises';
 import { normalizeFoodText, searchLocalFoods } from './food-search';
+import { recordAiUsage, resolveRoutes } from './ai-governance';
 
 export class AiUnavailable extends Error {}
 
@@ -9,42 +10,47 @@ type ContentPart =
   | { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } };
 type ChatMessage = { role: 'system' | 'user'; content: string | ContentPart[] };
 
-const modelList = (...values: (string | undefined)[]) =>
-  values
-    .flatMap((value) => (value || '').split(','))
-    .map((m) => m.trim())
-    .filter(Boolean);
-
-// Free models are often rate-limited, so each backup (comma-separated) gets its own attempt.
-const textModels = () =>
-  modelList(process.env.OPENAI_MODEL || 'gpt-4.1-mini', process.env.OPENAI_FALLBACK_MODEL);
-/** Models that accept images; defaults to the text models (gpt-4.1-mini sees images). */
-const visionModels = () =>
-  process.env.OPENAI_VISION_MODEL ? modelList(process.env.OPENAI_VISION_MODEL) : textModels();
-
-/** Calls any OpenAI-compatible chat endpoint (OpenAI, OpenRouter...) configured in the env. */
+/**
+ * Calls an OpenAI-compatible chat endpoint. Routes come from administrator-configured
+ * providers (default + fallbacks) or, when none are set, the OPENAI_* environment variables.
+ * Free models are often rate-limited, so each backup model gets its own attempt.
+ * Every attempt is metered (tokens, estimated cost, latency, failure class; never content).
+ */
 export async function chat(
   messages: ChatMessage[],
   maxTokens: number,
   json = false,
-  models = textModels(),
+  kind: 'text' | 'vision' = 'text',
 ) {
-  if (!process.env.OPENAI_API_KEY) throw new AiUnavailable('no api key');
-  const baseUrl = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const routes = await resolveRoutes(kind);
+  if (!routes.length) throw new AiUnavailable('no api key');
   const failures: string[] = [];
   const deadline = Date.now() + (json ? 110000 : 50000);
-  for (const model of models) {
+  for (const route of routes) {
+    const { model } = route;
     const remaining = deadline - Date.now();
     if (remaining < 5000) break;
+    const started = Date.now();
+    const fail = (reason: string, usage?: { prompt_tokens?: number; completion_tokens?: number }) => {
+      failures.push(`${route.provider}/${model}: ${reason}`);
+      return recordAiUsage({
+        route,
+        promptTokens: usage?.prompt_tokens ?? 0,
+        completionTokens: usage?.completion_tokens ?? 0,
+        success: false,
+        latencyMs: Date.now() - started,
+        error: reason,
+      });
+    };
     try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
+      const response = await fetch(`${route.baseUrl}/chat/completions`, {
         method: 'POST',
         signal: AbortSignal.timeout(Math.min(remaining, json ? 70000 : 40000)),
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${route.key}`,
           'Content-Type': 'application/json',
           ...(process.env.APP_URL && { 'HTTP-Referer': process.env.APP_URL }),
-          'X-Title': 'Nutra+',
+          'X-Title': 'Fitura+',
         },
         body: JSON.stringify({
           model,
@@ -54,16 +60,25 @@ export async function chat(
         }),
       });
       if (!response.ok) {
-        failures.push(`${model}: HTTP ${response.status}`);
+        await fail(`HTTP ${response.status}`);
         continue;
       }
       const data = await response.json().catch(() => null);
       const choice = data?.choices?.[0];
       const answer = choice?.message?.content;
-      if (typeof answer === 'string' && answer.trim()) return answer.trim();
-      failures.push(`${model}: empty (${choice?.finish_reason})`);
+      if (typeof answer === 'string' && answer.trim()) {
+        await recordAiUsage({
+          route,
+          promptTokens: data?.usage?.prompt_tokens ?? 0,
+          completionTokens: data?.usage?.completion_tokens ?? 0,
+          success: true,
+          latencyMs: Date.now() - started,
+        });
+        return answer.trim();
+      }
+      await fail(`empty (${choice?.finish_reason})`, data?.usage);
     } catch (error) {
-      failures.push(`${model}: ${error instanceof Error ? error.name : 'error'}`);
+      await fail(error instanceof Error ? error.name : 'error');
     }
   }
   console.warn('[ai] all models failed:', failures.join('; '));
@@ -187,7 +202,7 @@ export async function draftWorkout(request: string, profile: Profile | null, lan
     [
       {
         role: 'system',
-        content: `You design one weekly workout for the Nutra+ app. ${SAFETY}
+        content: `You design one weekly workout for the Fitura+ app. ${SAFETY}
 Use ONLY exercises from this catalog, referenced by their number (format: number|name|muscle):
 ${list}
 
@@ -270,7 +285,7 @@ export async function draftMenu(
     [
       {
         role: 'system',
-        content: `You design a one-day balanced menu for the Nutra+ app. ${SAFETY}
+        content: `You design a one-day balanced menu for the Fitura+ app. ${SAFETY}
 Use simple, common, generic foods (as found in a nutrition database), one ingredient per item, e.g. "חזה עוף" / "chicken breast", "אורז לבן מבושל" / "cooked white rice", "יוגורט" / "yogurt". No brands, no composite dishes.
 
 Reply with JSON only, no prose:
@@ -387,7 +402,7 @@ export async function recognizeMeal(
     [
       {
         role: 'system',
-        content: `You identify foods in a meal photo for the Nutra+ food diary. ${SAFETY}
+        content: `You identify foods in a meal photo for the Fitura+ food diary. ${SAFETY}
 List each distinct food or drink you can see, one ingredient or simple dish per item, using common generic names (as found in a nutrition database), e.g. "חזה עוף צלוי" / "grilled chicken breast", "אורז לבן מבושל" / "cooked white rice". No brands.
 Estimate the portion in grams from visual cues (plate size, cutlery, hands). Give typical nutrition per 100 g for that food as prepared.
 
@@ -414,7 +429,7 @@ Reply with JSON only, no prose:
     ],
     3000,
     true,
-    visionModels(),
+    'vision',
   );
   const json = parseJsonObject(reply);
   if (!json) throw new AiUnavailable('unparseable');

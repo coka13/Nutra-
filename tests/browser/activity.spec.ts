@@ -11,6 +11,7 @@ test('health imports are idempotent, private and exportable', async ({ browser }
         data: {
           name: 'Activity Test',
           email: `activity-${Date.now()}-${index}@example.test`,
+          acceptTerms: true,
           password,
           role: 'INDEPENDENT',
           language: 'en',
@@ -89,6 +90,7 @@ for (const language of ['en', 'he'])
           data: {
             name: 'Aerobic Test',
             email: `aerobic-${language}-${Date.now()}@example.test`,
+            acceptTerms: true,
             password,
             role: 'INDEPENDENT',
             language,
@@ -99,12 +101,23 @@ for (const language of ['en', 'he'])
     try {
       await page.goto('/app/activity');
       await expect(
-        page.getByRole('heading', { name: he ? 'צעדים ואירובי' : 'Steps & aerobics' }),
+        page.getByRole('heading', { name: he ? 'צעדים ופעילות' : 'Steps & activity' }),
       ).toBeVisible();
-      await page.getByLabel(he ? 'משך (דקות)' : 'Duration (minutes)').fill('35');
-      await page.getByRole('button', { name: he ? 'שמירת פעילות' : 'Save activity' }).click();
-      await expect(page.locator('.activity-log-row')).toHaveCount(1);
-      await expect(page.locator('.activity-log-row')).toContainText('35');
+      await expect(page.locator('input[name=minutes]')).toHaveCount(0);
+      const date = new Intl.DateTimeFormat('en-CA').format(new Date());
+      expect(
+        (
+          await page.request.post('/api/activity', {
+            data: {
+              action: 'sync',
+              source: he ? 'health-connect' : 'apple-health',
+              date,
+              steps: 1000,
+              activities: [{ externalId: 'walking-test', date, kind: 'walking', minutes: 35 }],
+            },
+          })
+        ).ok(),
+      ).toBeTruthy();
       await page.reload();
       await expect(page.locator('.activity-log-row')).toHaveCount(1);
       expect(
@@ -176,6 +189,8 @@ for (const language of ['en', 'he'])
         }),
       );
       await page.goto('/app/library');
+      await page.locator('.catalog-search').fill('walking');
+      await expect(page.locator('.catalog-card')).toHaveCount(1);
       await expect(page.locator('.catalog-card')).toContainText('Walking');
       await page.getByRole('button', { name: he ? 'עמוד הבא' : 'Next page' }).click();
       await expect(page.locator('.catalog-pagination')).toContainText('11–11');

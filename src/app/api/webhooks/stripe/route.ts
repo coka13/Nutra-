@@ -5,7 +5,7 @@ import {
   billingConfigured,
   stripeClient,
   subscriptionStatus,
-  tierForPrice,
+  tierForAnyPrice,
   verifyStripeWebhook,
 } from '@/lib/billing';
 export const runtime = 'nodejs';
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       // Fetch canonical state so an out-of-order delivery cannot reinstate stale access.
       const subscription = await stripe.subscriptions.retrieve(source.id);
       const userId = subscription.metadata.userId,
-        tier = tierForPrice(subscription.items.data[0]?.price.id || '');
+        tier = await tierForAnyPrice(subscription.items.data[0]?.price.id || '');
       const user = userId ? await db.user.findUnique({ where: { id: userId } }) : null;
       if (user) {
         const permittedTier = tier && (tier !== 'COACH' || user.role === 'COACH') ? tier : 'FREE';
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
           status: permittedTier === 'FREE' ? 'INACTIVE' : subscriptionStatus(subscription.status),
           currentPeriodEnd: end ? new Date(end * 1000) : null,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
         };
         await db.$transaction(async (tx) => {
           if (await tx.webhookEvent.findUnique({ where: { id: event.id } })) return;

@@ -17,6 +17,7 @@ for (const language of ['he', 'en'] as const) {
       await post('auth/register', {
         name: 'Reset Test',
         email,
+        acceptTerms: true,
         password,
         language,
         role: 'INDEPENDENT',
@@ -25,7 +26,13 @@ for (const language of ['he', 'en'] as const) {
       expect(
         (
           await other.request.post('/api/auth/register', {
-            data: { name: 'Other Test', email: otherEmail, password, role: 'INDEPENDENT' },
+            data: {
+              name: 'Other Test',
+              email: otherEmail,
+              acceptTerms: true,
+              password,
+              role: 'INDEPENDENT',
+            },
           })
         ).ok(),
       ).toBeTruthy();

@@ -19,18 +19,21 @@ for (const language of ['he', 'en'] as const) {
         name: 'Calendar Coach',
         email: `calendar-coach-${suffix}@example.test`,
         phone: '+972501234567',
+        acceptTerms: true,
         password,
         language,
       });
       const { user: clientUser } = await post(client, 'auth/user/register', {
         name: 'Calendar Client',
         email,
+        acceptTerms: true,
         password,
         language,
       });
       const { user: outsiderUser } = await post(outsider, 'auth/user/register', {
         name: 'Unrelated Client',
         email: `calendar-outsider-${suffix}@example.test`,
+        acceptTerms: true,
         password,
         language,
       });

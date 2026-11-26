@@ -28,10 +28,18 @@ import {
   signOut,
 } from '@/lib/auth';
 import { hashPassword, tokenHash, verifyPassword } from '@/lib/security';
-import { clientCapacity, entitlements } from '@/lib/plans';
+import { clientCapacity } from '@/lib/plans';
 import { billingConfigured } from '@/lib/billing';
+import { activeGrantKinds, planRules, userEntitlements } from '@/lib/access';
+import { deleteAccountData, sendPasswordReset } from '@/lib/account-ops';
+import { aiConfigured, aiContext, assertAiAllowed } from '@/lib/ai-governance';
+import { getConfig } from '@/lib/remote-config';
+import { termsVersion } from '@/lib/legal';
+import { recordRequest, routeGroup } from '@/lib/metrics';
+import { applyExerciseOverrides } from '@/lib/content-overrides';
 import { menuApplies, serializeWeekdays } from '@/lib/meal-schedule';
 import { searchLocalFoods } from '@/lib/food-search';
+import { foodAccess } from '@/lib/food-access';
 import { clientAdherence } from '@/lib/adherence';
 import { workoutClockTransition } from '@/lib/workout-clock';
 import { recordPerformance, recordLivePerformance } from '@/lib/performance';
@@ -69,24 +77,8 @@ const safeUser = (u: {
   language: u.language,
   theme: u.theme,
 });
-async function planAccess(u: {
-  id: string;
-  role: string;
-  subscription: { tier: string; status: string } | null;
-}) {
-  const links = await db.coachRelationship.findMany({
-    where: { clientId: u.id, status: 'ACTIVE' },
-    select: {
-      coach: { select: { role: true, subscription: { select: { tier: true, status: true } } } },
-    },
-  });
-  return entitlements({
-    role: u.role,
-    sub: u.subscription,
-    billingOn: billingConfigured(),
-    coaches: links.map((l) => l.coach),
-  });
-}
+/** Subscription, complimentary grants, remote plan rules and coach approval combined. */
+const planAccess = userEntitlements;
 async function related(coachId: string, clientId: string) {
   return !!(await db.coachRelationship.findFirst({
     where: { coachId, clientId, status: 'ACTIVE' },
@@ -147,9 +139,42 @@ async function pauseOtherWorkouts(tx: Prisma.TransactionClient, userId: string, 
   }
 }
 
-async function handle(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+async function handle(req: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+  const started = performance.now();
+  const path = (await context.params).path.join('/');
+  const response = await handleRequest(req, path);
+  let code = '';
+  if (response.status >= 400)
+    code = await response
+      .clone()
+      .json()
+      .then((body: { error?: unknown }) => (typeof body.error === 'string' ? body.error : ''))
+      .catch(() => '');
+  recordRequest({
+    route: routeGroup(path),
+    method: req.method,
+    status: response.status,
+    durationMs: performance.now() - started,
+    code,
+  });
+  return response;
+}
+
+async function handleRequest(req: NextRequest, path: string) {
   try {
-    const path = (await params).path.join('/');
+    // Maintenance mode answers every call except session lookup and sign-out.
+    if (path !== 'auth/me' && path !== 'auth/logout') {
+      const { maintenance } = await getConfig();
+      if (maintenance.enabled)
+        return NextResponse.json(
+          {
+            error: 'maintenance',
+            messageEn: maintenance.messageEn,
+            messageHe: maintenance.messageHe,
+          },
+          { status: 503, headers: { 'Retry-After': '300' } },
+        );
+    }
     if (req.method !== 'GET') {
       if (!acceptsOrigin(req)) throw new ApiError('forbidden', 403);
       if (
@@ -216,12 +241,19 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
             language: z.enum(['en', 'he']).default('en'),
           })
           .parse({ ...body, role });
+        // Explicit consent: the user confirms they are 18+ and accept the Terms of Use.
+        if (body.acceptTerms !== true) throw new ApiError('termsRequired', 400);
+        const { features } = await getConfig();
+        if (data.role === 'COACH' ? !features.coachRegistration : !features.userRegistration)
+          throw new ApiError('registrationClosed', 403);
         if (await db.user.findUnique({ where: { email: data.email.toLowerCase() } }))
           throw new ApiError('emailTaken', 409);
         const { password, ...rest } = data;
         const u = await db.user.create({
           data: {
             ...rest,
+            ...(data.role === 'COACH' &&
+              features.coachApprovalRequired && { coachStatus: 'PENDING' }),
             email: data.email.toLowerCase(),
             passwordHash: hashPassword(password),
             profile: { create: {} },
@@ -230,6 +262,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         });
         await createSession(u.id);
         await audit(u.id, 'REGISTER');
+        await audit(u.id, `TERMS_ACCEPTED:${termsVersion}`);
         return NextResponse.json({ user: safeUser(u) });
       }
       if (
@@ -253,6 +286,8 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         ) {
           throw new ApiError('credentials', 401);
         }
+        // Checked only after the password, so it reveals nothing to someone guessing.
+        if (u.status === 'SUSPENDED') throw new ApiError('accountSuspended', 403);
         const user = data.language
           ? await db.user.update({ where: { id: u.id }, data: { language: data.language } })
           : u;
@@ -264,27 +299,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM)
           throw new ApiError('emailUnavailable', 503);
         const u = await db.user.findUnique({ where: { email: email.toLowerCase() } });
-        if (u) {
-          const token = randomBytes(32).toString('hex');
-          await db.passwordReset.create({
-            data: { id: tokenHash(token), userId: u.id, expiresAt: new Date(Date.now() + 1800000) },
-          });
-          const link = `${process.env.APP_URL}/reset?token=${token}`;
-          const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: process.env.EMAIL_FROM,
-              to: [u.email],
-              subject: 'Nutra+\u200E / איפוס סיסמה',
-              text: `Reset your password / איפוס סיסמה: ${link}`,
-            }),
-          });
-          if (!response.ok) throw new ApiError('emailUnavailable', 503);
-        }
+        if (u && u.status !== 'SUSPENDED') await sendPasswordReset(u);
         return NextResponse.json({ ok: true });
       }
       if (path === 'auth/reset') {
@@ -509,20 +524,24 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
             orderBy: { createdAt: 'asc' },
           }),
           db.waterEntry.findMany({ where: { userId: target, date } }),
-          db.progressRecord.findMany({
-            where: { userId: target },
-            orderBy: { date: 'asc' },
-            take: 500,
-          }),
+          db.progressRecord
+            .findMany({
+              where: { userId: target },
+              orderBy: { date: 'desc' },
+              take: 500,
+            })
+            .then((records) => records.reverse()),
           db.appointment.findMany({
             where: { OR: [{ ownerId: u.id }, { guestId: u.id }] },
             orderBy: { startsAt: 'asc' },
           }),
-          db.message.findMany({
-            where: { OR: [{ senderId: u.id }, { recipientId: u.id }] },
-            orderBy: { createdAt: 'asc' },
-            take: 300,
-          }),
+          db.message
+            .findMany({
+              where: { OR: [{ senderId: u.id }, { recipientId: u.id }] },
+              orderBy: { createdAt: 'desc' },
+              take: 300,
+            })
+            .then((messages) => messages.reverse()),
           db.notification.findMany({
             where: { userId: u.id },
             orderBy: { createdAt: 'desc' },
@@ -590,6 +609,16 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
             appointments,
             messages,
             notifications,
+            // Administrative announcements referenced by in-app notifications.
+            announcements: await db.announcement.findMany({
+              where: {
+                id: {
+                  in: notifications.filter((n) => n.key === 'announcement').map((n) => n.detail),
+                },
+              },
+              select: { id: true, titleEn: true, titleHe: true, bodyEn: true, bodyHe: true },
+            }),
+            coachStatus: u.role === 'COACH' ? u.coachStatus : null,
             relationships: activeLinks.map((l) =>
               l.coachId === u.id ? l : { ...l, notes: '', tags: '' },
             ),
@@ -603,14 +632,17 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
                     select: { planId: true, meal: true },
                   }),
             entitlements: await planAccess(u),
-            integrations: {
-              ai: !!process.env.OPENAI_API_KEY,
-              email: !!process.env.RESEND_API_KEY,
-              billing: billingConfigured(),
-              whatsapp: false,
-              health: false,
-              photo: !!process.env.OPENAI_API_KEY,
-            },
+            integrations: await (async () => {
+              const [ai, { ai: aiConfig }] = await Promise.all([aiConfigured(), getConfig()]);
+              return {
+                ai: ai && aiConfig.enabled,
+                email: !!process.env.RESEND_API_KEY,
+                billing: billingConfigured(),
+                whatsapp: false,
+                health: false,
+                photo: ai && aiConfig.enabled && aiConfig.features.photo,
+              };
+            })(),
             demo: process.env.DEMO_ENABLED === 'true' && process.env.NODE_ENV !== 'production',
           },
           { headers: { 'Cache-Control': 'no-store' } },
@@ -632,13 +664,27 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
       }
       if (path === 'library')
         return NextResponse.json({
-          exercises: completeExerciseLibrary(await db.exercise.findMany()),
+          exercises: await applyExerciseOverrides(
+            completeExerciseLibrary(await db.exercise.findMany()),
+          ),
           // The bundled datasets are searched server-side, not shipped to every client.
           foods: await db.food.findMany({
             include: { units: { orderBy: { position: 'asc' } } },
             where: {
               OR: [
-                { ownerId: null, source: { notIn: ['usda', 'openfoodfacts', 'tzameret'] } },
+                {
+                  ownerId: null,
+                  source: {
+                    notIn: [
+                      'usda',
+                      'openfoodfacts',
+                      'tzameret',
+                      'private-retained',
+                      'user-estimate',
+                      'ai-photo-estimate',
+                    ],
+                  },
+                },
                 { ownerId: u.id },
               ],
             },
@@ -666,6 +712,13 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           progress: await db.progressRecord.findMany({ where: { userId: u.id } }),
           cardioActivities: await db.cardioActivity.findMany({ where: { userId: u.id } }),
           dailySteps: await db.dailySteps.findMany({ where: { userId: u.id } }),
+          coachPackages:
+            u.role === 'COACH'
+              ? await db.coachPackage.findMany({
+                  where: { relationship: { coachId: u.id } },
+                  include: { sessions: true, receipts: true },
+                })
+              : [],
           water: await db.waterEntry.findMany({ where: { userId: u.id } }),
           recipes: await db.recipe.findMany({
             where: { userId: u.id },
@@ -689,7 +742,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         return new NextResponse(JSON.stringify(data, null, 2), {
           headers: {
             'Content-Type': 'application/json',
-            'Content-Disposition': 'attachment; filename="nutra-export.json"',
+            'Content-Disposition': 'attachment; filename="fitura-export.json"',
             'Cache-Control': 'no-store',
           },
         });
@@ -1108,11 +1161,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           !(await db.food.findFirst({
             where: {
               id: data.foodId,
-              OR: [
-                { ownerId: null },
-                { ownerId: u.id },
-                { planItems: { some: { plan: readablePlan(u.id) } } },
-              ],
+              ...foodAccess(u.id),
             },
           }))
         )
@@ -1153,7 +1202,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           ...new Set(input.items.flatMap((item) => (item.foodId ? [item.foodId] : []))),
         ];
         const allowed = await db.food.count({
-          where: { id: { in: catalogIds }, OR: [{ ownerId: null }, { ownerId: u.id }] },
+          where: { id: { in: catalogIds }, ...foodAccess(u.id) },
         });
         if (allowed !== catalogIds.length) throw new ApiError('forbidden', 403);
         await db.$transaction(async (tx) => {
@@ -1193,19 +1242,37 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
       case 'meals/copy': {
         if (u.role === 'COACH') throw new ApiError('forbidden', 403);
         const data = z.object({ from: day, to: day }).parse(body);
-        const meals = await db.mealEntry.findMany({ where: { userId: u.id, date: data.from } });
-        if (!meals.length) throw new ApiError('empty');
-        await db.mealEntry.createMany({
-          data: meals.map((m) => ({
-            userId: u.id,
-            foodId: m.foodId,
-            grams: m.grams,
-            quantity: m.quantity,
-            unitHe: m.unitHe,
-            unitEn: m.unitEn,
-            meal: m.meal,
-            date: data.to,
-          })),
+        if (data.from === data.to) throw new ApiError('invalid');
+        await db.$transaction(async (tx) => {
+          const meals = await tx.mealEntry.findMany({ where: { userId: u.id, date: data.from } });
+          if (!meals.length) throw new ApiError('empty');
+          const destination = await tx.mealEntry.findMany({
+            where: { userId: u.id, date: data.to },
+          });
+          const signature = (m: (typeof meals)[number]) =>
+            JSON.stringify([m.foodId, m.grams, m.meal, m.quantity, m.unitHe, m.unitEn]);
+          const available = new Map<string, number>();
+          for (const entry of destination)
+            available.set(signature(entry), (available.get(signature(entry)) ?? 0) + 1);
+          const missing = meals.filter((entry) => {
+            const key = signature(entry),
+              count = available.get(key) ?? 0;
+            if (!count) return true;
+            available.set(key, count - 1);
+            return false;
+          });
+          await tx.mealEntry.createMany({
+            data: missing.map((m) => ({
+              userId: u.id,
+              foodId: m.foodId,
+              grams: m.grams,
+              quantity: m.quantity,
+              unitHe: m.unitHe,
+              unitEn: m.unitEn,
+              meal: m.meal,
+              date: data.to,
+            })),
+          });
         });
         break;
       }
@@ -1285,29 +1352,31 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           Math.ceil(input.calories / 950),
           ...[input.protein, input.carbs, input.fat].map((g) => Math.ceil(g / 100)),
         );
-        const food = await db.food.create({
-          data: {
-            nameEn: input.name,
-            nameHe: input.name,
-            calories: input.calories / parts,
-            protein: input.protein / parts,
-            carbs: input.carbs / parts,
-            fat: input.fat / parts,
-            ownerId: u.id,
-            source: 'user-estimate',
-          },
-        });
-        await db.mealEntry.create({
-          data: {
-            userId: u.id,
-            foodId: food.id,
-            grams: parts * 100,
-            quantity: 1,
-            unitHe: 'מנה',
-            unitEn: 'serving',
-            meal: input.meal,
-            date: input.date,
-          },
+        await db.$transaction(async (tx) => {
+          const food = await tx.food.create({
+            data: {
+              nameEn: input.name,
+              nameHe: input.name,
+              calories: input.calories / parts,
+              protein: input.protein / parts,
+              carbs: input.carbs / parts,
+              fat: input.fat / parts,
+              ownerId: u.id,
+              source: 'user-estimate',
+            },
+          });
+          await tx.mealEntry.create({
+            data: {
+              userId: u.id,
+              foodId: food.id,
+              grams: parts * 100,
+              quantity: 1,
+              unitHe: 'מנה',
+              unitEn: 'serving',
+              meal: input.meal,
+              date: input.date,
+            },
+          });
         });
         break;
       }
@@ -1318,22 +1387,38 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           where: { id: input.planId, ...readablePlan(u.id) },
           include: { items: { orderBy: { position: 'asc' } } },
         });
-        if (!plan) throw new ApiError('forbidden', 403);
+        if (!plan || !plan.active || !menuApplies(plan, input.date))
+          throw new ApiError('forbidden', 403);
         const items = plan.items.filter((item) => !input.meal || item.meal === input.meal);
         if (!items.length) throw new ApiError('empty');
-        await db.mealEntry.createMany({
-          data: items.map((item) => ({
-            userId: u.id,
-            foodId: item.foodId,
-            grams: item.grams,
-            quantity: item.quantity,
-            unitHe: item.unitHe,
-            unitEn: item.unitEn,
-            meal: item.meal,
-            date: input.date,
-          })),
+        const logged = await db.$transaction(async (tx) => {
+          const existing = await tx.mealEntry.findMany({
+            where: {
+              userId: u.id,
+              date: input.date,
+              planItemId: { in: items.map((item) => item.id) },
+            },
+            select: { planItemId: true },
+          });
+          const pending = items.filter(
+            (item) => !existing.some((entry) => entry.planItemId === item.id),
+          );
+          await tx.mealEntry.createMany({
+            data: pending.map((item) => ({
+              userId: u.id,
+              planItemId: item.id,
+              foodId: item.foodId,
+              grams: item.grams,
+              quantity: item.quantity,
+              unitHe: item.unitHe,
+              unitEn: item.unitEn,
+              meal: item.meal,
+              date: input.date,
+            })),
+          });
+          return pending.length;
         });
-        result = { ok: true, logged: items.length };
+        result = { ok: true, logged };
         break;
       }
       case 'recipes': {
@@ -1351,7 +1436,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         for (const ing of data.ingredients)
           if (
             !(await db.food.findFirst({
-              where: { id: ing.foodId, OR: [{ ownerId: null }, { ownerId: u.id }] },
+              where: { id: ing.foodId, ...foodAccess(u.id) },
             }))
           )
             throw new ApiError('forbidden', 403);
@@ -1399,7 +1484,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         const { id: planId, items, ...values } = data;
         const foodIds = [...new Set(items.map((item) => item.foodId))];
         const usable = await db.food.count({
-          where: { id: { in: foodIds }, OR: [{ ownerId: null }, { ownerId: u.id }] },
+          where: { id: { in: foodIds }, ...foodAccess(u.id) },
         });
         if (usable !== foodIds.length) throw new ApiError('forbidden', 403);
         await db.$transaction(async (tx) => {
@@ -1622,20 +1707,35 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         const client = await db.user.findUnique({ where: { email: email.toLowerCase() } });
         if (!client || client.id === u.id || client.role === 'ADMIN')
           throw new ApiError('clientNotFound', 404);
-        const count = await db.coachRelationship.count({
-          where: { coachId: u.id, status: { in: ['ACTIVE', 'PENDING'] } },
+        if (u.coachStatus !== 'APPROVED') throw new ApiError('coachNotApproved', 403);
+        const capacity = clientCapacity(u.role, u.subscription, billingConfigured(), {
+          coachStatus: u.coachStatus,
+          coachClientLimit: u.coachClientLimit,
+          grants: await activeGrantKinds(u.id),
+          rules: planRules(await getConfig()),
         });
-        if (count >= clientCapacity(u.role, u.subscription, billingConfigured()))
-          throw new ApiError(
-            billingConfigured() && count === 0 ? 'coachPlanRequired' : 'capacity',
-            403,
-          );
-        await db.coachRelationship.upsert({
-          where: { coachId_clientId: { coachId: u.id, clientId: client.id } },
-          create: { coachId: u.id, clientId: client.id },
-          update: { status: 'PENDING' },
+        await db.$transaction(async (tx) => {
+          const existing = await tx.coachRelationship.findUnique({
+            where: { coachId_clientId: { coachId: u.id, clientId: client.id } },
+          });
+          if (existing && ['ACTIVE', 'PENDING'].includes(existing.status)) return;
+          const count = await tx.coachRelationship.count({
+            where: { coachId: u.id, status: { in: ['ACTIVE', 'PENDING'] } },
+          });
+          if (count >= capacity)
+            throw new ApiError(
+              billingConfigured() && count === 0 ? 'coachPlanRequired' : 'capacity',
+              403,
+            );
+          await tx.coachRelationship.upsert({
+            where: { coachId_clientId: { coachId: u.id, clientId: client.id } },
+            create: { coachId: u.id, clientId: client.id },
+            update: { status: 'PENDING' },
+          });
+          const profile = await tx.profile.findUnique({ where: { userId: client.id } });
+          if (profile?.reminders !== false)
+            await tx.notification.create({ data: { userId: client.id, key: 'coachInvite' } });
         });
-        await notify(client.id, 'coachInvite');
         break;
       }
       case 'clients/respond': {
@@ -1843,20 +1943,25 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
         if (!u.profile?.adult || !u.profile.aiConsent) throw new ApiError('consent', 403);
         if (mode === 'copilot' && u.role !== 'COACH') throw new ApiError('forbidden', 403);
         if (!(await planAccess(u)).ai) throw new ApiError('aiPlanRequired', 403);
-        if (!process.env.OPENAI_API_KEY) throw new ApiError('aiUnavailable', 503);
+        if (!(await aiConfigured())) throw new ApiError('aiUnavailable', 503);
+        await assertAiAllowed(u.id, mode === 'copilot' ? 'copilot' : 'chat');
         await rateLimit(`ai:${u.id}`, 5);
-        const answer = await chat(
-          [
-            {
-              role: 'system',
-              content: `You are Nutra+, a general ${mode} assistant. Reply in ${u.language === 'he' ? 'Hebrew' : 'English'}. ${AI_SAFETY} Never claim you changed any records. Do not request identifying health data.`,
-            },
-            { role: 'user', content: prompt },
-          ],
-          1500,
-        ).catch(() => {
-          throw new ApiError('aiUnavailable', 503);
-        });
+        const answer = await aiContext
+          .run({ userId: u.id, feature: mode === 'copilot' ? 'copilot' : 'chat' }, () =>
+            chat(
+              [
+                {
+                  role: 'system',
+                  content: `You are Fitura+, a general ${mode} assistant. Reply in ${u.language === 'he' ? 'Hebrew' : 'English'}. ${AI_SAFETY} Never claim you changed any records. Do not request identifying health data.`,
+                },
+                { role: 'user', content: prompt },
+              ],
+              1500,
+            ),
+          )
+          .catch(() => {
+            throw new ApiError('aiUnavailable', 503);
+          });
         await db.aIInteraction.create({ data: { userId: u.id, prompt, response: answer } });
         result = { answer };
         break;
@@ -1873,16 +1978,21 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           .parse(body);
         if (!u.profile?.adult || !u.profile.aiConsent) throw new ApiError('consent', 403);
         if (!(await planAccess(u)).ai) throw new ApiError('aiPlanRequired', 403);
-        if (!process.env.OPENAI_API_KEY) throw new ApiError('aiUnavailable', 503);
+        if (!(await aiConfigured())) throw new ApiError('aiUnavailable', 503);
+        await assertAiAllowed(u.id, 'photo');
         await rateLimit(`ai:${u.id}`, 5);
         const jpeg = await prepareProgressPhoto(input.image).catch(() => {
           throw new ApiError('photoError');
         });
         const lang = u.language === 'he' ? 'he' : 'en';
-        const draft = await recognizeMeal(db, u.id, jpeg, lang, input.note).catch((error) => {
-          if (error instanceof AiUnavailable) throw new ApiError('aiPhotoFailed', 503);
-          throw error;
-        });
+        const draft = await aiContext
+          .run({ userId: u.id, feature: 'photo' }, () =>
+            recognizeMeal(db, u.id, jpeg, lang, input.note),
+          )
+          .catch((error) => {
+            if (error instanceof AiUnavailable) throw new ApiError('aiPhotoFailed', 503);
+            throw error;
+          });
         await db.aIInteraction.create({
           data: {
             userId: u.id,
@@ -1905,7 +2015,8 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           .parse(body);
         if (!u.profile?.adult || !u.profile.aiConsent) throw new ApiError('consent', 403);
         if (!(await planAccess(u)).ai) throw new ApiError('aiPlanRequired', 403);
-        if (!process.env.OPENAI_API_KEY) throw new ApiError('aiUnavailable', 503);
+        if (!(await aiConfigured())) throw new ApiError('aiUnavailable', 503);
+        await assertAiAllowed(u.id, 'plan');
         if (input.clientId && (u.role !== 'COACH' || !(await related(u.id, input.clientId))))
           throw new ApiError('forbidden', 403);
         await rateLimit(`ai:${u.id}`, 5);
@@ -1916,14 +2027,16 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
             ? null
             : u.profile;
         const lang = u.language === 'he' ? 'he' : 'en';
-        const draft = await (
-          input.kind === 'workout'
-            ? draftWorkout(input.prompt, profile, lang)
-            : draftMenu(db, u.id, input.prompt, profile, lang)
-        ).catch((error) => {
-          if (error instanceof AiUnavailable) throw new ApiError('aiPlanFailed', 503);
-          throw error;
-        });
+        const draft = await aiContext
+          .run({ userId: u.id, feature: 'plan' }, () =>
+            input.kind === 'workout'
+              ? draftWorkout(input.prompt, profile, lang)
+              : draftMenu(db, u.id, input.prompt, profile, lang),
+          )
+          .catch((error) => {
+            if (error instanceof AiUnavailable) throw new ApiError('aiPlanFailed', 503);
+            throw error;
+          });
         await db.aIInteraction.create({
           data: {
             userId: u.id,
@@ -1969,7 +2082,10 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
               planItems: { none: {} },
             },
           });
-          await tx.food.updateMany({ where: { ownerId: u.id }, data: { ownerId: null } });
+          await tx.food.updateMany({
+            where: { ownerId: u.id },
+            data: { ownerId: null, source: 'private-retained' },
+          });
           await tx.progressPhoto.deleteMany({ where: { userId: u.id } });
           await tx.progressRecord.deleteMany({ where: { userId: u.id } });
           await tx.cardioActivity.deleteMany({ where: { userId: u.id } });
@@ -2000,31 +2116,7 @@ async function handle(req: NextRequest, { params }: { params: Promise<{ path: st
           throw new ApiError('subscriptionActive', 409);
         if (!verifyPassword(password, u.passwordHash)) throw new ApiError('credentials', 401);
         if (u.email === 'alex@nutri.local') throw new ApiError('demoProtected', 403);
-        await db.$transaction(async (tx) => {
-          await tx.program.deleteMany({ where: { ownerId: u.id } });
-          await tx.mealEntry.deleteMany({ where: { userId: u.id } });
-          await tx.recipe.deleteMany({ where: { userId: u.id } });
-          await tx.mealPlan.deleteMany({ where: { userId: u.id } });
-          // Foods still used in other people's diaries, recipes or plans become shared records.
-          await tx.food.updateMany({
-            where: {
-              ownerId: u.id,
-              OR: [
-                { meals: { some: {} } },
-                { ingredients: { some: {} } },
-                { planItems: { some: {} } },
-              ],
-            },
-            data: { ownerId: null },
-          });
-          await tx.user.delete({ where: { id: u.id } });
-          await tx.auditLog.deleteMany({ where: { actorId: u.id } });
-          await tx.rateLimit.deleteMany({
-            where: {
-              key: { in: [`user:${u.id}`, `ai:${u.id}`, `billing:${u.id}`, `auth:${u.email}`] },
-            },
-          });
-        });
+        await db.$transaction((tx) => deleteAccountData(tx, u));
         await signOut();
         break;
       }

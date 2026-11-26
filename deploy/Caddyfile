@@ -1,0 +1,20 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# Public app (web + API used by the mobile app).
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+# Administration console. The app itself only serves /admin and /api/console on this host
+# (ADMIN_HOST) and refuses them everywhere else; Caddy adds a second noindex layer.
+# Optionally restrict by IP: uncomment and list trusted office/VPN addresses.
+{$ADMIN_HOST} {
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow, noarchive"
+	# @blocked not remote_ip 203.0.113.10/32
+	# respond @blocked 404
+	reverse_proxy app:3000
+}

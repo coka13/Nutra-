@@ -1,6 +1,6 @@
 'use client';
 import { menuApplies, parseWeekdays } from '@/lib/meal-schedule';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   CalendarDays,
   Check,
@@ -21,6 +21,7 @@ import type { Food } from '@prisma/client';
 import type { FoodWithUnits, PlanItem } from '@/lib/types';
 import { FoodPicker } from './food-picker';
 import { MealPhotoModal } from './meal-photo';
+import { NutritionActivity } from './nutrition-activity';
 import { AmountInput, defaultAmount, useAmountLabel, type Amount } from './amount-input';
 import { DatePicker, Empty, Form, Modal, PageHeading, Submit, useNutri } from './workspace';
 export function NutritionView() {
@@ -66,19 +67,24 @@ export function NutritionView() {
       .join(' · ');
   // Optimistic ticks so a tap shows immediately, before the refresh lands.
   const [pendingEat, setPendingEat] = useState<Record<string, boolean>>({});
+  const pendingMeals = useRef(new Set<string>());
   const isEaten = (itemId: string) =>
-    pendingEat[itemId] ?? state.meals.some((m) => m.planItemId === itemId);
+    pendingEat[`${date}:${itemId}`] ?? state.meals.some((m) => m.planItemId === itemId);
   function eat(itemId: string, eaten: boolean) {
-    setPendingEat((all) => ({ ...all, [itemId]: eaten }));
+    const key = `${date}:${itemId}`;
+    if (pendingMeals.current.has(key)) return;
+    pendingMeals.current.add(key);
+    setPendingEat((all) => ({ ...all, [key]: eaten }));
     run('meal-plans/eat', { itemId, date, eaten }, true)
       .catch(() => {})
-      .finally(() =>
+      .finally(() => {
+        pendingMeals.current.delete(key);
         setPendingEat((all) => {
           const rest = { ...all };
-          delete rest[itemId];
+          delete rest[key];
           return rest;
-        }),
-      );
+        });
+      });
   }
   function add(m: string) {
     setMeal(m);
@@ -108,6 +114,7 @@ export function NutritionView() {
           {t('addFood')}
         </button>
       </PageHeading>
+      <NutritionActivity />
       <div className="nutrition-stats">
         <button
           type="button"
@@ -279,6 +286,7 @@ export function NutritionView() {
                             className="meal-check"
                             role="checkbox"
                             aria-checked={eaten}
+                            disabled={pendingEat[`${date}:${item.id}`] !== undefined}
                             aria-label={`${t('markEaten')} · ${foodName(item.food)}`}
                             onClick={() => eat(item.id, !eaten)}
                           >
@@ -399,7 +407,7 @@ export function NutritionView() {
               }}
             >
               <button type="button" className="text-button" onClick={() => setSelected(null)}>
-                ← {t('backButton')}
+                <span aria-hidden="true">{lang === 'he' ? '→' : '←'}</span> {t('backButton')}
               </button>
               <h3>{foodName(selected)}</h3>
               <p className="muted small-copy">{t('estimates')}</p>

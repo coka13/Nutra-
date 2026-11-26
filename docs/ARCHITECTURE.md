@@ -1,6 +1,6 @@
-# Nutra+ architecture
+# Fitura+ architecture
 
-This repository began empty. Nutra+ is a modular Next.js App Router application with React, TypeScript, Prisma and Zod. The web client calls a same-origin JSON API. Session secrets are hashed in the database; passwords use scrypt. Business access rules run on the server for every operation. Client records require an accepted, explicit sharing relationship. Admin accounts cannot be self-registered.
+This repository began empty. Fitura+ is a modular Next.js App Router application with React, TypeScript, Prisma and Zod. The web client calls a same-origin JSON API. Session secrets are hashed in the database; passwords use scrypt. Business access rules run on the server for every operation. Client records require an accepted, explicit sharing relationship. Admin accounts cannot be self-registered.
 
 ## Persistence and deployment
 
@@ -16,7 +16,7 @@ AI runs through a server-only provider adapter and requires an API key, explicit
 
 ## Reference research
 
-Reviewed public pages on 2026-11-21: https://landing.nutricloudpro.com/, /who-is-nutrical-for, /for/personal-trainers, /for/dietitians. Functional themes: coaching CRM, reusable programs, meal substitutions, progress records, appointments, branded client experience, payments and communication automation. Original implementation and seed data only; no source code, assets, food database or branding copied. The reference explicitly targets professionals rather than self-guided users; Nutra+ supports independent users as a first-class role.
+Reviewed public pages on 2026-11-21: https://landing.nutricloudpro.com/, /who-is-nutrical-for, /for/personal-trainers, /for/dietitians. Functional themes: coaching CRM, reusable programs, meal substitutions, progress records, appointments, branded client experience, payments and communication automation. Original implementation and seed data only; no source code, assets, food database or branding copied. The reference explicitly targets professionals rather than self-guided users; Fitura+ supports independent users as a first-class role.
 
 ## Safety and operational limits
 

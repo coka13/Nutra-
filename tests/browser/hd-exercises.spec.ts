@@ -12,6 +12,7 @@ for (const language of ['en', 'he'] as const) {
           data: {
             name: 'HD Test',
             email: `hd-${language}-${Date.now()}@example.test`,
+            acceptTerms: true,
             password,
             role: 'INDEPENDENT',
             language,
@@ -20,21 +21,24 @@ for (const language of ['en', 'he'] as const) {
       ).ok(),
     ).toBeTruthy();
     try {
+      const library = await (await page.request.get('/api/library')).json();
+      const bench = library.exercises.find(
+        (exercise: { nameEn: string }) => exercise.nameEn === 'Dumbbell Bench Press',
+      );
+      const benchName = he ? bench.nameHe : bench.nameEn;
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto('/app/library');
-      await page
-        .locator('.catalog-search')
-        .fill(he ? 'לחיצת חזה במשקולות יד' : 'Dumbbell Bench Press');
+      await page.locator('.catalog-search').fill(benchName);
       const card = page.locator('.catalog-card').filter({
         has: page.getByRole('heading', {
-          name: he ? 'לחיצת חזה במשקולות יד' : 'Dumbbell Bench Press',
+          name: benchName,
           exact: true,
         }),
       });
       await expect(card).toHaveCount(1);
       await expect(card.locator('.catalog-thumbnail')).toHaveCSS(
         'background-color',
-        'rgb(255, 255, 255)',
+        'rgb(247, 247, 247)',
       );
       await card.click();
       const video = page.locator('.exercise-demo-gif');
@@ -45,7 +49,7 @@ for (const language of ['en', 'he'] as const) {
         .toBeGreaterThan(0);
       await expect(video).toBeVisible();
       if (he) {
-        await expect(page.getByRole('dialog')).toHaveAccessibleName('לחיצת חזה במשקולות יד');
+        await expect(page.getByRole('dialog')).toHaveAccessibleName(benchName);
         await expect(page.locator('.instruction-copy')).toContainText(/[א-ת]/);
         await expect(page.locator('.instruction-copy')).not.toContainText('Lie down');
       }

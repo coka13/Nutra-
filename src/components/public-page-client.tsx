@@ -11,8 +11,34 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Language, translate } from '@/lib/i18n';
-import { PLAN_PRICE_USD } from '@/lib/plans';
+import { COACH_PACKAGES, PLAN_PRICE_USD } from '@/lib/plans';
 import { languagePreferenceKey, parseLanguage, persistLanguage } from '@/lib/language-preference';
+import { privacyContact, privacyVersion, termsVersion } from '@/lib/legal';
+const privacySections = [
+  'privacyCollect',
+  'privacyHealth',
+  'privacyUse',
+  'privacyCoaches',
+  'privacyProviders',
+  'privacyAds',
+  'privacyRetention',
+  'privacyRights',
+  'privacySecurity',
+  'privacyAge',
+  'privacyChanges',
+];
+const termsSections = [
+  'termsAge',
+  'termsAccount',
+  'termsHealth',
+  'termsCoaches',
+  'termsContent',
+  'termsBilling',
+  'termsPrivacy',
+  'termsTermination',
+  'termsLiability',
+  'termsChanges',
+];
 export function PublicPageClient({
   mode,
   account,
@@ -73,7 +99,7 @@ export function PublicPageClient({
     {
       key: 'coachTier',
       price: PLAN_PRICE_USD.COACH,
-      points: ['planCoach1', 'planCoach2', 'planCoach5', 'planCoach3', 'planCoach4', 'planCoach6'],
+      points: ['planCoach2', 'planCoach5', 'planCoach3', 'planCoach4', 'planCoach6'],
       soon: true,
       featured: true,
     },
@@ -95,18 +121,40 @@ export function PublicPageClient({
             <span className="public-plan-icon">
               {plan.key === 'coachTier' ? <Users size={22} /> : <Dumbbell size={22} />}
             </span>
-            <h3>{t(plan.key)}</h3>
-            <p className="public-plan-price">
-              {plan.price ? (
-                <>
-                  ${plan.price}
-                  <small> {t('perMonth')}</small>
-                </>
-              ) : (
-                t('free')
+            <h3>
+              {t(plan.key)}
+              {plan.key === 'coachTier' && (
+                <small className="coach-monthly"> {t('perMonth')}</small>
               )}
-            </p>
-            <ul>
+            </h3>
+            {plan.key === 'coachTier' ? (
+              <div className="coach-package-options">
+                <div className="coach-packages">
+                  {COACH_PACKAGES.map((offer) => (
+                    <div className="coach-package" key={offer.key}>
+                      <strong>{t(offer.key)}</strong>
+                      <span className="coach-package-price">${offer.price}</span>
+                      <span className="coach-package-capacity">
+                        {t('coachPackageCapacity').replace('{count}', String(offer.clientLimit))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="coach-package-contact">{t('coachCustomPackage')}</p>
+              </div>
+            ) : (
+              <p className="public-plan-price">
+                {plan.price ? (
+                  <>
+                    ${plan.price}
+                    <small> {t('perMonth')}</small>
+                  </>
+                ) : (
+                  t('free')
+                )}
+              </p>
+            )}
+            <ul className="public-plan-benefits">
               {plan.points.map((point) => (
                 <li key={point}>
                   <Check size={16} aria-hidden="true" />
@@ -114,15 +162,10 @@ export function PublicPageClient({
                 </li>
               ))}
             </ul>
-            {plan.soon ? (
+            {plan.soon && (
               <span className="button secondary full" aria-disabled="true">
                 {t('comingSoon')}
               </span>
-            ) : (
-              <a href="/auth" className="button primary full">
-                {t('getStarted')}
-                <ArrowRight size={17} />
-              </a>
             )}
           </article>
         ))}
@@ -131,7 +174,7 @@ export function PublicPageClient({
   );
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const values = Object.fromEntries(new FormData(e.currentTarget));
+    const { acceptTerms, ...values } = Object.fromEntries(new FormData(e.currentTarget));
     setBusy(true);
     setError('');
     try {
@@ -141,7 +184,12 @@ export function PublicPageClient({
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...values, language: lang, token }),
+          body: JSON.stringify({
+            ...values,
+            language: lang,
+            token,
+            ...(mode === 'register' && { acceptTerms: acceptTerms === 'on' }),
+          }),
         },
       );
       const data = await r.json();
@@ -173,15 +221,12 @@ export function PublicPageClient({
   }
   const home = ['home', 'features', 'pricing'].includes(mode);
   return (
-    <div className="public-site">
+    <div className={`public-site${home ? ' public-home' : ''}`}>
       <nav className="public-nav">
-        <a href="/" className="brand">
-          nutra<span>+</span>
-          <i />
-        </a>
-        <div className="public-links">
-          <a href={home ? '#pricing' : '/pricing'} className="public-pricing-link">
-            {t('pricing')}
+        <div className="public-nav-main">
+          <a href="/" className="brand">
+            Fitura<span>+</span>
+            <i />
           </a>
         </div>
         <div className="row">
@@ -193,18 +238,22 @@ export function PublicPageClient({
             <Globe size={18} />
             <span>{lang === 'en' ? 'HE' : 'EN'}</span>
           </button>
-          <a className="button secondary" href={account ? authUrl('login') : '/auth'}>
-            {t('login')}
-          </a>
-          <a className="button primary" href={account ? authUrl('register') : '/auth'}>
-            {t('getStarted')}
-            <ArrowUpRight size={16} />
-          </a>
+          {home && (
+            <a className="button secondary" href="/auth">
+              {t('login')}
+            </a>
+          )}
         </div>
       </nav>
       {mode === 'choose' ? (
         <main className="account-chooser">
-          <img className="home-art" src="/nutri-home.webp" alt="" width={1000} height={1094} />
+          <img
+            className="home-art"
+            src="/nutri-home-transparent.webp"
+            alt=""
+            width={1000}
+            height={1094}
+          />
           <div>
             <h1>{t('chooseAccount')}</h1>
             {(['user', 'coach'] as const).map((kind) => (
@@ -219,8 +268,30 @@ export function PublicPageClient({
             ))}
           </div>
         </main>
+      ) : mode === 'terms' || mode === 'privacy' ? (
+        <main className="legal-page">
+          <h1>{t(mode === 'terms' ? 'termsOfUse' : 'privacyPolicy')}</h1>
+          <p className="legal-updated">
+            {t('termsUpdated')} {mode === 'terms' ? termsVersion : privacyVersion}
+          </p>
+          {(mode === 'terms' ? termsSections : privacySections).map((key) => (
+            <section key={key}>
+              <h2>{t(key + 'Title')}</h2>
+              <p>{t(key + 'Body')}</p>
+            </section>
+          ))}
+          {mode === 'privacy' && (
+            <section>
+              <h2>{t('privacyContactTitle')}</h2>
+              <p>
+                {t('privacyContactBody')}{' '}
+                {privacyContact && <a href={`mailto:${privacyContact}`}>{privacyContact}</a>}
+              </p>
+            </section>
+          )}
+        </main>
       ) : home ? (
-        <>
+        <main className="landing-overview">
           <section className="landing-hero">
             <div>
               <span className="eyebrow">
@@ -250,21 +321,23 @@ export function PublicPageClient({
                 <span>{t('tagline')}</span>
               </div>
             </div>
-            <img
-              className="home-art"
-              src="/nutri-home.webp"
-              width={1000}
-              height={1094}
-              alt=""
-              fetchPriority="high"
-            />
+            <div className="hero-art-frame">
+              <img
+                className="home-art"
+                src="/nutri-home-transparent.webp"
+                width={1000}
+                height={1094}
+                alt=""
+                fetchPriority="high"
+              />
+            </div>
           </section>
           {pricingSection}
-        </>
+        </main>
       ) : (
         <section className="auth-wrap">
           <div className="auth-story">
-            <span className="eyebrow">NUTRA+ / YOUR NEXT CHAPTER</span>
+            <span className="eyebrow">Fitura+ / YOUR NEXT CHAPTER</span>
             <h1>{t('welcome')}</h1>
             <p>{t('landingSub')}</p>
             <div className="decor-rings">
@@ -340,6 +413,22 @@ export function PublicPageClient({
                     <small>{t('coachContactHint')}</small>
                   </label>
                 )}
+                {mode === 'register' && (
+                  <label className="checkbox-label terms-consent">
+                    <input name="acceptTerms" type="checkbox" required />
+                    <span>
+                      {t('termsConsentBefore')}
+                      <a href="/terms" target="_blank" rel="noopener">
+                        {t('termsOfUse')}
+                      </a>
+                      {t('termsConsentMiddle')}
+                      <a href="/privacy" target="_blank" rel="noopener">
+                        {t('privacyPolicy')}
+                      </a>
+                      {t('termsConsentAfter')}
+                    </span>
+                  </label>
+                )}
                 {error && (
                   <p className="form-error" role="alert">
                     {t(error)}
@@ -380,10 +469,12 @@ export function PublicPageClient({
       )}
       <footer>
         <a className="brand" href="/">
-          nutra<span>+</span>
+          Fitura<span>+</span>
         </a>
         <span>{t('tagline')}</span>
-        <span>© {new Date().getFullYear()} Nutra+</span>
+        <a href="/terms">{t('termsOfUse')}</a>
+        <a href="/privacy">{t('privacyPolicy')}</a>
+        <span>© {new Date().getFullYear()} Fitura+</span>
       </footer>
     </div>
   );

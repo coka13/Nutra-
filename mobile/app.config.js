@@ -13,7 +13,7 @@ module.exports = ({ config }) => {
     );
   if (process.env.EAS_BUILD === 'true' && !localPreview && (!url || !/^https:\/\//.test(url)))
     throw new Error(
-      'Set EXPO_PUBLIC_NUTRI_URL to the deployed HTTPS Nutra+ origin in the EAS build environment.',
+      'Set EXPO_PUBLIC_NUTRI_URL to the deployed HTTPS Fitura+ origin in the EAS build environment.',
     );
   const mode = process.env.EXPO_PUBLIC_ADMOB_MODE || 'test';
   if (!['off', 'test', 'live'].includes(mode)) throw new Error('Invalid EXPO_PUBLIC_ADMOB_MODE.');

@@ -55,7 +55,7 @@ export function updateWorkoutRest(deadline: unknown, language: unknown) {
       await Notifications.scheduleNotificationAsync({
         identifier,
         content: {
-          title: 'Nutra+',
+          title: 'Fitura+',
           body:
             language === 'he'
               ? 'זמן המנוחה הסתיים. אפשר להתחיל את הסט הבא.'

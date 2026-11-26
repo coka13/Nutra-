@@ -86,6 +86,10 @@ export type State = {
   appointments: Serialized<Appointment>[];
   messages: Serialized<Message>[];
   notifications: Serialized<Notification>[];
+  /** Administrative announcements referenced by `announcement` notifications. */
+  announcements?: { id: string; titleEn: string; titleHe: string; bodyEn: string; bodyHe: string }[];
+  /** APPROVED | PENDING | REJECTED | REVOKED for coaches; null otherwise. */
+  coachStatus?: string | null;
   relationships: Relationship[];
   recipes: Recipe[];
   mealPlans: MealPlanWithItems[];

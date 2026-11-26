@@ -10,7 +10,7 @@ for (const language of ['en', 'he'] as const) {
     const email = `contact-coach-${suffix}@example.test`;
     const clientEmail = `contact-client-${suffix}@example.test`;
     const password = 'Coach-Contact-Test-2026!';
-    const details = { name: 'Contact coach', email, password, language };
+    const details = { name: 'Contact coach', email, password, language, acceptTerms: true };
     try {
       for (const path of ['auth/register', 'auth/coach/register']) {
         for (const phone of [undefined, '', '0501234567', '+972123<script>']) {
@@ -48,7 +48,13 @@ for (const language of ['en', 'he'] as const) {
       expect(
         (
           await client.request.post('/api/auth/user/register', {
-            data: { name: 'Contact client', email: clientEmail, password, language },
+            data: {
+              name: 'Contact client',
+              email: clientEmail,
+              acceptTerms: true,
+              password,
+              language,
+            },
           })
         ).ok(),
       ).toBeTruthy();

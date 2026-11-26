@@ -12,6 +12,7 @@ for (const language of ['en', 'he'] as const) {
           data: {
             name: 'Workout editing',
             email: `editing-${language}-${Date.now()}@example.test`,
+            acceptTerms: true,
             password,
             role: 'INDEPENDENT',
             language,
@@ -128,7 +129,7 @@ for (const language of ['en', 'he'] as const) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await expect(
         page
-          .getByRole('button', { name: he ? 'צעדים ואירובי' : 'Steps & aerobics', exact: true })
+          .getByRole('button', { name: he ? 'צעדים ופעילות' : 'Steps & activity', exact: true })
           .locator('svg'),
       ).toHaveClass(/lucide-footprints/);
       await expect(

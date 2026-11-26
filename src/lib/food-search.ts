@@ -49,9 +49,21 @@ export async function searchLocalFoods(
   const candidates = await db.food.findMany({
     where: {
       AND: [
-        { OR: [{ ownerId: null }, { ownerId: userId }] },
+        {
+          OR: [
+            {
+              ownerId: null,
+              source: { notIn: ['private-retained', 'user-estimate', 'ai-photo-estimate'] },
+            },
+            { ownerId: userId },
+          ],
+        },
         ...terms.map((t) => ({
-          OR: [{ nameEn: { contains: t } }, { nameHe: { contains: t } }, { brand: { contains: t } }],
+          OR: [
+            { nameEn: { contains: t } },
+            { nameHe: { contains: t } },
+            { brand: { contains: t } },
+          ],
         })),
       ],
     },
@@ -59,33 +71,35 @@ export async function searchLocalFoods(
     take: 400,
   });
   const seen = new Set<string>();
-  return candidates
-    .map((food) => {
-      const primary = lang === 'he' ? food.nameHe : food.nameEn;
-      const secondary = lang === 'he' ? food.nameEn : food.nameHe;
-      const rank = Math.min(matchRank(primary, q, terms), matchRank(secondary, q, terms) + 0.5);
-      return {
-        food,
-        rank,
-        length: primary.length,
-        source: SOURCE_ORDER[food.source] ?? 5,
-        branded: food.brand ? 1 : 0,
-      };
-    })
-    // Generic foods (no brand) first: a branded exact match ranks below a generic prefix match.
-    .sort(
-      (a, b) =>
-        a.rank + a.branded * 1.5 - (b.rank + b.branded * 1.5) ||
-        a.source - b.source ||
-        a.length - b.length,
-    )
-    .filter((r) => {
-      // Never show two foods with the same visible name.
-      const key = foodNameKey(lang === 'he' ? r.food.nameHe : r.food.nameEn);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit)
-    .map((r) => r.food);
+  return (
+    candidates
+      .map((food) => {
+        const primary = lang === 'he' ? food.nameHe : food.nameEn;
+        const secondary = lang === 'he' ? food.nameEn : food.nameHe;
+        const rank = Math.min(matchRank(primary, q, terms), matchRank(secondary, q, terms) + 0.5);
+        return {
+          food,
+          rank,
+          length: primary.length,
+          source: SOURCE_ORDER[food.source] ?? 5,
+          branded: food.brand ? 1 : 0,
+        };
+      })
+      // Generic foods (no brand) first: a branded exact match ranks below a generic prefix match.
+      .sort(
+        (a, b) =>
+          a.rank + a.branded * 1.5 - (b.rank + b.branded * 1.5) ||
+          a.source - b.source ||
+          a.length - b.length,
+      )
+      .filter((r) => {
+        // Never show two foods with the same visible name.
+        const key = foodNameKey(lang === 'he' ? r.food.nameHe : r.food.nameEn);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, limit)
+      .map((r) => r.food)
+  );
 }

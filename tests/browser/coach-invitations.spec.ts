@@ -13,7 +13,14 @@ for (const language of ['en', 'he'] as const) {
     const email = `invited-${suffix}@example.test`;
     try {
       const registered = await client.request.post('/api/auth/register', {
-        data: { name: 'Invited client', email, password, role: 'INDEPENDENT', language },
+        data: {
+          name: 'Invited client',
+          email,
+          acceptTerms: true,
+          password,
+          role: 'INDEPENDENT',
+          language,
+        },
       });
       expect(registered.ok()).toBeTruthy();
       const { user } = await registered.json();
@@ -27,6 +34,7 @@ for (const language of ['en', 'he'] as const) {
               data: {
                 name,
                 email: `${name.replaceAll(' ', '-').toLowerCase()}-${suffix}@example.test`,
+                acceptTerms: true,
                 password,
                 role: 'COACH',
                 phone: '+972501234567',

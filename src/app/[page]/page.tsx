@@ -3,7 +3,16 @@ import { notFound } from 'next/navigation';
 export default async function Page({ params }: { params: Promise<{ page: string }> }) {
   const { page } = await params;
   if (
-    !['login', 'coach-login', 'register', 'recover', 'reset', 'features', 'pricing'].includes(page)
+    ![
+      'login',
+      'coach-login',
+      'register',
+      'recover',
+      'reset',
+      'features',
+      'pricing',
+      'terms',
+    ].includes(page)
   )
     notFound();
   return <PublicPage mode={page} />;

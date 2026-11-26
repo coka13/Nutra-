@@ -17,12 +17,20 @@ for (const language of ['en', 'he'] as const) {
           email: coachEmail,
           role: 'COACH',
           phone: '+972501234567',
+          acceptTerms: true,
           password,
           language,
         },
       });
       const clientRegister = await client.request.post('/api/auth/register', {
-        data: { name: 'Trainee', email, role: 'INDEPENDENT', password, language },
+        data: {
+          name: 'Trainee',
+          email,
+          role: 'INDEPENDENT',
+          acceptTerms: true,
+          password,
+          language,
+        },
       });
       expect(coachRegister.ok()).toBeTruthy();
       expect(clientRegister.ok()).toBeTruthy();
@@ -57,7 +65,8 @@ for (const language of ['en', 'he'] as const) {
       await page.goto('/app/clients');
       await expect(page.locator('html')).toHaveAttribute('dir', he ? 'rtl' : 'ltr');
       await page.getByRole('button', { name: he ? 'פרופיל מתאמן' : 'Client profile' }).click();
-      const dialog = page.getByRole('dialog', { name: 'Trainee' });
+      const dialog = page.locator('.client-profile');
+      await dialog.getByRole('tab', { name: he ? 'משקל' : 'Weight', exact: true }).click();
       await expect(
         dialog.getByRole('heading', { name: he ? 'תמונות מעקב' : 'Progress photos' }),
       ).toBeVisible();

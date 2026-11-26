@@ -1,4 +1,4 @@
-# Nutra+ JSON API
+# Fitura+ JSON API
 
 Base path: `/api/`. All mutations use POST with `Content-Type: application/json`. Authenticated routes require the `nutri_session` HttpOnly cookie. Foreign browser origins are rejected on mutation. Responses use localized error keys; the client translates them. Zod strips unknown object keys and checks enums, lengths and numeric ranges. The API runs on Node, never at the edge.
 

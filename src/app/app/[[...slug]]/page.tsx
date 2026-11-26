@@ -4,7 +4,19 @@ export default async function Page({ params }: { params: Promise<{ slug?: string
   const user = await currentUser();
   if (!user) redirect('/auth');
   const section = (await params).slug?.[0];
-  if (section && ['clients', 'branding', 'reports'].includes(section) && user.role !== 'COACH')
+  if (
+    section &&
+    [
+      'clients',
+      'branding',
+      'reports',
+      'packages',
+      'trainingLog',
+      'clientPayments',
+      'businessReports',
+    ].includes(section) &&
+    user.role !== 'COACH'
+  )
     redirect('/app');
   if (section === 'admin' && user.role !== 'ADMIN') redirect('/app');
   return null;

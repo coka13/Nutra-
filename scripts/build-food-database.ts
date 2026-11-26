@@ -33,7 +33,7 @@ const USDA = [
   ['FoodData_Central_foundation_food_json_2026-10-29.zip', 'FoundationFoods'],
   ['FoodData_Central_survey_food_json_2024-10-31.zip', 'SurveyFoods'],
 ] as const;
-const UA = 'NutraPlus/0.1 (one-time food database build)';
+const UA = 'FituraPlus/0.1 (one-time food database build)';
 
 async function exists(p: string) {
   return fs.stat(p).then(

@@ -15,7 +15,7 @@ test('demo dashboard, responsive RTL and persisted nutrition workflow', async ({
   await page.getByRole('button', { name: 'Log food', exact: true }).click();
   await page.getByRole('textbox', { name: 'Search foods…' }).fill('apple');
   await page.getByRole('button', { name: /Apple/ }).click();
-  await page.getByRole('spinbutton', { name: 'Portion (grams)' }).fill('150');
+  await page.getByRole('spinbutton', { name: 'Quantity', exact: true }).fill('150');
   await page.getByRole('button', { name: 'Add to diary' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();
@@ -29,7 +29,7 @@ test('demo dashboard, responsive RTL and persisted nutrition workflow', async ({
   expect(overflow).toBe(false);
   await page.getByRole('button', { name: 'פתיחת ניווט' }).click();
   await page.getByRole('button', { name: 'סקירה כללית', exact: true }).click();
-  await expect(page.getByRole('heading', { name: /בוא נעשה משהו טוב היום/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /בואו נעשה משהו טוב היום/ })).toBeVisible();
   await page.screenshot({ path: 'test-results/dashboard-mobile-hebrew.png', fullPage: true });
   await page.getByRole('button', { name: 'ערכת נושא', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -48,6 +48,9 @@ test('register, onboard, build, log and recover an active workout after refresh'
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Jordan Test');
   await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email);
   await page.getByLabel(/^Password/).fill('BrowserTestPassword!');
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  await page.locator('[name=acceptTerms]').check();
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Welcome to your next chapter.' })).toBeVisible();
   await page.getByLabel('I am 18 or older.').check();
@@ -80,15 +83,15 @@ test('coach reviews a consented client and assigns a program through the visual 
   await expect(page).toHaveURL(/\/app\/?$/);
   await page.getByRole('button', { name: 'Clients', exact: true }).click();
   await page.getByRole('button', { name: 'Client profile' }).click();
-  await expect(page.getByRole('dialog', { name: 'Alex Morgan' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Check-ins', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: 'My workouts', exact: true }).click();
+  await expect(page.locator('.client-profile h1')).toHaveText('Alex Morgan');
+  await expect(page.locator('.client-tabs')).toBeVisible();
+  await page.locator('.client-profile-back').click();
+  await page.getByRole('button', { name: 'Workout plans', exact: true }).click();
   await page.getByRole('button', { name: 'Create workout', exact: true }).first().click();
   const title = `Coach browser routine ${Date.now()}`;
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill(title);
   await page.getByRole('combobox', { name: 'Primary muscles', exact: true }).selectOption('legs');
-  await page.getByRole('button', { name: /Bodyweight squat/ }).click();
+  await page.locator('.library-add-row').first().click();
   await page.getByRole('spinbutton', { name: 'Sets', exact: true }).fill('2');
   await page
     .getByRole('combobox', { name: 'Assign to client' })

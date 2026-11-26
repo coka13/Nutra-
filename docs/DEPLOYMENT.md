@@ -18,7 +18,7 @@ Only one application instance should write this SQLite volume. Do not use epheme
 
 ## Administrator bootstrap
 
-Admin access is never available through registration. A trusted operator can set temporary `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables (password at least 14 characters), then run `npm run admin:create`. The script only creates a new account and refuses to promote an existing account. Remove these bootstrap variables afterward. The current admin workspace provides the account directory and feature-flag control; complete moderation and support workflows remain pending.
+The administration console uses separate administrator accounts with mandatory two-step verification. Provision the first Super Admin from the server shell with `npm run admin:provision -- --email … --name …`, which prints a one-time setup link. See [ADMIN.md](ADMIN.md) for the console, security model, production stack (`deploy/`), backups and environment variables. The legacy `npm run admin:create` only creates an app user with the old `ADMIN` role and grants no console access.
 
 ## CI verification
 

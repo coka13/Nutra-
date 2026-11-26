@@ -4,6 +4,7 @@ import { ApiError, rateLimit, requireUser } from '@/lib/auth';
 import { catalogQuery, loadCatalog } from '@/lib/exercise-catalog';
 import { acceptsOrigin } from '@/lib/request-origin';
 import { db } from '@/lib/db';
+import { applyExerciseOverrides } from '@/lib/content-overrides';
 import { getFreeExercise, hasExerciseAnimation } from '@/lib/free-exercises';
 
 const headers = { 'Cache-Control': 'private, no-store' };
@@ -29,7 +30,11 @@ export async function GET(req: NextRequest) {
     const user = await requireUser();
     await rateLimit(`catalog:${user.id}`, 40);
     const query = catalogQuery.parse(Object.fromEntries(req.nextUrl.searchParams));
-    return NextResponse.json(await loadCatalog(query), { headers });
+    const page = await loadCatalog(query);
+    return NextResponse.json(
+      { ...page, results: await applyExerciseOverrides(page.results) },
+      { headers },
+    );
   } catch (error) {
     return failure(error);
   }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   BackHandler,
   Keyboard,
   Linking,
@@ -35,6 +36,12 @@ const source = { uri: origin + '/phone-session' };
 const allowedPages = new Set([
   'dashboard',
   'clients',
+  'packages',
+  'trainingLog',
+  'clientPayments',
+  'businessReports',
+  'branding',
+  'billing',
   'workouts',
   'nutrition',
   'mealPlans',
@@ -65,6 +72,14 @@ export function WorkspaceHost({ children }: PropsWithChildren) {
   const { lang, colors, update } = usePhone();
   const inside = path === '/portal';
   const signedIn = session === 'coach' || session === 'user';
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && signedIn && ready) {
+        ref.current?.injectJavaScript("window.dispatchEvent(new Event('nutri-resume'));true;");
+      }
+    });
+    return () => subscription.remove();
+  }, [signedIn, ready]);
 
   useEffect(() => {
     if (!navigation?.key) return;
@@ -115,6 +130,7 @@ export function WorkspaceHost({ children }: PropsWithChildren) {
           password?: string;
           name?: string;
           language: string;
+          acceptTerms?: boolean;
         },
       ) =>
         new Promise<void>((resolve, reject) => {

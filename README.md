@@ -1,4 +1,4 @@
-# Nutra+
+# Fitura+
 
 The exercise library opens **1,086 exercises with demonstrations**, covering all **1,029 SmartWorkout animations**, organized by individual muscle groups: biceps, triceps, chest, lats, upper/lower back, shoulders, quads, hamstrings, glutes, calves and more. It includes preacher-bench, machine, barbell, dumbbell and cable variations. Search for “preacher chair” or “preacher bench” to find preacher curls. The workout builder offers the same demonstrated catalog and saves selected exercises automatically; no manual import is required.
 
@@ -10,7 +10,7 @@ Videos and posters load directly from SmartWorkout and require internet access a
 
 Run `npm run catalog:smartworkout` to refresh the public animation URL index, then `npm run catalog:thumbnails` and `npm run catalog:gifs` to prepare the local previews and looping animations before deployment. The GIF build is resumable and uses the light video variants; no runtime conversion is needed for indexed exercises. The first catalog page is supplied with the app shell, its animations load in the background, and the library preloads the next page. `npm run catalog:translate` rebuilds changed public catalog translations and reapplies the terminology glossary; runtime translation does not require a network call. Legacy media restore scripts remain available for archival assets.
 
-The Android and iPhone app lives in [mobile](mobile/README.md). Start the Nutra+ backend and Expo preview to use it on a phone. The mobile app shares accounts, workouts and coaching records with this service.
+The Android and iPhone app lives in [mobile](mobile/README.md). Start the Fitura+ backend and Expo preview to use it on a phone. The mobile app shares accounts, workouts and coaching records with this service.
 
 A bilingual fitness and coaching application built from an empty repository. Next.js 16 App Router, React 19, TypeScript, Prisma, SQLite, Zod, Lucide and Recharts. All shipped tracking and coaching workflows use the database; the demo is explicitly labeled sample data.
 
@@ -25,7 +25,7 @@ npm run setup
 npm run dev
 ```
 
-Open [Nutra+](http://localhost:3000). Choose **Explore the demo** on the sign-in page, or register an independent or coach account. New users complete onboarding. The guided routine generator creates an editable template using your experience, equipment, frequency and session length. This is deterministic programming logic, not AI inference or individualized medical advice.
+Open [Fitura+](http://localhost:3000). Choose **Explore the demo** on the sign-in page, or register an independent or coach account. New users complete onboarding. The guided routine generator creates an editable template using your experience, equipment, frequency and session length. This is deterministic programming logic, not AI inference or individualized medical advice.
 
 Development-only sample accounts:
 

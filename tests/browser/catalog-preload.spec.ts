@@ -11,6 +11,7 @@ test('library is preloaded before navigation and every card animates without med
         data: {
           name: 'Preload Test',
           email: `preload-${Date.now()}@example.test`,
+          acceptTerms: true,
           password,
           role: 'INDEPENDENT',
           language: 'en',

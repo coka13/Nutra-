@@ -10,7 +10,7 @@ Rules live in `src/lib/plans.ts` and are returned to the client as `state.entitl
 
 # Stripe adapter
 
-Billing is disabled by default. The official Stripe SDK implements hosted subscription checkout, customer billing portal (including provider-configured cancellation), raw-body signature verification, a timestamp tolerance and event deduplication in a database transaction. Only verified subscription webhooks update entitlement records; the success URL does not grant access. Canonical provider subscription/invoice retrieval reduces stale-event effects. Prices come only from server environment IDs, not request amounts. No card details enter Nutra+.
+Billing is disabled by default. The official Stripe SDK implements hosted subscription checkout, customer billing portal (including provider-configured cancellation), raw-body signature verification, a timestamp tolerance and event deduplication in a database transaction. Only verified subscription webhooks update entitlement records; the success URL does not grant access. Canonical provider subscription/invoice retrieval reduces stale-event effects. Prices come only from server environment IDs, not request amounts. No card details enter Fitura+.
 
 ## Configuration and test-mode validation
 

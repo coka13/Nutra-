@@ -12,6 +12,7 @@ for (const language of ['en', 'he'] as const) {
             data: {
               name: 'Full Catalog Test',
               email: 'catalog-' + language + '-' + Date.now() + '@example.test',
+              acceptTerms: true,
               password,
               role: 'INDEPENDENT',
               language,
@@ -144,6 +145,7 @@ test('new SmartWorkout exercise plays and can be saved into a workout in Hebrew'
         data: {
           name: 'Native catalog test',
           email: 'native-' + Date.now() + '@example.test',
+          acceptTerms: true,
           password,
           role: 'INDEPENDENT',
           language: 'he',

@@ -39,7 +39,7 @@ test('free plan has ads and AI only through a paying coach', () => {
     coaches: [paidCoach],
   });
   assert.equal(coached.ai, true);
-  assert.equal(coached.ads, true);
+  assert.equal(coached.ads, false);
   const unpaid = entitlements({
     role: 'INDEPENDENT',
     sub: active('FREE'),
@@ -47,6 +47,11 @@ test('free plan has ads and AI only through a paying coach', () => {
     coaches: [unpaidCoach],
   });
   assert.equal(unpaid.ai, false);
+  assert.equal(unpaid.ads, false);
+  assert.equal(
+    entitlements({ role: 'INDEPENDENT', sub: null, billingOn: true, coaches: [] }).ads,
+    true,
+  );
 });
 
 test('plus removes ads but not AI', () => {

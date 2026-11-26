@@ -17,7 +17,28 @@ export async function currentUser() {
     where: { id: tokenHash(token) },
     include: { user: { include: { profile: true, subscription: true, branding: true } } },
   });
-  return session && session.expiresAt > new Date() ? session.user : null;
+  if (!session || session.expiresAt <= new Date() || session.user.status === 'SUSPENDED') return null;
+  await trackActivity(session.user);
+  return session.user;
+}
+const ACTIVITY_THROTTLE_MS = 5 * 60 * 1000;
+/** Feeds DAU/MAU/retention. Throttled so most requests do not write. */
+async function trackActivity(user: { id: string; lastActiveAt: Date | null }) {
+  const now = new Date();
+  if (user.lastActiveAt && +now - +user.lastActiveAt < ACTIVITY_THROTTLE_MS) return;
+  const today = now.toISOString().slice(0, 10);
+  try {
+    await db.user.update({ where: { id: user.id }, data: { lastActiveAt: now } });
+    if (!user.lastActiveAt || user.lastActiveAt.toISOString().slice(0, 10) !== today)
+      await db.userActivityDay.upsert({
+        where: { userId_date: { userId: user.id, date: today } },
+        create: { userId: user.id, date: today },
+        update: {},
+      });
+    user.lastActiveAt = now;
+  } catch {
+    // Activity metrics are best-effort.
+  }
 }
 export async function requireUser() {
   const user = await currentUser();

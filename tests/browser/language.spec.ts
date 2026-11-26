@@ -52,7 +52,7 @@ for (const language of ['en', 'he'] as const) {
     const email = `language-${language}-${Date.now()}@example.test`;
     const password = 'Language-Test-492!';
     const registered = await page.request.post('/api/auth/user/register', {
-      data: { email, password, name: 'Language test', language: other },
+      data: { email, acceptTerms: true, password, name: 'Language test', language: other },
     });
     expect(registered.ok()).toBeTruthy();
     await page.request.post('/api/auth/logout', { data: { email } });

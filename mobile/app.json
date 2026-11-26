@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Nutra+",
+    "name": "Fitura+",
     "slug": "nutra-plus",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,7 +33,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Nutra+ reads your steps, active calories, distance and workouts, with your permission, to show your daily activity and save it to your account.",
+          "NSHealthShareUsageDescription": "Fitura+ reads your steps, active calories, distance and workouts, with your permission, to show your daily activity and save it to your account.",
           "NSHealthUpdateUsageDescription": false,
           "background": false
         }

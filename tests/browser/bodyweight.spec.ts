@@ -20,6 +20,7 @@ for (const language of ['en', 'he'] as const) {
           data: {
             name: role === 'COACH' ? 'Weight Coach' : 'Weight Client',
             email: accountEmail,
+            acceptTerms: true,
             password,
             role,
             phone: role === 'COACH' ? '+972501234567' : undefined,
@@ -169,7 +170,10 @@ for (const language of ['en', 'he'] as const) {
       await coachPage
         .getByRole('button', { name: language === 'he' ? 'פרופיל מתאמן' : 'Client profile' })
         .click();
-      const dialog = coachPage.getByRole('dialog', { name: 'Weight Client' });
+      const dialog = coachPage.locator('.client-profile');
+      await dialog
+        .getByRole('tab', { name: language === 'he' ? 'משקל' : 'Weight', exact: true })
+        .click();
       const coachPanel = dialog.getByRole('region', {
         name: language === 'he' ? 'משקל גוף יומי' : 'Daily bodyweight',
       });

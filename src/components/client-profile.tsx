@@ -79,7 +79,11 @@ export function ClientProfile({ link, onBack }: { link: Relationship; onBack: ()
           setLoadError('');
         }
       } catch (cause) {
-        if (current) setLoadError(cause instanceof Error ? cause.message : 'offline');
+        if (current) {
+          if (cause instanceof Error && ['forbidden', 'unauthorized'].includes(cause.message))
+            setRecords(null);
+          setLoadError(cause instanceof Error ? cause.message : 'offline');
+        }
       }
     }
     void update();

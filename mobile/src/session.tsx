@@ -9,7 +9,14 @@ type ContextValue = {
   authenticate: (
     account: Account,
     mode: AuthMode,
-    values: { email: string; phone?: string; password?: string; name?: string; language: string },
+    values: {
+      email: string;
+      phone?: string;
+      password?: string;
+      name?: string;
+      language: string;
+      acceptTerms?: boolean;
+    },
   ) => Promise<void>;
 };
 export const SessionContext = createContext<ContextValue | null>(null);

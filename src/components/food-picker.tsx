@@ -40,6 +40,7 @@ export function FoodPicker({
       return;
     }
     let cancelled = false;
+    setResults([]);
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
@@ -84,7 +85,7 @@ export function FoodPicker({
           {macros(f)}
         </small>
       </span>
-      <ChevronRight size={16} />
+      <ChevronRight size={16} className="directional-icon" />
     </button>
   );
 

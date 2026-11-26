@@ -1,0 +1,188 @@
+/* Short pages fill the viewport; long pages keep their natural document scroll. */
+.app-shell {
+  min-height: 100dvh;
+}
+.main-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  flex-shrink: 0;
+}
+.main-content {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+.main-content > * {
+  flex-shrink: 0;
+}
+.main-content > .app-footer {
+  margin-top: auto;
+  padding-block: 8px;
+}
+.main-content > .panel:has(+ .app-footer) {
+  margin-bottom: 10px;
+}
+
+/* Public authentication pages share a compact, content-driven frame. */
+.public-site:not(.public-home) {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.public-site:not(.public-home) .public-nav {
+  width: 100%;
+  flex-shrink: 0;
+  padding-block: 16px;
+}
+.public-site:not(.public-home) > footer {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 12px 0;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.public-site:not(.public-home) > footer .brand,
+.public-site:not(.public-home) > footer .brand > span {
+  font-size: 24px;
+}
+.public-site .auth-wrap {
+  flex: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 32px;
+  gap: 40px;
+  align-content: center;
+}
+.public-site .auth-story {
+  min-height: 300px;
+  padding: 28px;
+}
+.public-site .auth-story h1 {
+  font-size: 32px;
+  margin: 16px 0 12px;
+}
+.public-site .auth-story p {
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+.public-site .auth-card h2 {
+  font-size: 26px;
+  margin: 12px 0;
+}
+.public-site .auth-card form {
+  margin: 12px 0;
+}
+.public-site .auth-card label {
+  margin: 10px 0;
+  gap: 5px;
+}
+.public-site .auth-card .button.full {
+  margin-top: 8px;
+}
+.public-site .account-chooser {
+  flex: 1;
+  margin: 0 auto;
+  padding-block: 12px;
+  align-content: center;
+}
+.account-chooser .home-art {
+  max-height: min(38dvh, 340px);
+}
+.account-choice.panel {
+  padding: 16px;
+  margin-block: 8px;
+}
+
+@media (max-width: 820px), (max-height: 750px) {
+  .main-content {
+    padding-top: 16px;
+  }
+  .main-content > .page-heading {
+    margin-bottom: 16px;
+  }
+  .main-content > .demo-label {
+    margin-bottom: 8px;
+  }
+}
+@media (max-width: 650px) {
+  .public-site:not(.public-home) .public-nav {
+    padding: 12px 16px;
+  }
+  .public-site .auth-wrap {
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 8px 16px 12px;
+  }
+  .public-site .auth-story {
+    width: 100%;
+    min-height: 0;
+    padding: 14px 16px;
+  }
+  .public-site .auth-story h1 {
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    margin: 6px 0;
+  }
+  .public-site .auth-story p {
+    max-width: none;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .public-site .auth-story .decor-rings {
+    display: none;
+  }
+  .public-site .auth-bottom {
+    gap: 12px;
+  }
+  .public-site .account-chooser {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .account-chooser .home-art {
+    max-height: clamp(100px, 22dvh, 190px);
+  }
+  .account-chooser h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  .public-site:not(.public-home) > footer {
+    padding-block: 8px;
+    font-size: 9px;
+  }
+}
+@media (max-width: 650px) and (max-height: 650px) {
+  .public-site:not(.public-home) .public-nav {
+    padding-block: 8px;
+  }
+  .public-site .auth-wrap {
+    gap: 0;
+    padding-block: 4px 6px;
+  }
+  .public-site .auth-story {
+    display: none;
+  }
+  .public-site .auth-card h2 {
+    font-size: 21px;
+    margin: 6px 0;
+  }
+  .public-site .auth-card form {
+    margin-block: 6px;
+  }
+  .public-site .auth-card label {
+    margin-block: 6px;
+  }
+  .public-site:not(.public-home) > footer {
+    padding-block: 4px;
+  }
+  .public-site:not(.public-home) > footer .brand,
+  .public-site:not(.public-home) > footer .brand > span {
+    font-size: 20px;
+  }
+}

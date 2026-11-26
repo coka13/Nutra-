@@ -1,7 +1,9 @@
 'use client';
+import { PromoRedeem } from './support-center';
 import { CoachContact } from './coach-contact';
 import { BrandMark, brandBackgroundUrl, encodeBackground, encodeLogo } from './brand-logo';
 import { ClientProfile } from './client-profile';
+import { LoadingCards } from './loading-cards';
 import { AiPlanner } from './ai-planner';
 import { isInternationalPhone } from '@/lib/phone';
 import { useEffect, useState, type CSSProperties } from 'react';
@@ -1055,6 +1057,7 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
   );
 }
 export function BillingView() {
+  const [loaded, setLoaded] = useState(false);
   const { state, t, lang, formatDate } = useNutri(),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -1062,9 +1065,20 @@ export function BillingView() {
       { id: string; amount: number; currency: string; status: string; createdAt: string }[]
     >([]);
   useEffect(() => {
+    let active = true;
     api<{ payments: typeof payments }>('billing/info')
-      .then((r) => setPayments(r.payments))
-      .catch(() => {});
+      .then((r) => {
+        if (active) setPayments(r.payments);
+      })
+      .catch((cause) => {
+        if (active) setError(cause instanceof Error ? cause.message : 'billingUnavailable');
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
   async function redirect(action: string, tier?: string) {
     setBusy(true);
@@ -1158,7 +1172,9 @@ export function BillingView() {
         </section>
         <section className="panel">
           <h2>{t('invoices')}</h2>
-          {payments.length ? (
+          {!loaded ? (
+            <LoadingCards count={1} />
+          ) : payments.length ? (
             payments.map((p) => (
               <div key={p.id} className="list-row">
                 <span className="grow">
@@ -1174,9 +1190,10 @@ export function BillingView() {
               </div>
             ))
           ) : (
-            <Empty text={t('noPaymentsYet')} />
+            <Empty text={t(error ? 'billingHistoryUnavailable' : 'noPaymentsYet')} />
           )}
         </section>
+        <PromoRedeem />
       </div>
     </>
   );
@@ -1353,7 +1370,7 @@ export function BrandingView() {
           )}
           <h2>{business}</h2>
           <p>{welcome}</p>
-          <span className="muted small-copy">Nutra+</span>
+          <span className="muted small-copy">Fitura+</span>
         </section>
       </div>
     </>

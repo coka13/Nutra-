@@ -1,4 +1,4 @@
-name: Verify Nutri+
+name: Verify Fitura+
 on:
   push:
   pull_request:
@@ -28,6 +28,7 @@ jobs:
           npm run dev > /tmp/nutri-server.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS http://localhost:3000/login > /dev/null && break; sleep 1; done
           npm run test:api
+          npm run test:admin
           npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()

@@ -310,7 +310,7 @@ label select {
   position: relative;
   color: var(--text);
 }
-/* The wordmark is Latin: keep "nutra+" in LTR order even inside RTL (Hebrew) pages. */
+/* The wordmark is Latin: keep "Fitura+" in LTR order even inside RTL (Hebrew) pages. */
 .brand,
 .brand-wordmark {
   direction: ltr;
@@ -3661,6 +3661,8 @@ html[data-theme='dark'] .weekday-chips button.active {
   line-height: 1.25;
   margin: 30px 0 20px;
   color: #fff;
+  position: relative;
+  z-index: 2;
 }
 .auth-story p {
   font-size: 13px;
@@ -6494,12 +6496,33 @@ html[data-portal-page='messages'] .conversation-messages {
 html {
   scroll-behavior: smooth;
 }
-.public-links a.public-pricing-link {
-  background: #2f3b31;
-  color: #fff;
+.public-nav-main {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 40px);
 }
-.public-links a.public-pricing-link:hover {
-  background: #1f2a21;
+.public-pricing-link {
+  color: #2f3b31;
+  padding: 10px 4px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  text-underline-offset: 6px;
+}
+.public-pricing-link:hover {
+  color: #20785f;
+  text-decoration: underline;
+}
+.public-pricing-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+@media (max-width: 480px) {
+  .public-pricing-link {
+    font-size: 13px;
+  }
 }
 .pricing-section {
   max-width: 1150px;
@@ -6602,6 +6625,618 @@ html {
   }
   .pricing-section {
     padding: 20px 16px 60px;
+  }
+}
+
+
+.coach-package-options {
+  margin-bottom: 6px;
+}
+.coach-monthly {
+  font-size: 10px;
+  font-weight: 400;
+  color: #6b7469;
+}
+.coach-packages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.coach-package {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 4px;
+  padding: 5px 6px;
+  border: 1px solid #dde8de;
+  border-radius: 6px;
+  background: #f5f8f2;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.coach-package strong {
+  font-weight: 600;
+}
+.coach-package-price {
+  color: var(--green);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.coach-package-price small {
+  font-size: 9px;
+  font-weight: 400;
+}
+.coach-package-capacity {
+  grid-column: 1 / -1;
+  color: #6b7469;
+  font-size: 10px;
+}
+.coach-package-contact {
+  margin: 4px 0 0;
+  color: var(--green);
+  font-size: 11px;
+  text-align: center;
+}
+@media (max-width: 860px) {
+  .coach-packages {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .coach-package {
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+    padding: 4px 2px;
+    gap: 2px;
+  }
+  .coach-package-price {
+    font-size: 12px;
+  }
+  .coach-package-price small {
+    display: block;
+    font-size: 9px;
+  }
+  .coach-package-capacity {
+    font-size: 9px;
+  }
+}
+
+/* Full plan details remain visible in the opening screen. */
+.public-home {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+.public-home .public-nav {
+  width: 100%;
+  flex-shrink: 0;
+}
+.public-home .landing-overview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.public-home footer {
+  padding: 8px 16px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1150px;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.public-home footer .brand {
+  display: none;
+}
+@media (max-width: 860px) {
+  .public-home .public-nav {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .public-home .public-nav-main {
+    gap: 12px;
+  }
+  .public-home .public-nav .brand,
+  .public-home .public-nav .brand > span {
+    font-size: 28px;
+  }
+  .public-home .public-nav > .row {
+    gap: 4px;
+  }
+  .public-home .public-nav > .row > .primary {
+    display: none;
+  }
+  .landing-overview .landing-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 90px;
+    gap: 6px 10px;
+    padding: 6px 12px 10px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .landing-overview .landing-hero > div {
+    display: contents;
+  }
+  .landing-overview .landing-hero .eyebrow {
+    grid-column: 1;
+    margin: 0;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+  .landing-overview .landing-hero h1 {
+    grid-column: 1;
+    font-size: clamp(22px, 5.8vw, 30px);
+    line-height: 1.1;
+    letter-spacing: -0.7px;
+    margin: 0;
+  }
+  .landing-overview .landing-hero .home-art {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    width: 100%;
+    height: 96px;
+    align-self: center;
+    object-fit: contain;
+    border-radius: 12px;
+  }
+  .landing-overview .landing-hero p {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: none;
+    margin: 0;
+  }
+  .landing-overview .landing-hero .row {
+    grid-column: 1 / -1;
+    gap: 8px;
+  }
+  .landing-overview .landing-hero .button.large {
+    flex: 1;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  .landing-overview .hero-foot,
+  .landing-overview .pricing-section > .eyebrow,
+  .landing-overview .pricing-section-sub,
+  .landing-overview .public-plan-icon,
+  .landing-overview .public-plan-flag {
+    display: none;
+  }
+  .landing-overview .pricing-section {
+    padding: 4px 12px 8px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .landing-overview .pricing-section h2 {
+    font-size: 19px;
+    margin: 0 0 8px;
+  }
+  .landing-overview .public-plans {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    max-width: none;
+    width: 100%;
+    flex: 1;
+  }
+  .landing-overview .public-plan.panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    align-content: center;
+    gap: 6px 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+  .landing-overview .public-plan h3 {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 17px;
+    margin: 0;
+  }
+  .landing-overview .public-plan-price {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    font-size: 12px;
+  }
+  .landing-overview .public-plan > .button {
+    grid-column: 3;
+    grid-row: 1;
+    width: auto;
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: 11px;
+    margin: 0;
+  }
+  .landing-overview .public-plan-benefits {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 10px;
+    margin: 0;
+  }
+  .landing-overview .public-plan li {
+    font-size: 11px;
+    line-height: 1.3;
+    gap: 4px;
+  }
+  .landing-overview .public-plan li svg {
+    width: 12px;
+    height: 12px;
+    margin-top: 1px;
+  }
+  .landing-overview .coach-package-options {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+  }
+  .landing-overview .public-plan:has(.coach-package-options) .public-plan-benefits {
+    grid-row: 3;
+  }
+}
+@media (max-width: 860px) and (min-height: 800px) {
+  .landing-overview .landing-hero {
+    grid-template-columns: minmax(0, 1fr) 110px;
+    padding: 10px 16px 14px;
+    gap: 8px 12px;
+  }
+  .landing-overview .landing-hero .home-art {
+    height: 96px;
+  }
+  .landing-overview .public-plan.panel {
+    padding: 10px 12px;
+  }
+  .landing-overview .public-plan li {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .landing-overview .public-plan > .button {
+    min-height: 36px;
+  }
+}
+@media (max-width: 860px) and (max-height: 650px) {
+  .public-home .public-nav {
+    padding-block: 4px;
+  }
+  .landing-overview .landing-hero {
+    grid-template-columns: minmax(0, 1fr) 64px;
+    padding-block: 2px 4px;
+    gap: 4px 8px;
+  }
+  .landing-overview .landing-hero .home-art {
+    height: 64px;
+  }
+  .landing-overview .landing-hero h1 {
+    font-size: 20px;
+  }
+  .landing-overview .landing-hero p {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .landing-overview .landing-hero .button.large {
+    min-height: 30px;
+  }
+  .landing-overview .pricing-section h2 {
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+  .landing-overview .public-plans {
+    gap: 5px;
+  }
+  .landing-overview .public-plan.panel {
+    padding: 5px 8px;
+    gap: 3px 6px;
+  }
+  .landing-overview .public-plan li {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  .landing-overview .public-plan > .button {
+    min-height: 28px;
+  }
+  .public-home footer {
+    padding-block: 4px;
+  }
+}
+
+@media (max-width: 860px) and (max-height: 740px) {
+  .landing-overview .landing-hero .home-art {
+    height: 76px;
+  }
+  .landing-overview .landing-hero {
+    gap: 4px 8px;
+    padding-block: 2px 4px;
+  }
+  .landing-overview .public-plan.panel {
+    padding: 5px 8px;
+    gap: 3px 6px;
+  }
+  .landing-overview .public-plan-benefits {
+    display: block;
+    columns: 2;
+    column-gap: 10px;
+  }
+  .landing-overview .public-plan li {
+    break-inside: avoid;
+    margin-bottom: 3px;
+  }
+}
+
+@media (max-width: 860px) and (max-height: 650px) {
+  .landing-overview .public-plan-benefits {
+    display: grid;
+    columns: auto;
+    row-gap: 2px;
+  }
+  .landing-overview .public-plan li {
+    margin-bottom: 0;
+  }
+  .landing-overview .public-plan > .button {
+    min-height: 26px;
+    padding: 4px 6px;
+  }
+  .landing-overview .landing-hero .home-art {
+    height: 64px;
+  }
+  .landing-overview .landing-hero .button.large {
+    padding-block: 4px;
+  }
+  .public-home .public-nav .brand,
+  .public-home .public-nav .brand > span {
+    font-size: 24px;
+  }
+}
+
+/* Keep the introduction and plan comparison together on desktop. */
+@media (max-width: 860px) and (min-height: 651px) and (max-height: 740px) {
+  .landing-overview .landing-hero .home-art {
+    height: 64px;
+  }
+  .landing-overview .public-plan li {
+    font-size: 10.5px;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+}
+
+@media (min-width: 861px) {
+  .public-home .public-nav {
+    padding-block: 8px;
+  }
+  .landing-overview .landing-hero {
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
+    padding: 8px 45px 16px;
+    max-width: 1150px;
+  }
+  .landing-overview .landing-hero .home-art {
+    width: auto;
+    height: clamp(110px, 18vh, 150px);
+    max-width: 100%;
+    object-fit: contain;
+    justify-self: center;
+  }
+  .landing-overview .landing-hero h1 {
+    font-size: clamp(26px, 2.1vw, 30px);
+    white-space: normal;
+    letter-spacing: -1px;
+    margin: 4px 0;
+  }
+  .landing-overview .landing-hero p {
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 520px;
+    margin: 0 0 10px;
+  }
+  .landing-overview .landing-hero .button.large {
+    min-height: 36px;
+    padding: 8px 18px;
+    font-size: 13px;
+  }
+  .landing-overview .hero-foot {
+    display: none;
+  }
+  .landing-overview .mini-mark {
+    width: 26px;
+    height: 26px;
+  }
+  .landing-overview .pricing-section {
+    padding: 8px 45px 12px;
+  }
+  .landing-overview .pricing-section > .eyebrow {
+    display: none;
+  }
+  .landing-overview .pricing-section h2 {
+    font-size: 26px;
+    margin: 4px 0 6px;
+  }
+  .landing-overview .pricing-section-sub {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .landing-overview .public-plan.panel {
+    padding: 14px 18px;
+    gap: 4px;
+  }
+  .landing-overview .public-plan-icon {
+    position: absolute;
+    top: 16px;
+    inset-inline-end: 18px;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 2px;
+    border-radius: 9px;
+  }
+  .landing-overview .public-plan-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .landing-overview .public-plan h3 {
+    font-size: 20px;
+  }
+  .landing-overview .public-plan-price {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .landing-overview .public-plan ul {
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .landing-overview .public-plan li {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .landing-overview .public-plan .button {
+    min-height: 36px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+/* Leave room for browser chrome on shorter displays. */
+@media (min-width: 861px) and (max-height: 760px) {
+  .public-home .public-nav {
+    padding-block: 4px;
+  }
+  .landing-overview .landing-hero {
+    grid-template-columns: 2.5fr 1fr;
+    gap: 20px;
+    padding-block: 4px 8px;
+  }
+  .landing-overview .landing-hero .home-art {
+    height: 100px;
+  }
+  .landing-overview .landing-hero p {
+    max-width: none;
+    margin-bottom: 6px;
+  }
+  .landing-overview .pricing-section {
+    padding-block: 4px 6px;
+  }
+  .landing-overview .pricing-section-sub {
+    margin-bottom: 8px;
+  }
+  .landing-overview .public-plan.panel {
+    padding-block: 10px;
+  }
+  .landing-overview .public-plan ul {
+    margin-bottom: 8px;
+  }
+  .public-home footer {
+    padding-block: 4px;
+  }
+}
+@media (max-width: 860px) {
+  .public-home .public-nav {
+    padding-block: 4px;
+  }
+  .landing-overview .landing-hero {
+    padding-block: 2px 4px;
+    row-gap: 4px;
+  }
+  .landing-overview .pricing-section {
+    padding-block: 2px 4px;
+  }
+  .public-home footer {
+    padding-block: 4px;
+  }
+}
+@media (max-width: 350px) and (max-height: 650px) {
+  .landing-overview .public-plan.panel {
+    padding-block: 3px;
+  }
+  .landing-overview .public-plans {
+    gap: 3px;
+  }
+  .landing-overview .pricing-section h2 {
+    margin-bottom: 2px;
+  }
+  .public-home footer {
+    padding-block: 2px;
+  }
+  .landing-overview .public-plan li svg {
+    display: none;
+  }
+  .landing-overview .public-plan-benefits {
+    column-gap: 6px;
+    row-gap: 1px;
+  }
+  .coach-package {
+    font-size: 9px;
+    line-height: 1.1;
+    padding: 2px;
+    gap: 1px;
+  }
+  .coach-package strong {
+    white-space: nowrap;
+    letter-spacing: -0.2px;
+  }
+  .coach-package-price {
+    font-size: 10px;
+  }
+}
+@media (min-width: 861px) and (max-height: 650px) {
+  .public-home .public-nav .brand {
+    font-size: 32px;
+  }
+  .landing-overview .pricing-section h2 {
+    font-size: 22px;
+    margin: 2px 0 4px;
+  }
+  .landing-overview .pricing-section-sub {
+    font-size: 11px;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .landing-overview .public-plan.panel {
+    gap: 2px;
+  }
+  .landing-overview .public-plan ul {
+    gap: 3px;
+  }
+  .landing-overview .public-plan li {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .landing-overview .landing-hero h1 {
+    font-size: 24px;
+  }
+  .landing-overview .landing-hero p {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .landing-overview .landing-hero .button.large {
+    min-height: 32px;
+    padding-block: 6px;
+  }
+}
+
+.hero-art-frame {
+  display: contents;
+}
+@media (min-width: 861px) {
+  .landing-overview .landing-hero {
+    flex: 1;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .hero-art-frame {
+    display: block;
+    position: relative;
+    align-self: stretch;
+    min-height: 100px;
+  }
+  .landing-overview .landing-hero .home-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 400px;
+    margin: auto;
+    object-fit: contain;
   }
 }
 
@@ -6912,4 +7547,126 @@ button.macro-stat.target-stat {
     var(--brand-background);
   background-size: cover;
   background-position: center;
+}
+.business-filters, .business-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 16px; }
+.business-filters label { display: grid; gap: 6px; min-width: 180px; }
+.business-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin-block: 20px; }
+.business-cards .panel { min-width: 0; }
+.business-cards strong { font-size: 1.35rem; }
+.business-cards progress { display: block; width: 100%; margin-block: 14px; accent-color: var(--primary, #16715b); }
+.business-low { color: #a65213; }
+.business-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+.business-table-wrap { overflow-x: auto; border-radius: 14px; margin-block: 20px; }
+.business-table { width: 100%; border-collapse: collapse; background: var(--panel); }
+.business-table th, .business-table td { padding: 14px; text-align: start; border-bottom: 1px solid #8883; white-space: nowrap; }
+.nutrition-burned { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-end: 20px; }
+.nutrition-burned strong { font-size: 1.4rem; }
+@media (max-width: 600px) { .nutrition-burned { align-items: start; flex-direction: column; } }
+/* Shared polish: retain the green identity and respect platform accessibility settings. */
+:root { --muted: #65746e; --focus-ring: #4c9378; }
+html[data-theme='dark'] { --muted: #acbbb1; --focus-ring: #a1d8ba; }
+.app-shell .panel { border-color: var(--line); }
+.button, .icon-btn, .nav-item, .round-button { transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease; }
+.button:focus-visible, .icon-btn:focus-visible, .nav-item:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.app-shell .grow, .page-heading > div, .section-heading > div { min-width: 0; }
+.page-heading h1, .business-cards h2, .business-cards h3, .client-profile h1 { overflow-wrap: anywhere; }
+.business-filters { align-items: end; gap: 12px 16px; }
+.business-filters label { margin-block: 0; flex: 0 1 240px; }
+.business-filters input, .business-filters select { min-height: 44px; }
+.business-table td { font-variant-numeric: tabular-nums; }
+.business-table th { background: var(--subtle); font-weight: 600; }
+html[data-theme='dark'] .business-low { color: #f3bc7c; }
+.loading-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
+.loading-card { min-height: 130px; display: grid; align-content: center; gap: 12px; }
+.loading-card > div { height: 14px; width: 75%; background: var(--line); border-radius: 4px; animation: loading-pulse 1.5s ease-in-out infinite; }
+.loading-card > div:nth-child(2) { width: 42%; height: 28px; }
+.loading-card > div:last-child { width: 60%; }
+@keyframes loading-pulse { 50% { opacity: .45; } }
+[dir='rtl'] .directional-icon { transform: scaleX(-1); }
+input[type='email'], input[type='tel'], input[type='url'] { direction: ltr; text-align: start; }
+input[type='number'], .rest-timer strong, .weight-hero-value { font-variant-numeric: tabular-nums; }
+.modal { overscroll-behavior: contain; max-height: calc(100dvh - 32px); scroll-padding-block: 20px; }
+.modal-backdrop { padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+@media (max-width: 600px) {
+  .app-shell .button, .app-shell .round-button, .modal .button { min-height: 44px; }
+  .app-shell .icon-btn, .modal .icon-btn { min-width: 44px; min-height: 44px; }
+  .topbar .breadcrumb { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .top-actions { gap: 2px; }
+  .modal input:not([type='checkbox']):not([type='radio']), .modal select, .modal textarea, .search-field input { font-size: 16px; }
+  .food-row small, .empty-meal, .food-row strong { font-size: 12px; }
+  .food-row { gap: 9px; }
+  .business-filters label { flex: 1 1 140px; min-width: 0; }
+  .business-cards { gap: 12px; }
+  .business-cards .panel { padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+.topbar .breadcrumb strong { color: var(--muted); }
+.nutrition-burned h2 { margin-bottom: 6px; }
+.nutrition-burned p { margin-block: 6px 0; }
+/* Help & support */
+.support-ticket {
+  border-bottom: 1px solid var(--line);
+}
+.support-ticket:last-child {
+  border-bottom: 0;
+}
+.support-ticket > .list-row {
+  width: 100%;
+  text-align: start;
+}
+.support-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 14px;
+}
+.support-message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--subtle);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.support-message.staff {
+  background: var(--soft-green);
+}
+.support-message small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.terms-consent {
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.terms-consent input[type='checkbox'] {
+  flex: none;
+  margin-top: 1px;
+}
+.terms-consent a {
+  color: var(--green);
+  text-decoration: underline;
+}
+.legal-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 16px 60px;
+  line-height: 1.7;
+}
+.legal-page h1 {
+  margin-bottom: 4px;
+}
+.legal-page h2 {
+  font-size: 17px;
+  margin: 28px 0 6px;
+}
+.legal-page p {
+  margin: 0;
+}
+.legal-page .legal-updated {
+  color: var(--muted);
+  font-size: 13px;
 }

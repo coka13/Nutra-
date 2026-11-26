@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiError, audit, rateLimit, requireUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { billingConfigured, priceForTier, stripeClient } from '@/lib/billing';
+import { billingConfigured, checkoutPriceForTier, stripeClient } from '@/lib/billing';
 import { acceptsOrigin } from '@/lib/request-origin';
 export const runtime = 'nodejs';
 export async function GET() {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
       const session = await stripe.checkout.sessions.create(
         {
           mode: 'subscription',
-          line_items: [{ price: priceForTier(tier)!, quantity: 1 }],
+          line_items: [{ price: (await checkoutPriceForTier(tier))!, quantity: 1 }],
           success_url: `${appUrl}/app/billing?checkout=returned`,
           cancel_url: `${appUrl}/app/billing`,
           client_reference_id: u.id,

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { getLocales } from 'expo-localization';
 import { useColorScheme } from 'react-native';
+import { translate } from '../../src/lib/i18n';
 
 type Language = 'he' | 'en';
 type Theme = 'light' | 'dark';
@@ -26,6 +27,7 @@ type Preferences = {
   lang: Language;
   colors: typeof light;
   darkMode: boolean;
+  t: (key: string) => string;
   update: (lang: Language, theme: Theme) => void;
 };
 const Context = createContext<Preferences | null>(null);
@@ -40,6 +42,7 @@ export function PhoneSettings({ children }: { children: React.ReactNode }) {
         lang,
         colors: darkMode ? dark : light,
         darkMode,
+        t: (key) => translate(lang, key),
         update: (l, th) => {
           setLang(l);
           setTheme(th);

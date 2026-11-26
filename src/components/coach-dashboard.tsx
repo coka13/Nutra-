@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Dumbbell, MessageSquare, Users, Utensils } from 'lucide-react';
 import { api, Empty, PageHeading, useNutri } from './workspace';
+import { LoadingCards } from './loading-cards';
 
 type LiveSession = {
   id: string;
@@ -89,7 +90,7 @@ export function CoachDashboard() {
             {error ? (
               <p role="alert">{t(error)}</p>
             ) : !live ? (
-              <p role="status">{t('loading')}</p>
+              <LoadingCards count={1} />
             ) : !live.length ? (
               <Empty text={t('noClientsLive')} />
             ) : (

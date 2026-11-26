@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePhone } from './settings';
 import { useSession, type Account, type AuthMode } from './session';
+import { workspaceOrigin } from './origin';
 import type { PropsWithChildren } from 'react';
 
 function Frame({ children }: PropsWithChildren) {
@@ -37,24 +39,17 @@ function Frame({ children }: PropsWithChildren) {
   );
 }
 
-const appName = Constants.expoConfig?.name ?? 'Nutri+';
-const copy = {
-  user: [
-    'I’m a User',
-    'אני מתאמן',
-    'Train independently or with a coach.',
-    'לאימון עצמאי או בליווי מאמן.',
-  ],
-  coach: [
-    'I’m a Coach',
-    'אני מאמן',
-    'Manage clients and build training and nutrition plans.',
-    'לניהול מתאמנים ובניית תוכניות אימון ותזונה.',
-  ],
-} as const;
+const appName = Constants.expoConfig?.name ?? 'Fitura+';
+const webOrigin = workspaceOrigin(
+  process.env.EXPO_PUBLIC_NUTRI_URL,
+  __DEV__,
+  Constants.expoConfig?.hostUri,
+  Platform.OS === 'android',
+  process.env.EXPO_PUBLIC_NUTRI_LOCAL_PREVIEW === 'true',
+);
 
 export function WelcomeScreen() {
-  const { lang, colors, darkMode, update } = usePhone();
+  const { lang, colors, darkMode, update, t } = usePhone();
   const { session, retry } = useSession();
   const he = lang === 'he';
   if (session === 'checking' || session === 'coach' || session === 'user')
@@ -79,7 +74,7 @@ export function WelcomeScreen() {
       </Text>
       <Image source={require('../assets/welcome.webp')} resizeMode="contain" style={styles.art} />
       <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>
-        {he ? `איך משתמשים ב‑${appName}?` : `How will you use ${appName}?`}
+        {t('choosePortal').replace('{app}', appName)}
       </Text>
       {(['user', 'coach'] as const).map((account) => (
         <Pressable
@@ -109,7 +104,7 @@ export function WelcomeScreen() {
                 color: account === 'coach' ? colors.ink : colors.buttonText,
               }}
             >
-              {copy[account][he ? 1 : 0]}
+              {t(account + 'Choice')}
             </Text>
             <Text
               style={{
@@ -117,7 +112,7 @@ export function WelcomeScreen() {
                 color: account === 'coach' ? colors.muted : colors.buttonText,
               }}
             >
-              {copy[account][he ? 3 : 2]}
+              {t(account + 'ChoiceHint')}
             </Text>
           </View>
           <Ionicons
@@ -129,48 +124,23 @@ export function WelcomeScreen() {
       ))}
       {session === 'offline' && (
         <Pressable accessibilityRole="button" style={styles.link} onPress={retry}>
-          <Text style={{ color: colors.accent }}>
-            {he ? 'לא ניתן להתחבר. נסו שוב.' : 'Connection unavailable. Try again.'}
-          </Text>
+          <Text style={{ color: colors.accent }}>{t('offline')}</Text>
         </Pressable>
       )}
     </Frame>
   );
 }
 
-const errors: Record<string, [string, string]> = {
-  invalid: ['Check your details and try again.', 'בדקו את הפרטים ונסו שוב.'],
-  credentials: [
-    'These credentials do not match an account for this portal.',
-    'פרטי הכניסה אינם תואמים לחשבון בסוג זה.',
-  ],
-  emailTaken: [
-    'An account already uses this email. Sign in with your existing account.',
-    'כבר קיים חשבון עם כתובת זו. היכנסו לחשבון הקיים.',
-  ],
-  offline: [
-    'Could not connect. Try again when you’re online.',
-    'לא ניתן להתחבר. נסו שוב כשיש חיבור לרשת.',
-  ],
-  rateLimited: [
-    'Too many attempts. Try again in a minute.',
-    'בוצעו יותר מדי ניסיונות. נסו שוב בעוד דקה.',
-  ],
-  emailUnavailable: [
-    'Password recovery is temporarily unavailable.',
-    'שחזור סיסמה אינו זמין כרגע.',
-  ],
-  serverError: ['Something went wrong. Try again.', 'אירעה שגיאה. נסו שוב.'],
-};
-
 export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode }) {
-  const { lang, colors } = usePhone();
+  const { lang, colors, t } = usePhone();
   const { session, retry, authenticate } = useSession();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
   const he = lang === 'he';
@@ -178,25 +148,7 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
   const registration = mode === 'register';
   const recovery = mode === 'recover';
   const login = mode === 'login';
-  const heading = recovery
-    ? he
-      ? 'איפוס סיסמה'
-      : 'Reset your password'
-    : registration
-      ? isCoach
-        ? he
-          ? 'יצירת חשבון מאמן'
-          : 'Create a coach account'
-        : he
-          ? 'יצירת חשבון מתאמן'
-          : 'Create a user account'
-      : isCoach
-        ? he
-          ? 'כניסת מאמנים'
-          : 'Coach sign-in'
-        : he
-          ? 'כניסת מתאמנים'
-          : 'User sign-in';
+  const heading = t(recovery ? 'reset' : account + (registration ? 'RegisterTitle' : 'LoginTitle'));
   const fields = {
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -205,6 +157,8 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
   };
 
   async function submit() {
+    if (busy || submitting.current) return;
+    submitting.current = true;
     if (
       !email.trim() ||
       (registration &&
@@ -219,6 +173,12 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
       (login && !password)
     ) {
       setError('invalid');
+      submitting.current = false;
+      return;
+    }
+    if (registration && !acceptTerms) {
+      setError('termsRequired');
+      submitting.current = false;
       return;
     }
     setBusy(true);
@@ -230,12 +190,14 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
         ...(!recovery && { password }),
         ...(registration && { name: name.trim() }),
         ...(registration && isCoach && { phone: phone.trim() }),
+        ...(registration && { acceptTerms }),
       });
       setPassword('');
       if (recovery) setSent(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'serverError');
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -248,7 +210,7 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
         style={styles.link}
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       >
-        <Text style={{ color: colors.accent }}>{he ? 'חזרה' : 'Back'}</Text>
+        <Text style={{ color: colors.accent }}>{t('backButton')}</Text>
       </Pressable>
       <View style={[styles.authMark, { backgroundColor: colors.surface }]}>
         <Ionicons
@@ -262,18 +224,16 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
       </Text>
       {sent ? (
         <Text accessibilityLiveRegion="polite" style={{ color: colors.ink }}>
-          {he
-            ? 'אם קיימת התאמה לכתובת, יישלח קישור לאיפוס הסיסמה.'
-            : 'If an account matches that email, you’ll receive a reset link.'}
+          {t('resetSent')}
         </Text>
       ) : (
         <>
           {registration && (
             <>
-              <Text style={{ color: colors.ink }}>{he ? 'שם מלא' : 'Full name'}</Text>
+              <Text style={{ color: colors.ink }}>{t('fullName')}</Text>
               <TextInput
                 testID="name"
-                accessibilityLabel={he ? 'שם מלא' : 'Full name'}
+                accessibilityLabel={t('fullName')}
                 style={[styles.field, fields]}
                 value={name}
                 onChangeText={setName}
@@ -282,11 +242,11 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
               />
             </>
           )}
-          <Text style={{ color: colors.ink }}>{he ? 'דוא״ל' : 'Email'}</Text>
+          <Text style={{ color: colors.ink }}>{t('email')}</Text>
           <TextInput
             testID="email"
-            accessibilityLabel={he ? 'דוא״ל' : 'Email'}
-            style={[styles.field, fields]}
+            accessibilityLabel={t('email')}
+            style={[styles.field, fields, { textAlign: 'left', writingDirection: 'ltr' }]}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -296,11 +256,11 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
           />
           {registration && isCoach && (
             <>
-              <Text style={{ color: colors.ink }}>{he ? 'מספר טלפון' : 'Phone number'}</Text>
+              <Text style={{ color: colors.ink }}>{t('phone')}</Text>
               <TextInput
                 testID="phone"
-                accessibilityLabel={he ? 'מספר טלפון' : 'Phone number'}
-                style={[styles.field, fields, { textAlign: 'left' }]}
+                accessibilityLabel={t('phone')}
+                style={[styles.field, fields, { textAlign: 'left', writingDirection: 'ltr' }]}
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -309,19 +269,15 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
                 placeholder="+972501234567"
                 placeholderTextColor={colors.muted}
               />
-              <Text style={{ color: colors.muted }}>
-                {he
-                  ? 'כללו קידומת מדינה. המתאמנים יוכלו ליצור קשר בדוא״ל, בוואטסאפ או בטלפון.'
-                  : 'Include the country code. Clients can contact you by email, WhatsApp or phone.'}
-              </Text>
+              <Text style={{ color: colors.muted }}>{t('coachContactHint')}</Text>
             </>
           )}
           {!recovery && (
             <>
-              <Text style={{ color: colors.ink }}>{he ? 'סיסמה' : 'Password'}</Text>
+              <Text style={{ color: colors.ink }}>{t('password')}</Text>
               <TextInput
                 testID="password"
-                accessibilityLabel={he ? 'סיסמה' : 'Password'}
+                accessibilityLabel={t('password')}
                 style={[styles.field, fields]}
                 value={password}
                 onChangeText={setPassword}
@@ -333,16 +289,66 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
                   if (!busy && session === 'signed-out') void submit();
                 }}
               />
-              {registration && (
-                <Text style={{ color: colors.muted }}>
-                  {he ? 'לפחות 10 תווים.' : 'At least 10 characters.'}
-                </Text>
-              )}
+              {registration && <Text style={{ color: colors.muted }}>{t('passwordHint')}</Text>}
             </>
+          )}
+          {registration && (
+            <View style={[styles.consent, { flexDirection: he ? 'row-reverse' : 'row' }]}>
+              <Pressable
+                testID="accept-terms"
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: acceptTerms }}
+                accessibilityLabel={
+                  t('termsConsentBefore') +
+                  t('termsOfUse') +
+                  t('termsConsentMiddle') +
+                  t('privacyPolicy')
+                }
+                hitSlop={8}
+                onPress={() => setAcceptTerms((value) => !value)}
+              >
+                <Ionicons
+                  name={acceptTerms ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color={acceptTerms ? colors.accent : colors.muted}
+                />
+              </Pressable>
+              <Text
+                style={{
+                  flex: 1,
+                  color: colors.ink,
+                  lineHeight: 21,
+                  textAlign: he ? 'right' : 'left',
+                }}
+                onPress={() => setAcceptTerms((value) => !value)}
+              >
+                {t('termsConsentBefore')}
+                <Text
+                  accessibilityRole="link"
+                  style={{ color: colors.accent, textDecorationLine: 'underline' }}
+                  onPress={() => {
+                    if (webOrigin) void Linking.openURL(webOrigin + '/terms').catch(() => {});
+                  }}
+                >
+                  {t('termsOfUse')}
+                </Text>
+                {t('termsConsentMiddle')}
+                <Text
+                  accessibilityRole="link"
+                  style={{ color: colors.accent, textDecorationLine: 'underline' }}
+                  onPress={() => {
+                    if (webOrigin) void Linking.openURL(webOrigin + '/privacy').catch(() => {});
+                  }}
+                >
+                  {t('privacyPolicy')}
+                </Text>
+                {t('termsConsentAfter')}
+              </Text>
+            </View>
           )}
           {!!error && (
             <Text accessibilityRole="alert" style={{ color: colors.ink }}>
-              {(errors[error] || errors.serverError)[he ? 1 : 0]}
+              {t(error) === error ? t('serverError') : t(error)}
             </Text>
           )}
           <Pressable
@@ -362,25 +368,13 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
               <ActivityIndicator color={colors.buttonText} />
             ) : (
               <Text style={{ color: colors.buttonText, fontSize: 17, fontWeight: '700' }}>
-                {recovery
-                  ? he
-                    ? 'שליחת קישור לאיפוס'
-                    : 'Send reset link'
-                  : registration
-                    ? he
-                      ? 'יצירת חשבון'
-                      : 'Create account'
-                    : he
-                      ? 'כניסה'
-                      : 'Sign in'}
+                {t(recovery ? 'recover' : registration ? 'register' : 'login')}
               </Text>
             )}
           </Pressable>
           {session === 'offline' && (
             <Pressable accessibilityRole="button" style={styles.link} onPress={retry}>
-              <Text style={{ color: colors.accent }}>
-                {he ? 'ניסיון התחברות נוסף' : 'Retry connection'}
-              </Text>
+              <Text style={{ color: colors.accent }}>{t('retryConnection')}</Text>
             </Pressable>
           )}
         </>
@@ -388,10 +382,10 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
       {login ? (
         <>
           <Pressable accessibilityRole="button" style={styles.link} onPress={() => go('register')}>
-            <Text style={{ color: colors.accent }}>{he ? 'יצירת חשבון' : 'Create an account'}</Text>
+            <Text style={{ color: colors.accent }}>{t('register')}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" style={styles.link} onPress={() => go('recover')}>
-            <Text style={{ color: colors.accent }}>{he ? 'שכחתי סיסמה' : 'Forgot password?'}</Text>
+            <Text style={{ color: colors.accent }}>{t('forgot')}</Text>
           </Pressable>
         </>
       ) : (
@@ -400,7 +394,7 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
           style={styles.link}
           onPress={() => router.replace(`/auth/${account}/login`)}
         >
-          <Text style={{ color: colors.accent }}>{he ? 'חזרה לכניסה' : 'Back to sign-in'}</Text>
+          <Text style={{ color: colors.accent }}>{t('backToSignIn')}</Text>
         </Pressable>
       )}
     </Frame>
@@ -430,6 +424,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  consent: { alignItems: 'flex-start', gap: 10, marginTop: 4 },
   field: { borderWidth: 1, borderRadius: 13, minHeight: 52, paddingHorizontal: 14, fontSize: 16 },
   primary: {
     minHeight: 51,

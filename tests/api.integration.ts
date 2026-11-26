@@ -37,16 +37,26 @@ test('end-to-end API access, persistence, nutrition, coaching, scheduling and in
       await anon.request('auth/register', {
         name: 'Escalation',
         email: `admin-${suffix}@example.test`,
+        acceptTerms: true,
         password,
         role: 'ADMIN',
       })
     ).status,
     400,
   );
+  const noTerms = await anon.request('auth/register', {
+    name: 'No consent',
+    email: `no-terms-${suffix}@example.test`,
+    password,
+    role: 'INDEPENDENT',
+  });
+  assert.equal(noTerms.status, 400);
+  assert.equal(noTerms.data.error, 'termsRequired');
   async function register(c: Client, email: string, role = 'INDEPENDENT') {
     const r = await c.request('auth/register', {
       name: email,
       email,
+      acceptTerms: true,
       password,
       role,
       ...(role === 'COACH' && { phone: '+972501234567' }),
@@ -308,7 +318,8 @@ test('end-to-end API access, persistence, nutrition, coaching, scheduling and in
       403,
     );
     assert.equal((await a.request('profile', { ...profile, aiConsent: true })).status, 200);
-    if (!process.env.OPENAI_API_KEY)
+    const integrations = (await a.request('state')).data.integrations as { ai: boolean };
+    if (!integrations.ai)
       assert.equal(
         (await a.request('ai', { mode: 'fitness', prompt: 'Help me plan a week' })).status,
         503,

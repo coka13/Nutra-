@@ -12,6 +12,7 @@ for (const language of ['en', 'he'] as const) {
           data: {
             name: 'Builder layout',
             email: `builder-${language}-${Date.now()}@example.test`,
+            acceptTerms: true,
             password,
             role: 'INDEPENDENT',
             language,
@@ -56,7 +57,7 @@ for (const language of ['en', 'he'] as const) {
       await picks.first().click();
       const tray = page.locator('.builder-selection-tray');
       await expect(tray).toBeVisible();
-      await expect(tray.locator('strong')).toHaveText(firstName);
+      await expect(tray.locator('.builder-tray-count')).toHaveText('1');
       expect(
         await tray.evaluate((node) => {
           const rect = node.getBoundingClientRect();
@@ -65,7 +66,6 @@ for (const language of ['en', 'he'] as const) {
       ).toBe(true);
       const secondName = await picks.nth(1).locator('strong').innerText();
       await picks.nth(1).click();
-      await expect(tray.locator('strong')).toHaveText(secondName);
       await expect(tray.locator('.builder-tray-count')).toHaveText('2');
       await expect(page.locator('.builder-exercise')).toHaveCount(2);
       await expect(picks.first()).toBeDisabled();

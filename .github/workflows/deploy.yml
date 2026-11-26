@@ -1,0 +1,43 @@
+name: Deploy
+# Manual only. Runs deploy/deploy.sh on the server over SSH; that script builds the image,
+# backs up the database, waits for /api/health and rolls back on failure.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment (configure matching GitHub environment secrets)
+        type: choice
+        options: [staging, production]
+        default: staging
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+    steps:
+      - name: Check deployment secrets
+        id: check
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "VPS_HOST/VPS_USER/VPS_SSH_KEY are not configured for '${{ inputs.environment }}'; nothing deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy over SSH
+        if: steps.check.outputs.ready == 'true'
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.APP_DIR || '~/fitura' }}
+          REF: ${{ github.sha }}
+        run: |
+          install -m 600 /dev/null ~/.ssh_key && printf '%s\n' "$SSH_KEY" > ~/.ssh_key
+          ssh -i ~/.ssh_key -o StrictHostKeyChecking=accept-new "$USER@$HOST" \
+            "cd $APP_DIR && git fetch --quiet origin && git checkout --quiet $REF && sh deploy/deploy.sh"
+          rm -f ~/.ssh_key

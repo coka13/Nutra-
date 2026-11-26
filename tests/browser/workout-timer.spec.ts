@@ -11,7 +11,14 @@ test('workout starts at zero, survives reopening, and keeps a separate clock per
   expect(
     (
       await page.request.post('/api/auth/register', {
-        data: { email, password, name: 'Timer test', role: 'INDEPENDENT', language: 'en' },
+        data: {
+          email,
+          acceptTerms: true,
+          password,
+          name: 'Timer test',
+          role: 'INDEPENDENT',
+          language: 'en',
+        },
       })
     ).ok(),
   ).toBeTruthy();

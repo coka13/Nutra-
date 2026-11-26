@@ -16,6 +16,7 @@ for (const language of ['en', 'he'] as const) {
             data: {
               name: 'Workout coach',
               email: `coach-workouts-${suffix}@example.test`,
+              acceptTerms: true,
               password,
               role: 'COACH',
               phone: '+972501234567',
@@ -28,6 +29,7 @@ for (const language of ['en', 'he'] as const) {
         data: {
           name: 'Workout client',
           email: `client-workouts-${suffix}@example.test`,
+          acceptTerms: true,
           password,
           role: 'INDEPENDENT',
           language,
@@ -84,7 +86,7 @@ for (const language of ['en', 'he'] as const) {
       const coachState = await (await coach.request.get('/api/state')).json();
       expect(
         coachState.programs.find((p: { id: string }) => p.id === original.id).assignedClientId,
-      ).toBeNull();
+      ).toBe(user.id);
       const clientState = await (await client.request.get('/api/state')).json();
       const assigned = clientState.programs.find(
         (p: { assignedClientId: string }) => p.assignedClientId === user.id,

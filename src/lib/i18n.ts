@@ -1,5 +1,180 @@
 export type Language = 'en' | 'he';
 export const messages = {
+  // Administration-driven messages (support, promotions, account state).
+  announcement: ['Announcement', 'הודעה'],
+  supportReply: ['Support replied to your request.', 'צוות התמיכה השיב לפנייה שלך.'],
+  coachStatusApproved: [
+    'Your coach account is approved. You can invite clients.',
+    'חשבון המאמן אושר. אפשר להזמין מתאמנים.',
+  ],
+  coachStatusPending: ['Your coach account is waiting for review.', 'חשבון המאמן ממתין לבדיקה.'],
+  coachStatusRejected: [
+    'Your coach application was not approved. Contact support for details.',
+    'בקשת המאמן לא אושרה. לפרטים פנו לתמיכה.',
+  ],
+  coachStatusRevoked: [
+    'Coach privileges were removed from this account. Contact support for details.',
+    'הרשאות המאמן הוסרו מהחשבון. לפרטים פנו לתמיכה.',
+  ],
+  coachPendingNotice: [
+    'Your coach account is being reviewed. Inviting clients opens once it is approved.',
+    'חשבון המאמן נמצא בבדיקה. הזמנת מתאמנים תיפתח לאחר האישור.',
+  ],
+  coachRestrictedNotice: [
+    'Coach features are unavailable for this account. Contact support if you think this is a mistake.',
+    'תכונות המאמן אינן זמינות לחשבון זה. אם נראה לכם שזו טעות, פנו לתמיכה.',
+  ],
+  coachNotApproved: [
+    'Inviting clients opens once your coach account is approved.',
+    'הזמנת מתאמנים תיפתח לאחר אישור חשבון המאמן.',
+  ],
+  maintenance: [
+    'Fitura+ is briefly down for maintenance. Please try again soon.',
+    'Fitura+ בתחזוקה קצרה. נסו שוב בעוד מספר דקות.',
+  ],
+  registrationClosed: [
+    'New sign-ups are paused right now. Please try again later.',
+    'ההרשמה מושהית כרגע. נסו שוב מאוחר יותר.',
+  ],
+  accountSuspended: [
+    'This account is suspended. Contact support for help.',
+    'החשבון מושעה. לעזרה פנו לתמיכה.',
+  ],
+  aiDisabled: ['This AI feature is turned off right now.', 'תכונת ה־AI הזו כבויה כרגע.'],
+  aiLimitReached: ['You have reached this month’s AI limit.', 'הגעתם למכסת ה־AI החודשית.'],
+  aiBudgetReached: ['AI is paused until next month.', 'ה־AI מושהה עד החודש הבא.'],
+  updateAvailable: ['A new version of Fitura+ is available.', 'גרסה חדשה של Fitura+ זמינה.'],
+  updateRequired: ['Please update Fitura+ to keep using it.', 'יש לעדכן את Fitura+ כדי להמשיך.'],
+  helpSupport: ['Help & support', 'עזרה ותמיכה'],
+  supportSub: [
+    'Questions, bug reports and ideas. Our team replies here.',
+    'שאלות, דיווח על תקלות ורעיונות. הצוות שלנו עונה כאן.',
+  ],
+  newRequest: ['New request', 'פנייה חדשה'],
+  requestType: ['Type', 'סוג'],
+  categorySUPPORT: ['Question', 'שאלה'],
+  categoryBUG: ['Bug report', 'דיווח על תקלה'],
+  categoryFEATURE: ['Feature request', 'הצעה לשיפור'],
+  categoryCOMPLAINT: ['Account complaint', 'תלונה על חשבון'],
+  categoryREPORT: ['Report an account', 'דיווח על חשבון'],
+  subject: ['Subject', 'נושא'],
+  describeRequest: ['Describe what happened or what you need', 'תארו מה קרה או במה אפשר לעזור'],
+  sendRequest: ['Send request', 'שליחת פנייה'],
+  requestSent: ['Request sent. We will reply here.', 'הפנייה נשלחה. נשיב כאן.'],
+  yourRequests: ['Your requests', 'הפניות שלך'],
+  noRequests: ['No requests yet.', 'אין פניות עדיין.'],
+  ticketOPEN: ['Open', 'פתוחה'],
+  ticketIN_PROGRESS: ['In progress', 'בטיפול'],
+  ticketWAITING: ['Awaiting your reply', 'ממתינה לתגובתך'],
+  ticketRESOLVED: ['Resolved', 'נפתרה'],
+  ticketCLOSED: ['Closed', 'סגורה'],
+  supportTeam: ['Support', 'תמיכה'],
+  you: ['You', 'את/ה'],
+  replyPlaceholder: ['Write a reply', 'כתבו תגובה'],
+  sendReply: ['Reply', 'שליחה'],
+  reportAbout: ['About', 'לגבי'],
+  promoCode: ['Promo code', 'קוד הטבה'],
+  redeem: ['Redeem', 'מימוש'],
+  promoRedeemed: [
+    'Code applied. Enjoy your access until {date}.',
+    'הקוד מומש. הגישה פעילה עד {date}.',
+  ],
+  promoInvalid: ['This code is not valid.', 'הקוד אינו תקף.'],
+  promoExhausted: ['This code has been fully redeemed.', 'הקוד נוצל עד תומו.'],
+  promoUsed: ['You already used this code.', 'כבר השתמשתם בקוד הזה.'],
+  pageErrorTitle: ['This screen could not load', 'לא ניתן לטעון את המסך'],
+  pageErrorHint: [
+    'Try again to reconnect. Saved workouts and entries remain in your account.',
+    'נסו שוב כדי להתחבר. האימונים והרישומים שנשמרו נשארים בחשבון.',
+  ],
+  billingHistoryUnavailable: [
+    'Payment history could not load. Reopen this screen to try again.',
+    'לא ניתן לטעון את היסטוריית התשלומים. פתחו שוב את המסך כדי לנסות מחדש.',
+  ],
+  mobileHome: ['Home', 'בית'],
+  mobileMore: ['More', 'עוד'],
+  fullName: ['Full name', 'שם מלא'],
+  retryConnection: ['Retry connection', 'ניסיון התחברות נוסף'],
+  choosePortal: ['How will you use {app}?', 'איך תרצו להשתמש ב־{app}?'],
+  profile: ['Profile', 'פרופיל'],
+  backToSignIn: ['Back to sign-in', 'חזרה לכניסה'],
+  libraryLoadFailed: [
+    'The exercise and food library could not load. Retry to restore search and exercise details.',
+    'לא ניתן לטעון את ספריית התרגילים והמזונות. נסו שוב כדי לטעון חיפוש ופרטי תרגילים.',
+  ],
+  savedRefreshPending: [
+    'Saved. Reconnect to refresh the displayed data.',
+    'נשמר. הנתונים המוצגים יתעדכנו לאחר חידוש החיבור.',
+  ],
+  delete: ['Delete', 'מחיקה'],
+  requestTimeout: [
+    'The request took too long. Check your connection and try again.',
+    'הבקשה נמשכת זמן רב. בדקו את החיבור ונסו שוב.',
+  ],
+  packages: ['Packages', 'חבילות'],
+  trainingSessions: ['sessions', 'אימונים'],
+  paymentMethod: ['Payment method', 'אמצעי תשלום'],
+  packagesSub: [
+    '4, 8 or 12 training sessions and balances.',
+    'חבילות של 4, 8 או 12 אימונים ומעקב יתרות.',
+  ],
+  trainingLog: ['Training log', 'מעקב אימונים'],
+  trainingLogSub: [
+    'Track each coaching session and its status.',
+    'תיעוד כל אימון אישי, תאריך ומצב ביצוע.',
+  ],
+  clientPayments: ['Client payments', 'תשלומי מתאמנים'],
+  clientPaymentsSub: [
+    'Payments received and outstanding balances in ILS.',
+    'תשלומים שהתקבלו ומעקב חובות בשקלים.',
+  ],
+  businessReports: ['Monthly business report', 'דוח עסקי חודשי'],
+  businessReportsSub: [
+    'Income, package sales and coaching activity.',
+    'הכנסות, מכירת חבילות ופעילות האימון.',
+  ],
+  addPackage: ['Add package', 'הוספת חבילה'],
+  addTraining: ['Log training session', 'תיעוד אימון'],
+  addReceipt: ['Record payment', 'רישום תשלום'],
+  sessionsRemaining: ['Sessions remaining', 'אימונים שנותרו'],
+  sessionsUsed: ['Sessions used', 'אימונים שנוצלו'],
+  packagePrice: ['Package price', 'מחיר החבילה'],
+  businessPaid: ['Paid', 'שולם'],
+  businessDebt: ['Outstanding debt', 'יתרת חוב'],
+  businessIncome: ['Payments received', 'הכנסות שהתקבלו'],
+  packageSales: ['Package sales (ILS)', 'מכירת חבילות (₪)'],
+  businessAmount: ['Amount', 'סכום'],
+  businessMonth: ['Month', 'חודש'],
+  businessPlanned: ['Planned', 'מתוכנן'],
+  businessCancelled: ['Cancelled', 'מבוטל'],
+  twoSessionsLeft: ['Only 2 sessions remain in this package', 'נותרו 2 אימונים בחבילה'],
+  packageExhausted: ['This package has no sessions remaining.', 'לא נותרו אימונים בחבילה זו.'],
+  noBusinessPackages: [
+    'No packages yet. Add an active client and create a package.',
+    'אין חבילות עדיין. ניתן ליצור חבילה למתאמן פעיל.',
+  ],
+  noBusinessActivity: ['No records for the selected month.', 'אין רישומים לחודש שנבחר.'],
+  exportBusiness: ['Export CSV', 'ייצוא CSV'],
+  debtSnapshot: ['Balance at the end of the selected month.', 'יתרת החוב בסוף החודש שנבחר.'],
+  currentDebt: ['Current balance across all dates.', 'יתרת חוב נוכחית מכל התאריכים.'],
+  outstandingPackages: ['Packages with an outstanding balance', 'חבילות עם יתרת חוב'],
+  receiptHistory: ['Payment history for selected month', 'תשלומים בחודש שנבחר'],
+  packagesSold: ['Packages sold', 'חבילות שנמכרו'],
+  businessActiveClients: ['Clients trained this month', 'מתאמנים שהתאמנו החודש'],
+  businessReportBasis: [
+    'Payments use their payment date; sales use the package date. Debt and remaining sessions are calculated at month end. Includes recorded coaching sessions only. Amounts in ILS; this is a management report.',
+    'הכנסות לפי תאריך תשלום; מכירות לפי תאריך החבילה. חובות ויתרות אימונים מחושבים לסוף החודש. הפעילות כוללת אימונים אישיים שתועדו כאן בלבד. הסכומים בשקלים; זהו דוח ניהולי.',
+  ],
+  payment_cash: ['Cash', 'מזומן'],
+  payment_transfer: ['Bank transfer / payment app', 'העברה בנקאית / אפליקציית תשלום'],
+  payment_card: ['Card', 'כרטיס אשראי'],
+  payment_other: ['Other', 'אחר'],
+  removeReceiptConfirm: [
+    'Delete this payment record? The outstanding balance will increase.',
+    'למחוק את רישום התשלום? יתרת החוב תגדל בהתאם.',
+  ],
+  caloriesBurned: ['Active calories burned', 'קלוריות שנשרפו בפעילות'],
+  stepsAndActivity: ['Steps and activity', 'צעדים ופעילות'],
   previousMonth: ['Previous month', 'החודש הקודם'],
   nextMonth: ['Next month', 'החודש הבא'],
   calendarWorkouts: ['Workouts this month', 'אימונים החודש'],
@@ -169,7 +344,7 @@ export const messages = {
     'Choose a date within the last 29 days to sync fitness data.',
     'בחרו תאריך מ־29 הימים האחרונים לסנכרון נתוני כושר.',
   ],
-  activity: ['Activity', 'פעילות'],
+  activity: ['Steps & activity', 'צעדים ופעילות'],
   dailySteps: ['Daily steps', 'צעדים ביום'],
   noStepsSynced: ['No steps synced for this date', 'לא סונכרנו צעדים לתאריך זה'],
   lastSync: ['Last synced', 'סנכרון אחרון'],
@@ -183,12 +358,12 @@ export const messages = {
     'קריאת צעדים, קלוריות שנשרפו, מרחק ואימונים מ־Apple Health באייפון או Health Connect באנדרואיד לתאריך שנבחר. לעדכון הנתונים לחצו שוב על סנכרון.',
   ],
   healthConsent: [
-    'I agree to save my steps, calories burned, distance and workout data to my Nutra+ account.',
-    'אני מסכים/ה לשמור את נתוני הצעדים, הקלוריות, המרחק והאימונים בחשבון Nutra+\u200e שלי.',
+    'I agree to save my steps, calories burned, distance and workout data to my Fitura+ account.',
+    'אני מסכים/ה לשמור את נתוני הצעדים, הקלוריות, המרחק והאימונים בחשבון Fitura+\u200e שלי.',
   ],
   healthPhoneOnly: [
-    'Open this page in the Nutra+ iPhone or Android app to connect Apple Health or Health Connect.',
-    'פתחו עמוד זה באפליקציית Nutra+\u200E באייפון או באנדרואיד לחיבור Apple Health או Health Connect.',
+    'Open this page in the Fitura+ iPhone or Android app to connect Apple Health or Health Connect.',
+    'פתחו עמוד זה באפליקציית Fitura+\u200E באייפון או באנדרואיד לחיבור Apple Health או Health Connect.',
   ],
   stepDeduplication: [
     'Daily totals come from your health platform. Sync replaces them instead of adding them again.',
@@ -214,8 +389,8 @@ export const messages = {
     'אפשרו גישה לצעדים, לקלוריות, למרחק או לאימונים באפליקציית הבריאות כדי לסנכרן.',
   ],
   healthDevelopmentBuild: [
-    'Health connections require an installed Nutra+ development or store build. They are unavailable in Expo Go.',
-    'חיבורי בריאות דורשים התקנה של גרסת פיתוח או גרסה מחנות של Nutra+\u200E. הם אינם זמינים ב־Expo Go.',
+    'Health connections require an installed Fitura+ development or store build. They are unavailable in Expo Go.',
+    'חיבורי בריאות דורשים התקנה של גרסת פיתוח או גרסה מחנות של Fitura+\u200E. הם אינם זמינים ב־Expo Go.',
   ],
   healthNoData: [
     'No readable health data was returned. Check permissions and try again.',
@@ -456,6 +631,9 @@ export const messages = {
   invoices: ['Invoices', 'חשבוניות'],
   amount: ['Amount', 'סכום'],
   paid: ['Paid', 'שולם'],
+  draft: ['Draft', 'טיוטה'],
+  void: ['Voided', 'בוטלה'],
+  uncollectible: ['Uncollectible', 'חוב שלא נגבה'],
   open: ['Open', 'פתוחה'],
   PAST_DUE: ['Payment overdue', 'תשלום באיחור'],
   INACTIVE: ['Inactive', 'לא פעיל'],
@@ -485,7 +663,7 @@ export const messages = {
   personal: ['YOUR WORKSPACE', 'סביבת העבודה שלך'],
   coaching: ['COACHING STUDIO', 'סטודיו האימון'],
   tagline: ['A little better. Every day.', 'קצת יותר טוב. בכל יום.'],
-  greeting: ['Let’s make today count,', 'בוא/י נעשה משהו טוב היום,'],
+  greeting: ['Let’s make today count,', 'בואו נעשה משהו טוב היום,'],
   dashboardSub: [
     'Your space to move well, eat well, and feel your best.',
     'המקום שלך לזוז, לאכול מאוזן ולהרגיש טוב.',
@@ -740,7 +918,7 @@ export const messages = {
   ],
   fitness: ['Fitness', 'כושר'],
   copilot: ['Coach copilot', 'עוזר למאמן'],
-  aiPlaceholder: ['Ask Nutra+…', 'שאלו את Nutra+\u200E…'],
+  aiPlaceholder: ['Ask Fitura+…', 'שאלו את Fitura+\u200E…'],
   send: ['Send', 'שליחה'],
   aiDisclaimer: [
     'General information only. Review suggestions with a qualified professional when needed. Plans are never changed automatically.',
@@ -762,8 +940,8 @@ export const messages = {
   clientsSub: ['Good coaching starts with a real connection.', 'אימון טוב מתחיל בקשר אמיתי.'],
   inviteClient: ['Invite client', 'הזמנת מתאמן'],
   inviteHint: [
-    'Invite an existing Nutra+ account. Health records are shared only after acceptance.',
-    'הזמינו חשבון Nutra+\u200E קיים. נתוני בריאות ישותפו רק לאחר אישור.',
+    'Invite an existing Fitura+ account. Health records are shared only after acceptance.',
+    'הזמינו חשבון Fitura+\u200E קיים. נתוני בריאות ישותפו רק לאחר אישור.',
   ],
   email: ['Email', 'דוא״ל'],
   status: ['Status', 'סטטוס'],
@@ -848,7 +1026,7 @@ export const messages = {
   coachInvite: ['You have a coaching invitation.', 'קיבלת הזמנה לאימון.'],
   appointmentBooked: ['A new session has been booked.', 'נקבעה פגישה חדשה.'],
   preferences: ['Your preferences', 'ההעדפות שלך'],
-  settingsSub: ['Make Nutra+ feel like you.', 'Nutra+\u200E בדרך שלך.'],
+  settingsSub: ['Make Fitura+ feel like you.', 'Fitura+\u200E בדרך שלך.'],
   goal: ['Your focus', 'המיקוד שלך'],
   strength: ['Build strength', 'בניית כוח'],
   mobility: ['Move comfortably', 'תנועה נוחה'],
@@ -913,7 +1091,7 @@ export const messages = {
     'יש להצטרף למסלול המאמנים כדי להזמין מתאמנים.',
   ],
   adLabel: ['Ad', 'פרסומת'],
-  adPlusTitle: ['Enjoy Nutra+ without ads', 'נוטרה+ בלי פרסומות'],
+  adPlusTitle: ['Enjoy Fitura+ without ads', 'Fitura+ בלי פרסומות'],
   adPlusBody: ['Upgrade to Plus for $5/month.', 'שדרגו לפלוס ב־5$ לחודש.'],
   adPlusCta: ['See plans', 'למסלולים'],
   coachTier: ['Coach', 'מאמן'],
@@ -932,7 +1110,7 @@ export const messages = {
   brandColor: ['Brand color', 'צבע המותג'],
   welcomeMessage: ['Welcome message', 'הודעת פתיחה'],
   preview: ['Preview', 'תצוגה מקדימה'],
-  landingTitle: ['A healthier rhythm.\nA stronger you.', 'קצב בריא יותר.\nעצמך, חזק יותר.'],
+  landingTitle: ['A healthier rhythm.\nA stronger you.', 'קצב בריא יותר.\nאתה, חזק יותר.'],
   landingSub: [
     'Your workouts, nutrition, and progress. Beautifully connected. Build lasting habits on your own, or with a coach by your side.',
     'האימונים, התזונה וההתקדמות שלך. הכול מתחבר. בנו הרגלים שנשארים, באופן עצמאי או עם מאמן לצידכם.',
@@ -948,6 +1126,12 @@ export const messages = {
     'מתחילים בחינם כבר היום. המסלולים בתשלום בדרך.',
   ],
   recommendedForCoaches: ['Best for coaches', 'מומלץ למאמנים'],
+  coachStarter: ['Starter', 'מתחיל'],
+  coachAdvanced: ['Advanced', 'מתקדם'],
+  coachProfessional: ['Professional', 'מקצועי'],
+  coachPremium: ['Premium', 'פרימיום'],
+  coachPackageCapacity: ['Up to {count} clients', 'עד {count} לקוחות'],
+  coachCustomPackage: ['Need more? Contact us', 'צריכים יותר מזה? צרו איתנו קשר'],
   comingSoon: ['Coming soon', 'בקרוב'],
   planFree1: ['Workout logging, set by set', 'תיעוד אימונים, סט אחרי סט'],
   planFree2: ['Nutrition diary and meal plans', 'יומן תזונה ותפריטים'],
@@ -979,7 +1163,7 @@ export const messages = {
   ],
   independent: ['For myself', 'בשבילי'],
   coach: ['I’m a coach', 'אני מאמן/ת'],
-  role: ['How will you use Nutra+?', 'איך תשתמשו ב־Nutra+\u200E?'],
+  role: ['How will you use Fitura+?', 'איך תשתמשו ב־Fitura+\u200E?'],
   backHome: ['Back to home', 'חזרה לבית'],
   landingBadge: ['YOUR WELLBEING, CONNECTED', 'הבריאות שלך, מחוברת'],
   featureWorkouts: ['Movement with intention', 'תנועה עם כוונה'],
@@ -1006,6 +1190,129 @@ export const messages = {
   forbidden: ['You do not have access to this record.', 'אין לך הרשאה לרשומה זו.'],
   credentials: ['Email or password is incorrect.', 'הדוא״ל או הסיסמה שגויים.'],
   emailTaken: ['This email is already registered.', 'כתובת הדוא״ל כבר רשומה.'],
+  termsOfUse: ['Terms of Use', 'תנאי השימוש'],
+  termsConsentBefore: [
+    'I confirm I am 18 or older and agree to the ',
+    'אני מאשר/ת שמלאו לי 18 ומסכים/ה ל',
+  ],
+  termsConsentMiddle: [' and the ', ' ול'],
+  termsConsentAfter: ['.', '.'],
+  privacyPolicy: ['Privacy Policy', 'מדיניות הפרטיות'],
+  privacyCollectTitle: ['1. What we collect', '1. איזה מידע אנו אוספים'],
+  privacyCollectBody: [
+    'Account details (name, email, a password stored only as a secure hash, and a phone number for coaches); profile details you choose to add, such as height, birth year, goals, experience, equipment, dietary preferences and physical limitations; and what you log: workouts, sets, meals, water, body measurements, progress photos, messages and appointments. We also keep basic technical records, such as sign-in sessions, security logs and app activity, to run and protect the service.',
+    'פרטי חשבון (שם, דוא״ל, סיסמה שנשמרת רק כגיבוב מאובטח, ומספר טלפון למאמנים); פרטי פרופיל שתבחרו להוסיף, כמו גובה, שנת לידה, מטרות, ניסיון, ציוד, העדפות תזונה ומגבלות גופניות; ומה שאתם מתעדים: אימונים, סטים, ארוחות, מים, מדדי גוף, תמונות התקדמות, הודעות ופגישות. אנו שומרים גם רשומות טכניות בסיסיות, כמו חיבורים, יומני אבטחה ופעילות באפליקציה, כדי להפעיל את השירות ולהגן עליו.',
+  ],
+  privacyHealthTitle: ['2. Health and activity data', '2. מידע בריאותי ומידע על פעילות'],
+  privacyHealthBody: [
+    'If you allow it on your phone, the app reads steps and workouts from Apple Health or Health Connect. This data is read only when you sync, is used only to show your activity in Fitura+, and is never used for advertising or sold. You can revoke access at any time in your phone settings.',
+    'אם תאשרו זאת בטלפון, האפליקציה קוראת צעדים ואימונים מ-Apple Health או מ-Health Connect. המידע נקרא רק בעת סנכרון, משמש רק להצגת הפעילות שלכם ב-Fitura+, ולעולם אינו משמש לפרסום ואינו נמכר. ניתן לבטל את ההרשאה בכל עת בהגדרות הטלפון.',
+  ],
+  privacyUseTitle: ['3. How we use it', '3. כיצד אנו משתמשים במידע'],
+  privacyUseBody: [
+    'To provide the app: build and track your workouts and meal plans, calculate targets, show progress, send the reminders you turn on, process payments, answer support requests and keep accounts secure. We do not sell your personal data.',
+    'כדי לספק את האפליקציה: לבנות ולעקוב אחרי אימונים ותפריטים, לחשב יעדים, להציג התקדמות, לשלוח את התזכורות שהפעלתם, לעבד תשלומים, לטפל בפניות תמיכה ולשמור על אבטחת החשבונות. איננו מוכרים את המידע האישי שלכם.',
+  ],
+  privacyCoachesTitle: ['4. Sharing with your coach', '4. שיתוף עם המאמן'],
+  privacyCoachesBody: [
+    'If you connect with a coach, that coach can see the profile, workouts, meals, progress and messages related to your coaching. Coaches are responsible for how they use the data they see.',
+    'אם תתחברו למאמן, הוא יוכל לראות את הפרופיל, האימונים, הארוחות, ההתקדמות וההודעות הקשורים לאימון שלכם. המאמנים אחראים לאופן שבו הם משתמשים במידע שהם רואים.',
+  ],
+  privacyProvidersTitle: ['5. Service providers', '5. ספקי שירות'],
+  privacyProvidersBody: [
+    'We use trusted providers only to run the service: hosting and database; Stripe for payments (we never see your full card number); an email provider for account and password-reset emails; Apple and Google push notification services; and an AI provider, only when you turn on AI features, which receives your request and the workout, meal or photo data needed to answer it.',
+    'אנו נעזרים בספקים אמינים רק לצורך הפעלת השירות: אחסון ומסד נתונים; Stripe לתשלומים (איננו רואים את מספר הכרטיס המלא); ספק דוא״ל לשליחת הודעות חשבון ואיפוס סיסמה; שירותי ההתראות של Apple ו-Google; וספק AI, רק כשאתם מפעילים את תכונות ה-AI, שמקבל את הבקשה ואת נתוני האימון, הארוחה או התמונה הנדרשים כדי לענות עליה.',
+  ],
+  privacyAdsTitle: ['6. Advertising', '6. פרסום'],
+  privacyAdsBody: [
+    'Free plans may show ads from Google (AdSense on the web, AdMob in the app). Google may use cookies or device identifiers to show and measure ads, according to its own policies and your consent choices. Your health, workout and meal data are never shared with advertisers. Paid plans have no ads.',
+    'בתוכניות החינמיות עשויות להופיע פרסומות של Google (AdSense באתר, AdMob באפליקציה). Google עשויה להשתמש בעוגיות או במזהי מכשיר כדי להציג ולמדוד פרסומות, בהתאם למדיניות שלה ולבחירות ההסכמה שלכם. נתוני הבריאות, האימונים והארוחות שלכם לעולם אינם משותפים עם מפרסמים. בתוכניות בתשלום אין פרסומות.',
+  ],
+  privacyRetentionTitle: ['7. How long we keep it', '7. כמה זמן אנו שומרים את המידע'],
+  privacyRetentionBody: [
+    'We keep your data while your account is active. When you delete your account from settings, your profile and logged data are deleted. We may keep limited records, such as payment and security logs, for as long as the law requires.',
+    'אנו שומרים את המידע כל עוד החשבון פעיל. כשתמחקו את החשבון מההגדרות, הפרופיל והמידע שתיעדתם יימחקו. ייתכן שנשמור רשומות מוגבלות, כמו רשומות תשלום ויומני אבטחה, ככל שהחוק מחייב.',
+  ],
+  privacyRightsTitle: ['8. Your choices and rights', '8. הבחירות והזכויות שלכם'],
+  privacyRightsBody: [
+    'You can view and edit your data in the app, turn off reminders and AI features, reset your data, or delete your account at any time. Depending on where you live, you may also have the right to request a copy of your data, correct it, restrict or object to its use, or complain to a data protection authority.',
+    'ניתן לצפות במידע ולערוך אותו באפליקציה, לכבות תזכורות ותכונות AI, לאפס את המידע או למחוק את החשבון בכל עת. בהתאם למקום מגוריכם, ייתכן שעומדת לכם גם הזכות לבקש עותק של המידע, לתקן אותו, להגביל את השימוש בו או להתנגד לו, או להגיש תלונה לרשות להגנת הפרטיות.',
+  ],
+  privacySecurityTitle: ['9. Security', '9. אבטחה'],
+  privacySecurityBody: [
+    'Data is sent over encrypted connections, passwords are hashed, and access to your data is limited to you, the coaches you connect with, and staff who need it to run the service. No system is perfectly secure, so please use a strong, unique password.',
+    'המידע מועבר בחיבורים מוצפנים, הסיסמאות נשמרות כגיבוב, והגישה למידע מוגבלת לכם, למאמנים שהתחברתם אליהם ולצוות שזקוק לה לצורך הפעלת השירות. אף מערכת אינה מאובטחת לחלוטין, ולכן מומלץ לבחור סיסמה חזקה וייחודית.',
+  ],
+  privacyAgeTitle: ['10. Age', '10. גיל'],
+  privacyAgeBody: [
+    'Fitura+ is only for people aged 18 and over. We do not knowingly collect data from anyone under 18, and we delete such accounts when we learn of them.',
+    'Fitura+ מיועדת רק לבני 18 ומעלה. איננו אוספים ביודעין מידע ממי שטרם מלאו לו 18, ונמחק חשבונות כאלה כשנדע עליהם.',
+  ],
+  privacyChangesTitle: ['11. Changes', '11. שינויים'],
+  privacyChangesBody: [
+    'We may update this policy. If changes are material we will let you know in the app before they take effect.',
+    'אנו עשויים לעדכן מדיניות זו. על שינויים מהותיים נודיע באפליקציה לפני שייכנסו לתוקף.',
+  ],
+  privacyContactTitle: ['12. Contact', '12. יצירת קשר'],
+  privacyContactBody: [
+    'For privacy questions or data requests, contact us:',
+    'לשאלות פרטיות או לבקשות בנוגע למידע, צרו איתנו קשר:',
+  ],
+  termsRequired: [
+    'Please confirm you are 18+ and accept the Terms of Use and Privacy Policy.',
+    'יש לאשר שמלאו לכם 18 ולקבל את תנאי השימוש ומדיניות הפרטיות.',
+  ],
+  termsUpdated: ['Last updated:', 'עודכן לאחרונה:'],
+  termsAgeTitle: ['1. Age requirement', '1. גיל מינימלי'],
+  termsAgeBody: [
+    'You must be at least 18 years old to create an account or use Fitura+. By signing up you confirm that you are 18 or older. Accounts found to belong to anyone under 18 will be closed.',
+    'השימוש ב-Fitura+ ופתיחת חשבון מותרים רק למי שמלאו לו 18 שנים. בהרשמה אתם מאשרים שמלאו לכם 18. חשבון שיתברר כי שייך למי שטרם מלאו לו 18 ייסגר.',
+  ],
+  termsAccountTitle: ['2. Your account', '2. החשבון שלכם'],
+  termsAccountBody: [
+    'Provide accurate information, keep your password secure and do not share your account. You are responsible for activity that happens under your account.',
+    'יש למסור פרטים נכונים, לשמור על סודיות הסיסמה ולא לשתף את החשבון. אתם אחראים לכל פעולה שמתבצעת בחשבון שלכם.',
+  ],
+  termsHealthTitle: ['3. Not medical advice', '3. אין לראות בכך ייעוץ רפואי'],
+  termsHealthBody: [
+    'Workouts, meal plans, nutrition data and AI suggestions are general information only and are not medical, dietary or professional advice. Consult a qualified professional before starting any exercise or nutrition program, and stop if you feel pain or discomfort. You exercise at your own risk.',
+    'האימונים, תפריטים, נתוני התזונה והצעות ה-AI הם מידע כללי בלבד ואינם ייעוץ רפואי, תזונתי או מקצועי. התייעצו עם איש מקצוע מוסמך לפני תחילת תוכנית אימון או תזונה, והפסיקו אם אתם חשים כאב או אי נוחות. הפעילות הגופנית על אחריותכם.',
+  ],
+  termsCoachesTitle: ['4. Coaches', '4. מאמנים'],
+  termsCoachesBody: [
+    'Coaches are independent and are solely responsible for the plans, guidance and services they provide to their clients, including any required qualifications, insurance and client consent. Fitura+ provides the tools only.',
+    'המאמנים פועלים באופן עצמאי ונושאים באחריות הבלעדית לתוכניות, להכוונה ולשירותים שהם מספקים למתאמנים, כולל הכשרה, ביטוח והסכמת המתאמנים כנדרש. Fitura+ מספקת את הכלים בלבד.',
+  ],
+  termsContentTitle: ['5. Acceptable use', '5. שימוש הולם'],
+  termsContentBody: [
+    'Do not misuse the service, upload unlawful or harmful content, access other people’s data without permission, or attempt to disrupt or reverse-engineer the platform.',
+    'אין לעשות שימוש לרעה בשירות, להעלות תוכן בלתי חוקי או פוגעני, לגשת למידע של אחרים ללא הרשאה, או לנסות לשבש את הפלטפורמה או לבצע בה הנדסה לאחור.',
+  ],
+  termsBillingTitle: ['6. Subscriptions', '6. מנויים'],
+  termsBillingBody: [
+    'Paid plans are billed through our payment provider. Price and renewal terms are shown before you confirm a purchase, and you can cancel renewal at any time from your billing settings.',
+    'תוכניות בתשלום מחויבות דרך ספק התשלומים שלנו. המחיר ותנאי החידוש מוצגים לפני אישור הרכישה, וניתן לבטל את החידוש בכל עת בהגדרות החיוב.',
+  ],
+  termsPrivacyTitle: ['7. Your data', '7. המידע שלכם'],
+  termsPrivacyBody: [
+    'We process the information you enter, such as body measurements, workouts and meals, to provide the service, as described in our Privacy Policy. If you connect to a coach, that coach can see the data you share with them. You can delete your account and its data from your settings.',
+    'אנו מעבדים את המידע שאתם מזינים, כמו מדדי גוף, אימונים וארוחות, כדי לספק את השירות, כמתואר במדיניות הפרטיות. אם תתחברו למאמן, הוא יוכל לראות את המידע שתשתפו איתו. ניתן למחוק את החשבון ואת המידע שבו מההגדרות.',
+  ],
+  termsTerminationTitle: ['8. Termination', '8. סיום שימוש'],
+  termsTerminationBody: [
+    'You may stop using Fitura+ at any time. We may suspend or close accounts that breach these terms.',
+    'ניתן להפסיק להשתמש ב-Fitura+ בכל עת. אנו רשאים להשעות או לסגור חשבונות שמפרים את התנאים האלה.',
+  ],
+  termsLiabilityTitle: ['9. Limitation of liability', '9. הגבלת אחריות'],
+  termsLiabilityBody: [
+    'The service is provided “as is”. To the extent permitted by law, Fitura+ is not liable for injury, loss or damages arising from your use of the service or from guidance provided by coaches.',
+    'השירות ניתן כמות שהוא (AS IS). ככל שהדין מתיר, Fitura+ אינה אחראית לפציעה, אובדן או נזק הנובעים מהשימוש בשירות או מהכוונה שניתנה על ידי מאמנים.',
+  ],
+  termsChangesTitle: ['10. Changes', '10. שינויים'],
+  termsChangesBody: [
+    'We may update these terms. If changes are material we will let you know in the app. Continuing to use the service after an update means you accept the new terms.',
+    'אנו עשויים לעדכן את התנאים. על שינויים מהותיים נודיע באפליקציה. המשך השימוש לאחר עדכון מהווה הסכמה לתנאים החדשים.',
+  ],
   rateLimited: ['Please wait a minute before trying again.', 'המתינו דקה לפני ניסיון נוסף.'],
   unavailable: ['This service is not available.', 'השירות אינו זמין.'],
   emailUnavailable: [
@@ -1095,7 +1402,18 @@ export const messages = {
   liters: ['L', 'ליטר'],
 } satisfies Record<string, readonly [string, string]>;
 export type MessageKey = keyof typeof messages;
+/** Administrator wording overrides delivered by /api/config (applied over the defaults). */
+let overrides: Record<string, { en?: string; he?: string }> = {};
+export function setMessageOverrides(
+  next: Record<string, { en?: string; he?: string }> | null | undefined,
+) {
+  overrides = next && typeof next === 'object' ? next : {};
+}
 export function translate(lang: Language, key: string): string {
-  const pair = messages[key as MessageKey];
+  const custom = Object.hasOwn(overrides, key)
+    ? overrides[key]?.[lang === 'he' ? 'he' : 'en']
+    : undefined;
+  if (custom) return custom;
+  const pair = Object.hasOwn(messages, key) ? messages[key as MessageKey] : undefined;
   return pair ? pair[lang === 'he' ? 1 : 0] : key;
 }

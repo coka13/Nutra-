@@ -27,6 +27,7 @@ for (const language of ['en', 'he'] as const) {
         await page.locator('[name=email]').fill(emails[kind]);
         await page.locator('[name=password]').fill(password);
         if (kind === 'coach') await page.locator('[name=phone]').fill('+972501234567');
+        await page.locator('[name=acceptTerms]').check();
         await page.locator('form button').click();
         await expect(page).toHaveURL(/\/app(?:\/onboarding)?$/);
         const { user } = await auth();
@@ -39,7 +40,9 @@ for (const language of ['en', 'he'] as const) {
           ).toBeVisible();
           expect((await page.request.get('/api/coach/active-workouts')).status()).toBe(403);
           await expect(
-            page.locator('.sidebar .nav-item').filter({ hasText: he ? 'מתאמנים' : 'Clients' }),
+            page
+              .locator('.sidebar')
+              .getByRole('button', { name: he ? 'מתאמנים' : 'Clients', exact: true }),
           ).toHaveCount(0);
           expect(
             (
@@ -57,7 +60,9 @@ for (const language of ['en', 'he'] as const) {
           });
           await expect(dashboard).toBeVisible();
           await expect(
-            page.locator('.sidebar .nav-item').filter({ hasText: he ? 'מתאמנים' : 'Clients' }),
+            page
+              .locator('.sidebar')
+              .getByRole('button', { name: he ? 'מתאמנים' : 'Clients', exact: true }),
           ).toHaveCount(1);
           await page.reload();
           await expect(dashboard).toBeVisible();
@@ -72,7 +77,13 @@ for (const language of ['en', 'he'] as const) {
           expect(
             (
               await page.request.post('/api/auth/coach/register', {
-                data: { email: emails.user, password, name: 'Duplicate', phone: '+972501234567' },
+                data: {
+                  email: emails.user,
+                  acceptTerms: true,
+                  password,
+                  name: 'Duplicate',
+                  phone: '+972501234567',
+                },
               })
             ).status(),
           ).toBe(409);

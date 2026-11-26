@@ -15,6 +15,21 @@ model User {
   language String @default("en")
   theme String @default("light")
   createdAt DateTime @default(now())
+  /// ACTIVE | SUSPENDED. Suspended accounts cannot sign in and their sessions are revoked.
+  status String @default("ACTIVE")
+  suspendedAt DateTime?
+  /// Throttled (about every 5 minutes) on authenticated requests; feeds DAU/MAU.
+  lastActiveAt DateTime?
+  /// Coach lifecycle: APPROVED | PENDING | REJECTED | REVOKED. Ignored for other roles.
+  coachStatus String @default("APPROVED")
+  coachVerifiedAt DateTime?
+  coachCredentials String @default("")
+  /// Per-coach override of the plan's client allowance. NULL = plan default.
+  coachClientLimit Int?
+  activityDays UserActivityDay[]
+  grants EntitlementGrant[]
+  tickets SupportTicket[] @relation("TicketAuthor")
+  pushTokens PushToken[]
   profile Profile?
   sessions Session[]
   programs Program[]
@@ -82,6 +97,7 @@ model PasswordReset {
   expiresAt DateTime
 }
 model CoachRelationship {
+  packages CoachPackage[]
   id String @id @default(cuid())
   coachId String
   clientId String
@@ -93,6 +109,37 @@ model CoachRelationship {
   createdAt DateTime @default(now())
   @@unique([coachId,clientId])
   @@index([clientId,status])
+}
+model CoachPackage {
+  id String @id @default(cuid())
+  relationshipId String
+  relationship CoachRelationship @relation(fields:[relationshipId],references:[id],onDelete:Cascade)
+  size Int
+  price Int
+  date String
+  lowBalanceNotified Boolean @default(false)
+  sessions CoachTraining[]
+  receipts CoachReceipt[]
+  @@index([relationshipId,date])
+}
+model CoachTraining {
+  id String @id @default(cuid())
+  packageId String
+  package CoachPackage @relation(fields:[packageId],references:[id],onDelete:Cascade)
+  date String
+  status String @default("COMPLETED")
+  notes String @default("")
+  @@index([packageId,date])
+}
+model CoachReceipt {
+  id String @id @default(cuid())
+  packageId String
+  package CoachPackage @relation(fields:[packageId],references:[id],onDelete:Cascade)
+  amount Int
+  date String
+  method String
+  notes String @default("")
+  @@index([packageId,date])
 }
 model Exercise {
   id String @id
@@ -398,6 +445,7 @@ model Subscription {
   customerId String? @unique
   currentPeriodEnd DateTime?
   cancelAtPeriodEnd Boolean @default(false)
+  canceledAt DateTime?
 }
 model Payment {
   id String @id
@@ -461,4 +509,318 @@ model RateLimit {
 model FeatureFlag {
   key String @id
   enabled Boolean @default(false)
+}
+/// One row per user per day with authenticated activity (DAU/MAU/retention source).
+model UserActivityDay {
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  date String
+  @@id([userId,date])
+  @@index([date])
+}
+/// Complimentary or promotional access that does not pass through a payment provider.
+model EntitlementGrant {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  /// PREMIUM | AD_FREE | COACH | AI
+  kind String
+  /// ADMIN | PROMO
+  source String @default("ADMIN")
+  reason String @default("")
+  startsAt DateTime @default(now())
+  endsAt DateTime?
+  revokedAt DateTime?
+  createdBy String?
+  promotionId String?
+  createdAt DateTime @default(now())
+  @@index([userId,endsAt])
+  @@unique([userId,promotionId])
+}
+model Promotion {
+  id String @id @default(cuid())
+  code String @unique
+  /// PREMIUM | AD_FREE
+  kind String
+  days Int
+  maxRedemptions Int?
+  redemptions Int @default(0)
+  /// ALL | INDEPENDENT | COACH
+  audience String @default("ALL")
+  startsAt DateTime @default(now())
+  endsAt DateTime?
+  active Boolean @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+}
+/// Administrative identities are separate from app users: no app role can reach the console.
+model AdminAccount {
+  id String @id @default(cuid())
+  email String @unique
+  name String
+  /// SUPER_ADMIN | SUPPORT_ADMIN | CONTENT_MANAGER | FINANCE_ADMIN | TECHNICAL_ADMIN
+  role String
+  passwordHash String?
+  /// AES-256-GCM encrypted base32 TOTP secret.
+  totpSecret String?
+  totpEnabledAt DateTime?
+  lastTotpStep Int?
+  /// Comma-separated SHA-256 digests of unused recovery codes.
+  recoveryCodes String @default("")
+  /// INVITED | ACTIVE | DISABLED
+  status String @default("INVITED")
+  failedAttempts Int @default(0)
+  lockedUntil DateTime?
+  lastLoginAt DateTime?
+  inviteTokenHash String? @unique
+  inviteExpiresAt DateTime?
+  createdBy String?
+  createdAt DateTime @default(now())
+  sessions AdminSession[]
+}
+model AdminSession {
+  /// SHA-256 of the cookie token.
+  id String @id
+  adminId String
+  admin AdminAccount @relation(fields:[adminId],references:[id],onDelete:Cascade)
+  createdAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt DateTime
+  /// Last successful step-up (second factor re-entry) for sensitive operations.
+  reauthAt DateTime?
+  userAgent String @default("")
+  @@index([adminId])
+}
+/// Password verified, second factor pending.
+model AdminChallenge {
+  id String @id
+  adminId String
+  expiresAt DateTime
+  attempts Int @default(0)
+}
+/// Append-only: database triggers reject UPDATE and DELETE.
+model AdminAuditLog {
+  id String @id @default(cuid())
+  adminId String
+  adminEmail String
+  action String
+  resourceType String
+  resourceId String?
+  details String @default("{}")
+  /// SUCCESS | FAILURE | DENIED
+  result String
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@index([adminId,createdAt])
+  @@index([resourceType,resourceId])
+}
+/// Remote configuration history. The highest version is live; rollback appends a copy.
+model ConfigVersion {
+  version Int @id @default(autoincrement())
+  data String
+  note String @default("")
+  createdBy String
+  createdAt DateTime @default(now())
+}
+model AIProvider {
+  /// openai | anthropic | gemini | groq | openrouter
+  id String @id
+  name String
+  baseUrl String
+  /// AES-256-GCM encrypted. Never returned to clients.
+  encryptedKey String?
+  keyHint String @default("")
+  enabled Boolean @default(false)
+  textModel String @default("")
+  visionModel String @default("")
+  /// USD per million tokens, for cost estimates.
+  inputCostPerM Float @default(0)
+  outputCostPerM Float @default(0)
+  lastCheckedAt DateTime?
+  lastStatus String @default("unknown")
+  updatedAt DateTime @default(now())
+}
+model AIUsage {
+  id String @id @default(cuid())
+  userId String?
+  feature String
+  provider String
+  model String
+  promptTokens Int @default(0)
+  completionTokens Int @default(0)
+  /// Estimated cost in millionths of a USD.
+  costMicros Int @default(0)
+  success Boolean
+  latencyMs Int
+  error String?
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@index([userId,createdAt])
+}
+model AdStatDay {
+  date String
+  placement String
+  impressions Int @default(0)
+  clicks Int @default(0)
+  @@id([date,placement])
+}
+/// Revenue reported by the ad network (AdMob/AdSense), recorded by finance.
+model AdRevenue {
+  id String @id @default(cuid())
+  month String
+  network String
+  amountCents Int
+  currency String @default("usd")
+  note String @default("")
+  createdBy String
+  createdAt DateTime @default(now())
+  @@unique([month,network])
+}
+model ContentItem {
+  id String @id @default(cuid())
+  /// ARTICLE | FAQ
+  type String
+  slug String @unique
+  category String @default("")
+  titleEn String
+  titleHe String
+  bodyEn String
+  bodyHe String
+  /// DRAFT | PUBLISHED | ARCHIVED
+  status String @default("DRAFT")
+  position Int @default(0)
+  version Int @default(1)
+  updatedBy String
+  updatedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  @@index([type,status])
+}
+/// Snapshot of every content edit, for history and restore.
+model ContentRevision {
+  id String @id @default(cuid())
+  /// content | exercise | food | translation
+  entityType String
+  entityId String
+  version Int
+  data String
+  createdBy String
+  createdAt DateTime @default(now())
+  @@index([entityType,entityId,version])
+}
+/// Edits layered over the bundled exercise catalog without rewriting the dataset.
+model ExerciseOverride {
+  exerciseId String @id
+  nameEn String?
+  nameHe String?
+  instructionsEn String?
+  instructionsHe String?
+  muscle String?
+  difficulty String?
+  hidden Boolean @default(false)
+  version Int @default(1)
+  updatedBy String
+  updatedAt DateTime @default(now())
+}
+model TranslationOverride {
+  key String @id
+  en String?
+  he String?
+  updatedBy String
+  updatedAt DateTime @default(now())
+}
+model Announcement {
+  id String @id @default(cuid())
+  titleEn String
+  titleHe String
+  bodyEn String
+  bodyHe String
+  /// ALL | COACHES | INDEPENDENT | COACH_CLIENTS | PREMIUM | USERS
+  audience String
+  userIds String @default("")
+  inApp Boolean @default(true)
+  push Boolean @default(false)
+  /// DRAFT | SCHEDULED | SENDING | SENT | CANCELLED | FAILED
+  status String @default("DRAFT")
+  scheduledAt DateTime?
+  sentAt DateTime?
+  recipients Int @default(0)
+  pushSent Int @default(0)
+  pushFailed Int @default(0)
+  createdBy String
+  createdAt DateTime @default(now())
+  @@index([status,scheduledAt])
+}
+model PushToken {
+  token String @id
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  platform String
+  createdAt DateTime @default(now())
+  @@index([userId])
+}
+model SupportTicket {
+  id String @id @default(cuid())
+  userId String?
+  user User? @relation("TicketAuthor",fields:[userId],references:[id],onDelete:SetNull)
+  email String
+  /// SUPPORT | BUG | FEATURE | COMPLAINT | REPORT
+  category String
+  subject String
+  /// OPEN | IN_PROGRESS | WAITING | RESOLVED | CLOSED
+  status String @default("OPEN")
+  /// LOW | NORMAL | HIGH | URGENT
+  priority String @default("NORMAL")
+  assigneeId String?
+  /// The account a REPORT or COMPLAINT is about.
+  reportedUserId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  messages TicketMessage[]
+  @@index([status,priority])
+  @@index([userId])
+  @@index([reportedUserId])
+}
+model TicketMessage {
+  id String @id @default(cuid())
+  ticketId String
+  ticket SupportTicket @relation(fields:[ticketId],references:[id],onDelete:Cascade)
+  /// USER | ADMIN
+  authorType String
+  adminId String?
+  body String
+  /// Internal notes are never shown to the user.
+  internal Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@index([ticketId,createdAt])
+}
+/// Hourly request counters per route group (no payloads, no identifiers).
+model ApiMetric {
+  hour String
+  route String
+  count Int @default(0)
+  errors Int @default(0)
+  clientErrors Int @default(0)
+  totalMs Int @default(0)
+  maxMs Int @default(0)
+  @@id([hour,route])
+}
+model RequestError {
+  id String @id @default(cuid())
+  route String
+  method String
+  status Int
+  code String
+  durationMs Int
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+model JobRun {
+  id String @id @default(cuid())
+  job String
+  /// RUNNING | SUCCESS | FAILED
+  status String
+  detail String @default("")
+  startedAt DateTime @default(now())
+  finishedAt DateTime?
+  @@index([job,startedAt])
 }

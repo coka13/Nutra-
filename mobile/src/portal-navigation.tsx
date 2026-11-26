@@ -1,31 +1,44 @@
 import { useState, type ComponentProps } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePhone } from './settings';
 
-type Item = [string, string, string, ComponentProps<typeof Ionicons>['name']];
+type Item = [string, string, ComponentProps<typeof Ionicons>['name']];
 const personal: Item[] = [
-  ['dashboard', 'Home', 'בית', 'home-outline'],
-  ['workouts', 'Workouts', 'אימונים', 'barbell-outline'],
-  ['nutrition', 'Nutrition', 'תזונה', 'nutrition-outline'],
-  ['activity', 'Activity', 'פעילות', 'footsteps-outline'],
-  ['progress', 'Progress', 'התקדמות', 'stats-chart-outline'],
-  ['settings', 'Profile', 'פרופיל', 'person-outline'],
+  ['dashboard', 'mobileHome', 'home-outline'],
+  ['workouts', 'trainingSessions', 'barbell-outline'],
+  ['nutrition', 'nutrition', 'nutrition-outline'],
+  ['activity', 'stepsAndActivity', 'footsteps-outline'],
+  ['progress', 'progress', 'stats-chart-outline'],
+  ['settings', 'profile', 'person-outline'],
 ];
 const coaching: Item[] = [
-  ['dashboard', 'Dashboard', 'לוח בקרה', 'grid-outline'],
-  ['clients', 'Clients', 'מתאמנים', 'people-outline'],
-  ['workouts', 'Workout Plans', 'תוכניות אימון', 'barbell-outline'],
-  ['mealPlans', 'Nutrition Plans', 'תוכניות תזונה', 'nutrition-outline'],
-  ['more', 'More', 'עוד', 'ellipsis-horizontal'],
+  ['dashboard', 'dashboard', 'grid-outline'],
+  ['clients', 'clients', 'people-outline'],
+  ['workouts', 'workoutPlans', 'barbell-outline'],
+  ['mealPlans', 'mealPlans', 'nutrition-outline'],
+  ['more', 'mobileMore', 'ellipsis-horizontal'],
 ];
 const more: Item[] = [
-  ['activity', 'Steps & aerobics', 'צעדים ואירובי', 'footsteps-outline'],
-  ['library', 'All exercises', 'כל התרגילים', 'barbell-outline'],
-  ['messages', 'Messages', 'הודעות', 'chatbubble-outline'],
-  ['calendar', 'Calendar', 'יומן', 'calendar-outline'],
-  ['settings', 'Settings', 'הגדרות', 'settings-outline'],
+  ['packages', 'packages', 'albums-outline'],
+  ['trainingLog', 'trainingLog', 'checkmark-circle-outline'],
+  ['clientPayments', 'clientPayments', 'wallet-outline'],
+  ['businessReports', 'businessReports', 'stats-chart-outline'],
+  ['library', 'allExercises', 'barbell-outline'],
+  ['messages', 'messages', 'chatbubble-outline'],
+  ['calendar', 'calendar', 'calendar-outline'],
+  ['branding', 'branding', 'color-palette-outline'],
+  ['billing', 'billing', 'card-outline'],
+  ['settings', 'settings', 'settings-outline'],
 ];
 
 export function PortalNavigation({
@@ -39,7 +52,8 @@ export function PortalNavigation({
   open: (page: string) => void;
   ready: boolean;
 }) {
-  const { lang, colors } = usePhone();
+  const { lang, colors, t } = usePhone();
+  const { height } = useWindowDimensions();
   const [menu, setMenu] = useState(false);
   const items = coach ? coaching : personal;
   const selectedPage = ['active', 'builder', 'library'].includes(page)
@@ -60,7 +74,7 @@ export function PortalNavigation({
         }}
       >
         <View style={[styles.tabs, { direction: lang === 'he' ? 'rtl' : 'ltr' }]}>
-          {items.map(([key, en, he, icon]) => {
+          {items.map(([key, label, icon]) => {
             const selected = key === selectedPage;
             return (
               <Pressable
@@ -73,7 +87,7 @@ export function PortalNavigation({
               >
                 <Ionicons name={icon} size={22} color={selected ? colors.accent : colors.muted} />
                 <Text style={[styles.label, { color: selected ? colors.accent : colors.muted }]}>
-                  {lang === 'he' ? he : en}
+                  {t(label)}
                 </Text>
               </Pressable>
             );
@@ -89,30 +103,37 @@ export function PortalNavigation({
         <View style={styles.overlay}>
           <Pressable
             style={StyleSheet.absoluteFill}
-            accessibilityLabel={lang === 'he' ? 'סגירה' : 'Close'}
+            accessibilityLabel={t('close')}
             onPress={() => setMenu(false)}
           />
           <SafeAreaView
             edges={['bottom']}
             style={[
               styles.sheet,
-              { backgroundColor: colors.surface, direction: lang === 'he' ? 'rtl' : 'ltr' },
+              {
+                backgroundColor: colors.surface,
+                direction: lang === 'he' ? 'rtl' : 'ltr',
+                maxHeight: height * 0.85,
+              },
             ]}
           >
-            {more.map(([key, en, he, icon]) => (
-              <Pressable
-                key={key}
-                accessibilityRole="button"
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenu(false);
-                  open(key);
-                }}
-              >
-                <Ionicons name={icon} size={21} color={colors.accent} />
-                <Text style={{ color: colors.ink, fontSize: 16 }}>{lang === 'he' ? he : en}</Text>
-              </Pressable>
-            ))}
+            <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+              {more.map(([key, label, icon]) => (
+                <Pressable
+                  key={key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: key === page }}
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenu(false);
+                    open(key);
+                  }}
+                >
+                  <Ionicons name={icon} size={21} color={colors.accent} />
+                  <Text style={{ color: colors.ink, fontSize: 16 }}>{t(label)}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </SafeAreaView>
         </View>
       </Modal>

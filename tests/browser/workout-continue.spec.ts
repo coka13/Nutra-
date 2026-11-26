@@ -11,6 +11,7 @@ for (const language of ['en', 'he'] as const) {
       data: {
         name: 'Continue test',
         email: `continue-${language}-${Date.now()}@example.test`,
+        acceptTerms: true,
         password,
         role: 'INDEPENDENT',
         language,
