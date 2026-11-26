@@ -10,6 +10,8 @@ docker compose up --build -d
 
 The application listens on port 3000. Put a TLS reverse proxy in front, set `APP_URL` to its trusted public HTTPS origin, set `DEMO_ENABLED=false`, and keep the database volume private. Production session cookies use Secure. Start with an empty production database; never copy the development demo database. Docker was not available in the authoring environment, so this configuration must be executed and verified before rollout.
 
+The Hostinger standalone server initializes its persistent SQLite file, applies Prisma migrations and seeds the public libraries during Node.js startup, before accepting requests. The data directory defaults to `~/fitura-data` and can be changed with `HOSTINGER_DATA_DIR`.
+
 Only one application instance should write this SQLite volume. Do not use ephemeral serverless disk, shared network filesystem SQLite or multiple replicas. For horizontal scaling, migrate the Prisma datasource and all migrations to PostgreSQL, add relevant transactional constraints and test concurrent scheduling/entitlements. Do not simply run SQLite migrations against PostgreSQL.
 
 ## Credentials

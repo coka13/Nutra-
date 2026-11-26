@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import { networkInterfaces } from 'node:os';
 const config: NextConfig = {
+  output: 'standalone',
   allowedDevOrigins: Object.values(networkInterfaces()).flatMap((entries) =>
     (entries ?? [])
       .filter((entry) => !entry.internal && entry.family === 'IPv4')
@@ -9,6 +10,12 @@ const config: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ['@prisma/client', 'ffmpeg-static'],
   outputFileTracingIncludes: {
+    '/*': [
+      './prisma/**/*',
+      './node_modules/prisma/**/*',
+      './node_modules/@prisma/engines/**/*',
+      './node_modules/tsx/**/*',
+    ],
     '/api/exercises/*/animation': ['node_modules/ffmpeg-static/ffmpeg*'],
   },
   async headers() {
