@@ -15,6 +15,7 @@ const config: NextConfig = {
       './node_modules/prisma/**/*',
       './node_modules/@prisma/**/*',
       './node_modules/@esbuild/**/*',
+      './node_modules/esbuild/**/*',
       './node_modules/tsx/**/*',
       './node_modules/c12/**/*',
       './node_modules/chokidar/**/*',
