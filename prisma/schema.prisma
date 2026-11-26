@@ -8,6 +8,7 @@ datasource db {
 model User {
   id String @id @default(cuid())
   email String @unique
+  emailVerified Boolean @default(true)
   phone String?
   passwordHash String
   name String
@@ -54,6 +55,7 @@ model User {
   mealChecks MealPlanCheck[]
   photos ProgressPhoto[]
   resets PasswordReset[]
+  emailVerifications EmailVerification[]
   aiInteractions AIInteraction[]
   branding Branding?
   brandLogo BrandLogo?
@@ -95,6 +97,13 @@ model PasswordReset {
   userId String
   user User @relation(fields:[userId],references:[id],onDelete:Cascade)
   expiresAt DateTime
+}
+model EmailVerification {
+  id String @id
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  expiresAt DateTime
+  @@index([userId])
 }
 model CoachRelationship {
   packages CoachPackage[]

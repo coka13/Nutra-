@@ -31,7 +31,36 @@ export async function deleteAccountData(tx: Prisma.TransactionClient, user: { id
 }
 
 export function passwordEmailConfigured() {
-  return !!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  return !!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && process.env.APP_URL);
+}
+
+async function sendEmail(to: string, subject: string, text: string) {
+  if (!passwordEmailConfigured()) throw new ApiError('emailUnavailable', 503);
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [to], subject, text }),
+  });
+  if (!response.ok) throw new ApiError('emailUnavailable', 503);
+}
+
+/** Creates a 24-hour verification token and emails the link. The token itself is never stored. */
+export async function sendEmailVerification(user: { id: string; email: string }) {
+  if (!passwordEmailConfigured()) throw new ApiError('emailUnavailable', 503);
+  const token = randomBytes(32).toString('hex');
+  await db.emailVerification.deleteMany({ where: { userId: user.id } });
+  await db.emailVerification.create({
+    data: { id: tokenHash(token), userId: user.id, expiresAt: new Date(Date.now() + 86400000) },
+  });
+  const link = `${process.env.APP_URL!.replace(/\/$/, '')}/verify-email?token=${token}`;
+  await sendEmail(
+    user.email,
+    'Verify your Fitura+ email',
+    `Verify your email address within 24 hours: ${link}`,
+  );
 }
 
 /** Creates a 30-minute reset token and emails the link. The token itself is never stored. */
@@ -41,19 +70,6 @@ export async function sendPasswordReset(user: { id: string; email: string }) {
   await db.passwordReset.create({
     data: { id: tokenHash(token), userId: user.id, expiresAt: new Date(Date.now() + 1800000) },
   });
-  const link = `${process.env.APP_URL}/reset?token=${token}`;
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM,
-      to: [user.email],
-      subject: 'Fitura+‎ / איפוס סיסמה',
-      text: `Reset your password / איפוס סיסמה: ${link}`,
-    }),
-  });
-  if (!response.ok) throw new ApiError('emailUnavailable', 503);
+  const link = `${process.env.APP_URL!.replace(/\/$/, '')}/reset?token=${token}`;
+  await sendEmail(user.email, 'Fitura+‎ / איפוס סיסמה', `Reset your password / איפוס סיסמה: ${link}`);
 }

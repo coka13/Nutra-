@@ -4,7 +4,7 @@ Base path: `/api/`. All mutations use POST with `Content-Type: application/json`
 
 ## Authentication
 
-- `POST auth/register`: `{name,email,password,role,language}`. Roles allowed: `INDEPENDENT`, `COACH`. Password minimum 10 characters. Creates profile, free subscription and session.
+- `POST auth/register`: `{name,email,password,role,language}`. Roles allowed: `INDEPENDENT`, `COACH`. Password minimum 10 characters. Production registration creates a profile and free subscription, emails a 24-hour verification link, and does not create a session until verification. `POST auth/verify-email` consumes the single-use token; `POST auth/resend-verification` sends another link without revealing whether an account exists. Production login rejects unverified accounts. Local development without email credentials keeps registration available for local workflows.
 - `POST auth/login`: `{email,password}`.
 - `POST auth/logout`: `{}`. Revokes the current session.
 - `GET auth/me`: current public identity, profile, subscription and branding, or `user:null`.

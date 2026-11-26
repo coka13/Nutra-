@@ -1161,6 +1161,26 @@ export const messages = {
     'If the account exists, a reset link has been sent.',
     'אם החשבון קיים, נשלח אליו קישור איפוס.',
   ],
+  verifyEmailTitle: ['Verify your email', 'אימות כתובת הדוא״ל'],
+  verifyEmail: ['Verify email', 'אימות דוא״ל'],
+  resendVerification: ['Resend verification email', 'שליחת הודעת אימות מחדש'],
+  verificationSent: [
+    'Check your inbox for a verification link. It expires in 24 hours.',
+    'בדקו את תיבת הדוא״ל לקבלת קישור אימות. תוקפו 24 שעות.',
+  ],
+  emailVerified: ['Your email is verified. You can sign in now.', 'כתובת הדוא״ל אומתה. אפשר להתחבר.'],
+  verifyEmailHelp: [
+    'Enter your email to get a new verification link.',
+    'הזינו את כתובת הדוא״ל לקבלת קישור אימות חדש.',
+  ],
+  emailUnverified: [
+    'Verify your email before signing in. You can request a new link below.',
+    'אמתו את כתובת הדוא״ל לפני ההתחברות. אפשר לבקש קישור חדש למטה.',
+  ],
+  invalidVerification: [
+    'This verification link has expired or was already used. Request a new one.',
+    'קישור האימות פג תוקף או שכבר נוצל. בקשו קישור חדש.',
+  ],
   independent: ['For myself', 'בשבילי'],
   coach: ['I’m a coach', 'אני מאמן/ת'],
   role: ['How will you use Fitura+?', 'איך תשתמשו ב־Fitura+\u200E?'],

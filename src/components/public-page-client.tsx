@@ -56,9 +56,13 @@ export function PublicPageClient({
   const [role, setRole] = useState('INDEPENDENT');
   const t = (k: string) => translate(lang, k);
   const title =
-    account && (mode === 'login' || mode === 'register')
+    mode === 'verify-email'
+      ? t('verifyEmailTitle')
+      : account && (mode === 'login' || mode === 'register')
       ? t(account + (mode === 'login' ? 'LoginTitle' : 'RegisterTitle'))
       : t(mode === 'coach-login' ? 'coachLogin' : mode);
+  const verificationToken =
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('token');
   const authUrl = (screen: string) => (account ? `/auth/${account}/${screen}` : `/${screen}`);
   useEffect(() => {
     if (!initialLanguage) {
@@ -179,8 +183,10 @@ export function PublicPageClient({
     setError('');
     try {
       const token = new URLSearchParams(location.search).get('token');
+      const requestMode =
+        mode === 'verify-email' ? (token ? 'verify-email' : 'resend-verification') : mode;
       const r = await fetch(
-        `/api/auth/${account && mode !== 'recover' ? account + '/' : ''}${mode}`,
+        `/api/auth/${account && mode !== 'recover' && mode !== 'verify-email' ? account + '/' : ''}${requestMode}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -194,7 +200,12 @@ export function PublicPageClient({
       );
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
-      if (mode === 'recover' || mode === 'reset') setSuccess(true);
+      if (
+        mode === 'recover' ||
+        mode === 'reset' ||
+        mode === 'verify-email' ||
+        (mode === 'register' && data.verificationRequired)
+      ) setSuccess(true);
       else location.href = mode === 'register' && account !== 'coach' ? '/app/onboarding' : '/app';
     } catch (e) {
       setError(e instanceof Error ? e.message : 'offline');
@@ -352,26 +363,37 @@ export function PublicPageClient({
             {mode === 'reset' && <p>{t('resetLink')}</p>}
             {success ? (
               <div className="success-state">
-                <p>{mode === 'recover' ? t('resetSent') : t('saved')}</p>
+                <p>
+                  {mode === 'recover'
+                    ? t('resetSent')
+                    : mode === 'register' || mode === 'verify-email'
+                      ? mode === 'verify-email' && verificationToken
+                        ? t('emailVerified')
+                        : t('verificationSent')
+                      : t('saved')}
+                </p>
                 <a className="button primary" href={authUrl('login')}>
                   {t('login')}
                 </a>
               </div>
             ) : (
               <form method="post" onSubmit={submit}>
+                {mode === 'verify-email' && !verificationToken && (
+                  <p className="auth-description">{t('verifyEmailHelp')}</p>
+                )}
                 {mode === 'register' && (
                   <label>
                     {t('name')}
                     <input name="name" required maxLength={200} autoComplete="name" />
                   </label>
                 )}
-                {mode !== 'reset' && (
+                {mode !== 'reset' && (mode !== 'verify-email' || !verificationToken) && (
                   <label>
                     {t('email')}
                     <input name="email" type="email" required autoComplete="email" />
                   </label>
                 )}
-                {mode !== 'recover' && (
+                {mode !== 'recover' && mode !== 'verify-email' && (
                   <label>
                     {t('password')}
                     <input
@@ -434,11 +456,24 @@ export function PublicPageClient({
                     {t(error)}
                   </p>
                 )}
+                {mode === 'login' && error === 'emailUnverified' && (
+                  <a className="text-button" href="/verify-email">
+                    {t('resendVerification')}
+                  </a>
+                )}
                 <button className="button primary full" disabled={!ready || busy}>
                   {busy ? (
                     <Loader2 size={18} className="spin" />
                   ) : (
-                    t(mode === 'coach-login' ? 'coachLogin' : mode)
+                    t(
+                      mode === 'coach-login'
+                        ? 'coachLogin'
+                        : mode === 'verify-email'
+                          ? verificationToken
+                            ? 'verifyEmail'
+                            : 'resendVerification'
+                          : mode,
+                    )
                   )}
                   <ArrowRight size={17} />
                 </button>

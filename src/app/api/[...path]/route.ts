@@ -31,7 +31,12 @@ import { hashPassword, tokenHash, verifyPassword } from '@/lib/security';
 import { clientCapacity } from '@/lib/plans';
 import { billingConfigured } from '@/lib/billing';
 import { activeGrantKinds, planRules, userEntitlements } from '@/lib/access';
-import { deleteAccountData, sendPasswordReset } from '@/lib/account-ops';
+import {
+  deleteAccountData,
+  passwordEmailConfigured,
+  sendEmailVerification,
+  sendPasswordReset,
+} from '@/lib/account-ops';
 import { aiConfigured, aiContext, assertAiAllowed } from '@/lib/ai-governance';
 import { getConfig } from '@/lib/remote-config';
 import { termsVersion } from '@/lib/legal';
@@ -243,6 +248,9 @@ async function handleRequest(req: NextRequest, path: string) {
           .parse({ ...body, role });
         // Explicit consent: the user confirms they are 18+ and accept the Terms of Use.
         if (body.acceptTerms !== true) throw new ApiError('termsRequired', 400);
+        const verificationRequired = passwordEmailConfigured();
+        if (process.env.NODE_ENV === 'production' && !verificationRequired)
+          throw new ApiError('emailUnavailable', 503);
         const { features } = await getConfig();
         if (data.role === 'COACH' ? !features.coachRegistration : !features.userRegistration)
           throw new ApiError('registrationClosed', 403);
@@ -252,6 +260,7 @@ async function handleRequest(req: NextRequest, path: string) {
         const u = await db.user.create({
           data: {
             ...rest,
+            emailVerified: !verificationRequired,
             ...(data.role === 'COACH' &&
               features.coachApprovalRequired && { coachStatus: 'PENDING' }),
             email: data.email.toLowerCase(),
@@ -260,10 +269,34 @@ async function handleRequest(req: NextRequest, path: string) {
             subscription: { create: {} },
           },
         });
-        await createSession(u.id);
+        if (verificationRequired) await sendEmailVerification(u);
+        else await createSession(u.id);
         await audit(u.id, 'REGISTER');
         await audit(u.id, `TERMS_ACCEPTED:${termsVersion}`);
-        return NextResponse.json({ user: safeUser(u) });
+        return NextResponse.json(
+          verificationRequired ? { verificationRequired: true } : { user: safeUser(u) },
+        );
+      }
+      if (path === 'auth/verify-email') {
+        const data = z.object({ token: id }).parse(body);
+        await db.$transaction(async (tx) => {
+          const verification = await tx.emailVerification.findUnique({
+            where: { id: tokenHash(data.token) },
+          });
+          if (!verification || verification.expiresAt < new Date())
+            throw new ApiError('invalidVerification', 400);
+          await tx.user.update({ where: { id: verification.userId }, data: { emailVerified: true } });
+          await tx.emailVerification.deleteMany({ where: { userId: verification.userId } });
+        });
+        return NextResponse.json({ ok: true });
+      }
+      if (path === 'auth/resend-verification') {
+        if (!passwordEmailConfigured()) throw new ApiError('emailUnavailable', 503);
+        const { email } = z.object({ email: z.email() }).parse(body);
+        const user = await db.user.findUnique({ where: { email: email.toLowerCase() } });
+        if (user && !user.emailVerified && user.status !== 'SUSPENDED')
+          await sendEmailVerification(user);
+        return NextResponse.json({ ok: true });
       }
       if (
         ['auth/login', 'auth/coach-login', 'auth/user/login', 'auth/coach/login'].includes(path)
@@ -288,6 +321,7 @@ async function handleRequest(req: NextRequest, path: string) {
         }
         // Checked only after the password, so it reveals nothing to someone guessing.
         if (u.status === 'SUSPENDED') throw new ApiError('accountSuspended', 403);
+        if (!u.emailVerified) throw new ApiError('emailUnverified', 403);
         const user = data.language
           ? await db.user.update({ where: { id: u.id }, data: { language: data.language } })
           : u;

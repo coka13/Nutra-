@@ -14,7 +14,7 @@ Only one application instance should write this SQLite volume. Do not use epheme
 
 ## Credentials
 
-`APP_URL` is required for password reset links and trusted-origin handling. `OPENAI_API_KEY` and `OPENAI_MODEL` are server-only and optional. `RESEND_API_KEY` and `EMAIL_FROM` activate the email adapter; verify the sender domain first. Never prefix secrets with `NEXT_PUBLIC_`. Stripe requires the complete set of environment values and provider test scenarios in `BILLING.md`; WhatsApp and health provider implementations are pending.
+`APP_URL` is the canonical public HTTPS origin and is required for account verification and password-reset links. `RESEND_API_KEY` and `EMAIL_FROM` enable production signup and send verification and recovery messages; verify the sender domain first. Production registration stays closed with a clear service error until all three values are set. `OPENAI_API_KEY` and `OPENAI_MODEL` are server-only and optional. Never prefix secrets with `NEXT_PUBLIC_`. Stripe requires the complete set of environment values and provider test scenarios in `BILLING.md`; WhatsApp and health provider implementations are pending.
 
 ## Administrator bootstrap
 
