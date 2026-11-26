@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
     "build": "next build --webpack",
+    "postinstall": "prisma generate",
     "start": "node scripts/hostinger-start.mjs",
     "typecheck": "next typegen --webpack && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
@@ -54,5 +55,10 @@
   "overrides": {
     "effect": "^3.22.1",
     "deepmerge-ts": "^8.0.0"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.0": true,
+    "@prisma/engines@6.19.0": true,
+    "prisma@6.19.0": true
   }
 }
