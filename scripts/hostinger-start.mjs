@@ -21,7 +21,7 @@ function persistentSecret(filename, byteLength) {
 }
 
 process.env.DATABASE_URL ||= `file:${path.join(dataDir, 'nutri.db')}`;
-process.env.APP_URL ||= 'https://charming-pink-ostrich-04.hostingersite.com';
+process.env.APP_URL ||= 'https://fitura.fit';
 process.env.DEMO_ENABLED = 'false';
 process.env.ENFORCE_HTTPS = 'true';
 process.env.BACKUP_DIR ||= path.join(dataDir, 'backups');
@@ -45,3 +45,4 @@ server.on('exit', (code, signal) => {
   if (signal) process.kill(process.pid, signal);
   else process.exit(code ?? 1);
 });
+
