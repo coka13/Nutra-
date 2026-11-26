@@ -13,7 +13,8 @@ const config: NextConfig = {
     '/*': [
       './prisma/**/*',
       './node_modules/prisma/**/*',
-      './node_modules/@prisma/engines/**/*',
+      './node_modules/@prisma/**/*',
+      './node_modules/@esbuild/**/*',
       './node_modules/tsx/**/*',
     ],
     '/api/exercises/*/animation': ['node_modules/ffmpeg-static/ffmpeg*'],
