@@ -12,6 +12,8 @@ const config: NextConfig = {
   outputFileTracingIncludes: {
     '/*': [
       './prisma/**/*',
+      './src/**/*',
+      './tsconfig.json',
       './node_modules/prisma/**/*',
       './node_modules/@prisma/**/*',
       './node_modules/@esbuild/**/*',
