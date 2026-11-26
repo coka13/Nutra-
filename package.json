@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
     "build": "next build --webpack",
-    "prestart": "npm run db:migrate && npm run db:seed",
-    "start": "next start --hostname 0.0.0.0",
+    "start": "node scripts/hostinger-start.mjs",
     "typecheck": "next typegen --webpack && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "test:api": "tsx --test tests/api.integration.ts",
