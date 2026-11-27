@@ -154,7 +154,12 @@ export function Workspace({
   // Remote configuration: administrator wording overrides and ad placements.
   const [remote, setRemote] = useState<{
     version: number;
-    ads?: { enabled: boolean; placements: Record<string, boolean>; minIntervalSeconds: number; maxImpressionsPerDay: number };
+    ads?: {
+      enabled: boolean;
+      placements: Record<string, boolean>;
+      minIntervalSeconds: number;
+      maxImpressionsPerDay: number;
+    };
   } | null>(null);
   useEffect(() => {
     let active = true;
@@ -422,35 +427,38 @@ export function Workspace({
               <X />
             </button>
           </div>
-          <button
-            className="workspace-switch"
-            // Coaches edit their brand; clients open their coach's profile.
-            onClick={() => navigate(isCoach ? 'branding' : sidebarBrand ? 'coach' : 'settings')}
-          >
-            {sidebarBrand?.branding?.logoAt ? (
-              <BrandMark
-                coachId={sidebarBrand.id}
-                name={sidebarBrand.name}
-                branding={sidebarBrand.branding}
-                className="workspace-icon"
-              />
-            ) : (
-              <span className="workspace-icon">
-                {isCoach ? <Users size={18} /> : <Dumbbell size={18} />}
+          {/* Independent users have no workspace to switch to or trainer to open. */}
+          {(isCoach || sidebarBrand) && (
+            <button
+              className="workspace-switch"
+              // Coaches edit their brand; clients open their coach's profile.
+              onClick={() => navigate(isCoach ? 'branding' : sidebarBrand ? 'coach' : 'settings')}
+            >
+              {sidebarBrand?.branding?.logoAt ? (
+                <BrandMark
+                  coachId={sidebarBrand.id}
+                  name={sidebarBrand.name}
+                  branding={sidebarBrand.branding}
+                  className="workspace-icon"
+                />
+              ) : (
+                <span className="workspace-icon">
+                  {isCoach ? <Users size={18} /> : <Dumbbell size={18} />}
+                </span>
+              )}
+              <span>
+                <strong>
+                  {t(isCoach ? 'coaching' : sidebarBrand ? 'connectedCoach' : 'personal')}
+                </strong>
+                <small>
+                  {sidebarBrand?.branding?.businessName ||
+                    (!isCoach && sidebarBrand?.name) ||
+                    t('tagline')}
+                </small>
               </span>
-            )}
-            <span>
-              <strong>
-                {t(isCoach ? 'coaching' : sidebarBrand ? 'connectedCoach' : 'personal')}
-              </strong>
-              <small>
-                {sidebarBrand?.branding?.businessName ||
-                  (!isCoach && sidebarBrand?.name) ||
-                  t('tagline')}
-              </small>
-            </span>
-            <ChevronRight size={16} className="directional-icon" />
-          </button>
+              <ChevronRight size={16} className="directional-icon" />
+            </button>
+          )}
           <span className="nav-caption">{t(isCoach ? 'coaching' : 'personal')}</span>
           <nav>
             {nav
@@ -584,7 +592,13 @@ export function Workspace({
                 {t('personal')}
                 <span>/</span>
                 <strong>
-                  {t(page === 'settings' ? 'profileSettings' : page === 'coach' ? 'connectedCoach' : page)}
+                  {t(
+                    page === 'settings'
+                      ? 'profileSettings'
+                      : page === 'coach'
+                        ? 'connectedCoach'
+                        : page,
+                  )}
                 </strong>
               </span>
             </div>
@@ -649,25 +663,31 @@ export function Workspace({
               {state.notifications.length ? (
                 state.notifications.map((n) => (
                   <p key={n.id} className={n.read ? 'muted' : ''}>
-                    {n.key === 'announcement'
-                      ? (() => {
-                          const item = state.announcements?.find((a) => a.id === n.detail);
-                          if (!item) return t('announcement');
-                          return (
-                            <>
-                              <strong>{lang === 'he' ? item.titleHe : item.titleEn}</strong>
-                              <br />
-                              {lang === 'he' ? item.bodyHe : item.bodyEn}
-                            </>
-                          );
-                        })()
-                      : n.key === 'supportReply'
-                        ? (
-                            <button className="text-button" onClick={() => { setNotifications(false); navigate('support'); }}>
-                              {t(n.key)}
-                            </button>
-                          )
-                        : t(n.key)}
+                    {n.key === 'announcement' ? (
+                      (() => {
+                        const item = state.announcements?.find((a) => a.id === n.detail);
+                        if (!item) return t('announcement');
+                        return (
+                          <>
+                            <strong>{lang === 'he' ? item.titleHe : item.titleEn}</strong>
+                            <br />
+                            {lang === 'he' ? item.bodyHe : item.bodyEn}
+                          </>
+                        );
+                      })()
+                    ) : n.key === 'supportReply' ? (
+                      <button
+                        className="text-button"
+                        onClick={() => {
+                          setNotifications(false);
+                          navigate('support');
+                        }}
+                      >
+                        {t(n.key)}
+                      </button>
+                    ) : (
+                      t(n.key)
+                    )}
                     {n.detail && n.key === 'twoSessionsLeft' && <small> · {n.detail}</small>}
                     {n.key === 'clientMissed' && (
                       <small>
@@ -720,7 +740,9 @@ export function Workspace({
             )}
             {state.coachStatus && state.coachStatus !== 'APPROVED' && (
               <p className="integration-notice" role="status">
-                {t(state.coachStatus === 'PENDING' ? 'coachPendingNotice' : 'coachRestrictedNotice')}
+                {t(
+                  state.coachStatus === 'PENDING' ? 'coachPendingNotice' : 'coachRestrictedNotice',
+                )}
               </p>
             )}
             {page === 'dashboard' ? (
@@ -775,7 +797,9 @@ export function Workspace({
             ) : (
               <Empty text={t('notFound')} />
             )}
+            {/* No ads mid-workout, and none on the plans page the ad links to. */}
             {page !== 'active' &&
+              page !== 'billing' &&
               remote?.ads?.enabled !== false &&
               remote?.ads?.placements[adPlacement(page)] !== false && (
                 <AdSlot
