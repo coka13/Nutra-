@@ -1,12 +1,103 @@
 import { PrismaClient } from '@prisma/client';
+import { createHash, randomBytes } from 'node:crypto';
 import { hashPassword } from '../src/lib/security';
+import { sendTransactionalEmail } from '../src/lib/account-ops';
 const db = new PrismaClient();
 try {
   process.loadEnvFile();
 } catch {
   /* Container environments supply variables directly. */
 }
+
+async function bootstrapAdminFromEnvironment() {
+  const email = process.env.FITURA_ADMIN_SETUP_EMAIL?.trim().toLowerCase();
+  if (!email) return;
+  const name = process.env.FITURA_ADMIN_SETUP_NAME?.trim() || 'Daniel Uralsky';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    console.error(JSON.stringify({ event: 'admin_setup_failed', reason: 'invalid_email' }));
+    return;
+  }
+
+  try {
+    const existing = await db.adminAccount.findUnique({ where: { email } });
+    if (existing?.status === 'ACTIVE') {
+      console.log(
+        JSON.stringify({ event: 'admin_setup_skipped', reason: existing.totpEnabledAt ? 'already_enrolled' : 'active_account' }),
+      );
+      return;
+    }
+    if (existing?.status === 'DISABLED') {
+      console.log(JSON.stringify({ event: 'admin_setup_skipped', reason: 'account_disabled' }));
+      return;
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const inviteExpiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
+    const inviteTokenHash = createHash('sha256').update(token).digest('hex');
+    const superAdminExists = await db.adminAccount.count({
+      where: { role: 'SUPER_ADMIN', status: { in: ['ACTIVE', 'INVITED'] } },
+    });
+    const invite = existing
+      ? await db.adminAccount.update({
+          where: { id: existing.id },
+          data: {
+            status: 'INVITED',
+            passwordHash: null,
+            totpSecret: null,
+            totpEnabledAt: null,
+            lastTotpStep: null,
+            recoveryCodes: '',
+            failedAttempts: 0,
+            lockedUntil: null,
+            inviteTokenHash,
+            inviteExpiresAt,
+          },
+        })
+      : await db.adminAccount.create({
+          data: {
+            email,
+            name,
+            role: superAdminExists ? 'ADMIN' : 'SUPER_ADMIN',
+            status: 'INVITED',
+            createdBy: 'email-bootstrap',
+            inviteTokenHash,
+            inviteExpiresAt,
+          },
+        });
+    await db.adminSession.deleteMany({ where: { adminId: invite.id } });
+    await db.adminAuditLog.create({
+      data: {
+        adminId: invite.id,
+        adminEmail: invite.email,
+        action: 'provision.emailBootstrap',
+        resourceType: 'admin',
+        resourceId: invite.id,
+        details: JSON.stringify({ role: invite.role }),
+        result: 'SUCCESS',
+      },
+    });
+
+    const adminHost = process.env.ADMIN_HOST?.trim();
+    const appUrl = process.env.APP_URL || 'https://fitura.fit';
+    const baseUrl = adminHost ? `https://${adminHost}` : appUrl.replace(/\/$/, '');
+    const setupUrl = `${baseUrl}/admin/setup?token=${token}`;
+    await sendTransactionalEmail(
+      email,
+      'Set up your Fitura+ admin account',
+      `Use this one-time link within 72 hours to choose your admin password and enroll your authenticator app. Save the recovery codes shown after setup.\n\n${setupUrl}`,
+    );
+    console.log(JSON.stringify({ event: 'admin_setup_invite_sent', role: invite.role }));
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: 'admin_setup_failed',
+        reason: error instanceof Error ? error.name : 'unknown',
+      }),
+    );
+  }
+}
 async function main() {
+  await bootstrapAdminFromEnvironment();
   const exerciseRows = [
     [
       'squat',

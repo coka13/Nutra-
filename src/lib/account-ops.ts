@@ -41,7 +41,7 @@ export function passwordEmailConfigured() {
   );
 }
 
-async function sendEmail(to: string, subject: string, text: string) {
+export async function sendTransactionalEmail(to: string, subject: string, text: string) {
   if (!passwordEmailConfigured()) throw new ApiError('emailUnavailable', 503);
   if (process.env.HOSTINGER_MAIL_API_TOKEN && process.env.HOSTINGER_MAILBOX_ID) {
     const response = await fetch(
@@ -78,7 +78,7 @@ export async function sendEmailVerification(user: { id: string; email: string })
     data: { id: tokenHash(token), userId: user.id, expiresAt: new Date(Date.now() + 86400000) },
   });
   const link = `${process.env.APP_URL!.replace(/\/$/, '')}/verify-email?token=${token}`;
-  await sendEmail(
+  await sendTransactionalEmail(
     user.email,
     'Verify your Fitura+ email',
     `Verify your email address within 24 hours: ${link}`,
@@ -93,5 +93,5 @@ export async function sendPasswordReset(user: { id: string; email: string }) {
     data: { id: tokenHash(token), userId: user.id, expiresAt: new Date(Date.now() + 1800000) },
   });
   const link = `${process.env.APP_URL!.replace(/\/$/, '')}/reset?token=${token}`;
-  await sendEmail(user.email, 'Fitura+‎ / איפוס סיסמה', `Reset your password / איפוס סיסמה: ${link}`);
+  await sendTransactionalEmail(user.email, 'Fitura+‎ / איפוס סיסמה', `Reset your password / איפוס סיסמה: ${link}`);
 }
