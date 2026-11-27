@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { isDemoEmail } from '@/lib/demo';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { ApiError } from '@/lib/auth';
@@ -235,7 +236,7 @@ export const userEndpoints: Endpoint[] = [
       const { confirmEmail } = z.object({ confirmEmail: z.string().max(200) }).parse(body);
       const user = await findUser(params.id);
       if (confirmEmail.trim().toLowerCase() !== user.email) throw new ApiError('confirmationMismatch', 400);
-      if (user.email === 'alex@nutri.local') throw new ApiError('demoProtected', 403);
+      if (isDemoEmail(user.email)) throw new ApiError('demoProtected', 403);
       // Paid subscriptions must be cancelled with the payment provider first.
       if (user.subscription?.providerId && user.subscription.status === 'ACTIVE') throw new ApiError('subscriptionActive', 409);
       await db.$transaction((tx) => deleteAccountData(tx, user));

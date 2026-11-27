@@ -1039,12 +1039,37 @@ export function BillingView() {
       active = false;
     };
   }, []);
+  // Inside the mobile app, offer the device wallet; checkout opens in the system browser,
+  // where Apple Pay / Google Pay are available (they don't work inside a WebView).
+  const [wallet, setWallet] = useState<'apple' | 'google' | null>(null);
+  useEffect(() => {
+    if (!('ReactNativeWebView' in window)) return;
+    setWallet(/iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) ? 'apple' : 'google');
+  }, []);
+  const card = !!state.integrations.card,
+    paypal = !!state.integrations.paypal && !wallet,
+    paypalSubscriber =
+      state.subscription?.provider === 'paypal' && state.subscription.status === 'ACTIVE';
   async function redirect(action: string, tier?: string) {
     setBusy(true);
     setError('');
     try {
       const result = await api<{ url: string }>(`billing/${action}`, { tier });
       location.href = result.url;
+      // The mobile app opens checkout externally and stays on this page.
+      if (wallet) setBusy(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'billingUnavailable');
+      setBusy(false);
+    }
+  }
+  async function cancelPaypal() {
+    if (!confirm(t('cancelPaypalConfirm'))) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api('billing/paypal-cancel', {});
+      location.reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'billingUnavailable');
       setBusy(false);
@@ -1053,10 +1078,15 @@ export function BillingView() {
   return (
     <>
       <PageHeading title={t('billing')} subtitle={t('membershipSub')}>
-        {state.subscription?.customerId && (
+        {state.subscription?.customerId && state.subscription.provider !== 'paypal' && (
           <button className="button secondary" disabled={busy} onClick={() => redirect('portal')}>
             {t('manageBilling')}
             <ArrowUpRight size={16} />
+          </button>
+        )}
+        {paypalSubscriber && (
+          <button className="button secondary" disabled={busy} onClick={cancelPaypal}>
+            {t('cancelPaypal')}
           </button>
         )}
       </PageHeading>
@@ -1097,13 +1127,41 @@ export function BillingView() {
                 {current ? (
                   <span className="badge">{t('currentPlan')}</span>
                 ) : i > 0 ? (
-                  <button
-                    className="button primary"
-                    disabled={!state.integrations.billing || busy}
-                    onClick={() => redirect('checkout', tier)}
-                  >
-                    {t(state.integrations.billing ? 'secureCheckout' : 'notConfigured')}
-                  </button>
+                  <div className="checkout-options">
+                    {wallet && card ? (
+                      <button
+                        className={`button wallet-pay ${wallet}`}
+                        disabled={busy}
+                        onClick={() => redirect('checkout', tier)}
+                      >
+                        {t(wallet === 'apple' ? 'payApplePay' : 'payGooglePay')}
+                      </button>
+                    ) : (
+                      card && (
+                        <button
+                          className="button primary"
+                          disabled={busy}
+                          onClick={() => redirect('checkout', tier)}
+                        >
+                          {t('secureCheckout')}
+                        </button>
+                      )
+                    )}
+                    {paypal && (
+                      <button
+                        className="button paypal-pay"
+                        disabled={busy}
+                        onClick={() => redirect('paypal', tier)}
+                      >
+                        {t('payPaypal')}
+                      </button>
+                    )}
+                    {!card && !paypal && (
+                      <button className="button primary" disabled>
+                        {t('notConfigured')}
+                      </button>
+                    )}
+                  </div>
                 ) : null}
               </section>
             );

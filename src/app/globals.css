@@ -7772,3 +7772,72 @@ input[type='number'], .rest-timer strong, .weight-hero-value { font-variant-nume
   }
 }
 
+
+/* Landing page: mobile app store links. */
+.store-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.store-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 7px 16px 7px 14px;
+  border-radius: 12px;
+  background: #111814;
+  color: #fff;
+  border: 1px solid #111814;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.store-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px #0000001f;
+}
+.store-link span {
+  display: grid;
+  line-height: 1.1;
+  text-align: start;
+}
+.store-link small {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.store-link strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+html[data-theme='dark'] .store-link {
+  background: #f4f6f5;
+  color: #111814;
+  border-color: #f4f6f5;
+}
+
+/* Billing: payment method buttons. */
+.checkout-options {
+  display: grid;
+  gap: 8px;
+}
+.button.paypal-pay {
+  background: #ffc439;
+  border-color: #ffc439;
+  color: #111;
+  font-weight: 700;
+}
+.button.paypal-pay:hover {
+  background: #f2b628;
+}
+.button.wallet-pay {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+  font-weight: 600;
+}
+html[data-theme='dark'] .button.wallet-pay {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}

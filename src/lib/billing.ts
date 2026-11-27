@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { getConfig } from './remote-config';
+import { paypalConfigured } from './paypal';
 export function billingConfigured() {
   return !!(
     process.env.STRIPE_SECRET_KEY &&
@@ -9,6 +10,10 @@ export function billingConfigured() {
     process.env.STRIPE_PRICE_PREMIUM !== process.env.STRIPE_PRICE_COACH &&
     process.env.APP_URL
   );
+}
+/** True when any payment provider (Stripe or PayPal) can take subscriptions. */
+export function paymentsConfigured() {
+  return billingConfigured() || paypalConfigured();
 }
 export function stripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) throw new Error('billingUnavailable');

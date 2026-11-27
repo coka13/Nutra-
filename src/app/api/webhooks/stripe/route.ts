@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
             : subscription.customer.id;
         const end = subscription.items.data[0]?.current_period_end;
         const data = {
+          provider: 'stripe',
           providerId: subscription.id,
           customerId,
           tier: permittedTier,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { LEGACY_DEMO_EMAIL, createDemoAccount, demoEnabled, isDemoEmail } from '@/lib/demo';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
@@ -29,7 +30,8 @@ import {
 } from '@/lib/auth';
 import { hashPassword, tokenHash, verifyPassword } from '@/lib/security';
 import { clientCapacity } from '@/lib/plans';
-import { billingConfigured } from '@/lib/billing';
+import { billingConfigured, paymentsConfigured } from '@/lib/billing';
+import { paypalConfigured } from '@/lib/paypal';
 import { activeGrantKinds, planRules, userEntitlements } from '@/lib/access';
 import {
   deleteAccountData,
@@ -210,7 +212,8 @@ async function handleRequest(req: NextRequest, path: string) {
       // Shared database counter: no trust in user-controlled forwarding headers.
       await rateLimit(
         `auth:${typeof body.email === 'string' ? body.email.toLowerCase().slice(0, 200) : 'demo'}`,
-        10,
+        // Demo logins share one key; allow a handful of concurrent visitors.
+        path === 'auth/demo' ? 30 : 10,
       );
       await rateLimit('auth:global', 250);
       if (path === 'auth/logout') {
@@ -218,10 +221,15 @@ async function handleRequest(req: NextRequest, path: string) {
         return NextResponse.json({ ok: true });
       }
       if (path === 'auth/demo') {
-        if (process.env.DEMO_ENABLED !== 'true' || process.env.NODE_ENV === 'production')
-          throw new ApiError('unavailable', 503);
+        if (!demoEnabled()) throw new ApiError('unavailable', 503);
         const { language } = z.object({ language: z.enum(['en', 'he']).optional() }).parse(body);
-        const u = await db.user.findUnique({ where: { email: 'alex@nutri.local' } });
+        if (process.env.NODE_ENV === 'production') {
+          // Every visitor gets a private, temporary account (see lib/demo).
+          const user = await createDemoAccount(db, language ?? 'he');
+          await createSession(user.id);
+          return NextResponse.json({ user: safeUser(user) });
+        }
+        const u = await db.user.findUnique({ where: { email: LEGACY_DEMO_EMAIL } });
         if (!u) throw new ApiError('unavailable', 503);
         const user = language
           ? await db.user.update({ where: { id: u.id }, data: { language } })
@@ -670,13 +678,16 @@ async function handleRequest(req: NextRequest, path: string) {
               return {
                 ai: ai && aiConfig.enabled,
                 email: passwordEmailConfigured(),
-                billing: billingConfigured(),
+                billing: billingConfigured() || paypalConfigured(),
+                card: billingConfigured(),
+                paypal: paypalConfigured(),
                 whatsapp: false,
                 health: false,
                 photo: ai && aiConfig.enabled && aiConfig.features.photo,
               };
             })(),
-            demo: process.env.DEMO_ENABLED === 'true' && process.env.NODE_ENV !== 'production',
+            // Marks the demo workspace only for demo accounts, never for real users.
+            demo: isDemoEmail(u.email),
           },
           { headers: { 'Cache-Control': 'no-store' } },
         );
@@ -1741,7 +1752,7 @@ async function handleRequest(req: NextRequest, path: string) {
         if (!client || client.id === u.id || client.role === 'ADMIN')
           throw new ApiError('clientNotFound', 404);
         if (u.coachStatus !== 'APPROVED') throw new ApiError('coachNotApproved', 403);
-        const capacity = clientCapacity(u.role, u.subscription, billingConfigured(), {
+        const capacity = clientCapacity(u.role, u.subscription, paymentsConfigured(), {
           coachStatus: u.coachStatus,
           coachClientLimit: u.coachClientLimit,
           grants: await activeGrantKinds(u.id),
@@ -1757,7 +1768,7 @@ async function handleRequest(req: NextRequest, path: string) {
           });
           if (count >= capacity)
             throw new ApiError(
-              billingConfigured() && count === 0 ? 'coachPlanRequired' : 'capacity',
+              paymentsConfigured() && count === 0 ? 'coachPlanRequired' : 'capacity',
               403,
             );
           await tx.coachRelationship.upsert({
@@ -2088,7 +2099,7 @@ async function handleRequest(req: NextRequest, path: string) {
           })
           .parse(body);
         if (!verifyPassword(password, u.passwordHash)) throw new ApiError('credentials', 401);
-        if (u.email === 'alex@nutri.local') throw new ApiError('demoProtected', 403);
+        if (isDemoEmail(u.email)) throw new ApiError('demoProtected', 403);
         await db.$transaction(async (tx) => {
           await tx.workoutSession.deleteMany({ where: { userId: u.id } });
           await tx.exercisePerformance.deleteMany({ where: { userId: u.id } });
@@ -2148,7 +2159,7 @@ async function handleRequest(req: NextRequest, path: string) {
         if (u.subscription?.providerId && u.subscription.status === 'ACTIVE')
           throw new ApiError('subscriptionActive', 409);
         if (!verifyPassword(password, u.passwordHash)) throw new ApiError('credentials', 401);
-        if (u.email === 'alex@nutri.local') throw new ApiError('demoProtected', 403);
+        if (isDemoEmail(u.email)) throw new ApiError('demoProtected', 403);
         await db.$transaction((tx) => deleteAccountData(tx, u));
         await signOut();
         break;

@@ -30,7 +30,8 @@ async function main() {
   });
   for (let i = 0; i < fresh.length; i += 500)
     await db.food.createMany({
-      data: fresh.slice(i, i + 500).map((f) => ({ ...f, ownerId: null })),
+      // Household units are stored in their own table below.
+      data: fresh.slice(i, i + 500).map(({ units: _units, ...f }) => ({ ...f, ownerId: null })),
     });
   for (let i = 0; i < changed.length; i += 200)
     await db.$transaction(

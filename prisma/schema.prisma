@@ -450,6 +450,7 @@ model Subscription {
   user User @relation(fields:[userId],references:[id],onDelete:Cascade)
   tier String @default("FREE")
   status String @default("ACTIVE")
+  provider String?
   providerId String? @unique
   customerId String? @unique
   currentPeriodEnd DateTime?

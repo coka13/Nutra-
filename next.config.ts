@@ -13,6 +13,7 @@ const config: NextConfig = {
     '/*': [
       './prisma/**/*',
       './src/**/*',
+      './scripts/load-food-database.ts',
       './tsconfig.json',
       './node_modules/prisma/**/*',
       './node_modules/@prisma/**/*',

@@ -32,7 +32,7 @@ Development-only sample accounts:
 - Personal: `alex@nutri.local` / `NutriDemo2026!`
 - Coach: `coach@nutri.local` / `NutriCoach2026!`
 
-The one-click demo is disabled in production. Demo seeding runs only with `DEMO_ENABLED=true` outside production. Never deploy a database containing demo accounts. Production startup must use a fresh database and `DEMO_ENABLED=false`.
+The one-click demo works everywhere. In development it signs in to the seeded shared `alex@nutri.local` account (seeded only with `DEMO_ENABLED=true` outside production). In production every visitor gets a private, temporary demo account with sample records, deleted after 24 hours (`src/lib/demo.ts`); set `DEMO_ENABLED=false` to turn the demo off. Never deploy a database copied from development.
 
 SQLite data lives at `prisma/dev.db` by default and survives application restarts. Do not delete it to restart the app. The schema and migrations are committed; the local database and credentials are ignored. `npm run db:migrate` creates the database file if necessary and applies migrations. Stop the running server before `prisma generate` on Windows because the Prisma DLL may be locked.
 

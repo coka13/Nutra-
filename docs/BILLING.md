@@ -24,4 +24,19 @@ Billing is disabled by default. The official Stripe SDK implements hosted subscr
 
 Important limitations: provider round trips, renewals and portal cancellation have not been tested with live credentials here. Unit tests validate SDK signature handling and status mapping; the default disabled state is tested by API checks. Annual/monthly plan selection, trials, proration UX, tax treatment, refunds, revenue analytics and coach-to-client payments remain pending. Do not enable paid plans commercially until the advertised premium value, applicable policies and all provider test scenarios have been verified. Account deletion is blocked while a paid subscription is locally active, so users must manage cancellation first.
 
+# PayPal (web)
+
+Web users can subscribe with PayPal as well as by card. `src/lib/paypal.ts` uses the PayPal Subscriptions REST API and is disabled until every value is set: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_PLAN_PREMIUM`, `PAYPAL_PLAN_COACH` (distinct plans whose prices match `PLAN_PRICE_USD`) and `APP_URL`. `PAYPAL_ENV=live` switches from the sandbox to live.
+
+- Create a product and two monthly billing plans in PayPal, then register a webhook to `POST /api/webhooks/paypal` for `BILLING.SUBSCRIPTION.ACTIVATED`, `BILLING.SUBSCRIPTION.UPDATED`, `BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.SUSPENDED`, `BILLING.SUBSCRIPTION.EXPIRED` and `PAYMENT.SALE.COMPLETED`; put its ID in `PAYPAL_WEBHOOK_ID`.
+- `POST /api/billing/paypal` `{tier}` returns PayPal's approval URL. Access is granted only by webhooks verified through PayPal's signature API and re-read from PayPal's canonical subscription; the return URL grants nothing. Events are deduplicated with a `paypal:` prefix.
+- `POST /api/billing/paypal-cancel` cancels the user's PayPal subscription (PayPal has no Stripe-style portal).
+- `Subscription.provider` records `stripe` or `paypal`.
+
+# Apple Pay / Google Pay (mobile)
+
+Inside the mobile app the billing page offers one wallet button (Apple Pay on iOS, Google Pay on Android). It starts the same Stripe Checkout session, which the app opens in the system browser because wallets do not work inside a WebView. Enable Apple Pay and Google Pay under Stripe → Settings → Payment methods and verify the domain for Apple Pay; Checkout then shows the wallet on supported devices.
+
+**Store policy:** Apple (App Review Guideline 3.1.1) and Google Play require their own in-app purchase systems for digital subscriptions bought inside an app. Taking payment through Stripe (even with Apple Pay / Google Pay) from inside the app risks rejection, except where external purchase links are explicitly permitted (for example the US App Store storefront, or Google's alternative/user-choice billing programs). Confirm the approach for each storefront before submitting, or move mobile purchases to StoreKit / Google Play Billing.
+
 Implementation references: [Checkout session creation](https://docs.stripe.com/api/checkout/sessions/create), [webhook handling](https://docs.stripe.com/events/manage-webhook-endpoints), [subscription lifecycle](https://docs.stripe.com/billing/subscriptions/overview). No real payment was created during development.

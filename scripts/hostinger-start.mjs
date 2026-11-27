@@ -22,7 +22,8 @@ function persistentSecret(filename, byteLength) {
 
 process.env.DATABASE_URL ||= `file:${path.join(dataDir, 'nutri.db')}`;
 process.env.APP_URL ||= 'https://fitura.fit';
-process.env.DEMO_ENABLED = 'false';
+// Each demo visitor gets a private, temporary account (see src/lib/demo.ts).
+process.env.DEMO_ENABLED ||= 'true';
 process.env.ENFORCE_HTTPS = 'true';
 process.env.BACKUP_DIR ||= path.join(dataDir, 'backups');
 process.env.ADMIN_ENCRYPTION_KEY ||= persistentSecret('.admin-encryption-key', 32);

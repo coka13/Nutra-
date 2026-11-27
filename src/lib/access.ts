@@ -1,5 +1,5 @@
 import { db } from './db';
-import { billingConfigured } from './billing';
+import { paymentsConfigured } from './billing';
 import { entitlements, isMinor, type PlanRules } from './plans';
 import { getConfig, type RemoteConfig } from './remote-config';
 
@@ -58,7 +58,7 @@ export async function userEntitlements(u: {
   return entitlements({
     role: u.role,
     sub: u.subscription,
-    billingOn: billingConfigured(),
+    billingOn: paymentsConfigured(),
     coaches: links.map(({ coach }) => ({
       role: coach.role,
       subscription: coach.subscription,
