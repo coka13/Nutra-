@@ -267,7 +267,9 @@ export function PublicPageClient({
         <main className="account-chooser">
           <img
             className="home-art"
-            src="/nutri-home-transparent.webp"
+            src="/nutri-home-hero-1000.webp"
+            srcSet="/nutri-home-hero-640.webp 640w, /nutri-home-hero-1000.webp 1000w"
+            sizes="(max-width: 520px) 320px, 470px"
             alt=""
             width={1000}
             height={1094}
@@ -399,7 +401,9 @@ export function PublicPageClient({
             <div className="hero-art-frame">
               <img
                 className="home-art"
-                src="/nutri-home-transparent.webp"
+                src="/nutri-home-hero-1000.webp"
+            srcSet="/nutri-home-hero-640.webp 640w, /nutri-home-hero-1000.webp 1000w"
+            sizes="(max-width: 520px) 320px, 470px"
                 width={1000}
                 height={1094}
                 alt=""

@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Heebo:wght@400;500;600;700;800&display=swap');
 :root {
   --bg: #f6f7f9;
   --panel: #fff;
@@ -21,13 +20,13 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', 'Heebo', Arial, sans-serif;
+  font-family: var(--font-dm-sans), var(--font-heebo), Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 html[lang='he'] body {
-  font-family: 'Heebo', 'DM Sans', Arial, sans-serif;
+  font-family: var(--font-heebo), var(--font-dm-sans), Arial, sans-serif;
 }
 button,
 input,

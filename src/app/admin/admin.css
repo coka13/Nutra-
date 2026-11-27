@@ -29,12 +29,12 @@
   min-height: 100vh;
   background: var(--a-bg);
   color: var(--a-text);
-  font-family: 'DM Sans', 'Heebo', system-ui, sans-serif;
+  font-family: var(--font-dm-sans), var(--font-heebo), system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
 }
 .adm[dir='rtl'] {
-  font-family: 'Heebo', 'DM Sans', system-ui, sans-serif;
+  font-family: var(--font-heebo), var(--font-dm-sans), system-ui, sans-serif;
 }
 .adm[data-theme='dark'] {
   --a-bg: #0f1514;
