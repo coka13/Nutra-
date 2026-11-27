@@ -39,16 +39,28 @@ export function proxy(req: NextRequest) {
     if (onAdminHost) {
       if (path === '/robots.txt')
         return new NextResponse('User-agent: *\nDisallow: /\n', { headers: { 'Content-Type': 'text/plain' } });
-      if (path === '/') return NextResponse.redirect(new URL('/admin', req.url));
+      if (path === '/') return NextResponse.redirect(new URL(signedIn(req) ? '/admin' : '/admin/login', req.url));
       const asset = path.startsWith('/_next/') || path === '/icon.svg' || path === '/favicon.ico' || path.startsWith('/exercise-thumbnails/');
       if (!adminPath && !asset) return notFound();
     } else if (adminPath) return notFound();
   } else if (production && adminPath && process.env.ADMIN_ALLOW_SHARED_HOST !== 'true') return notFound();
 
-  const response = NextResponse.next();
+  // Signed-out visits to the console go straight to the sign-in page, so the server never renders
+  // (and dev never compiles) the full console just to redirect. Only a missing cookie short-circuits;
+  // a present one is still validated server-side by the page itself.
+  const consolePage = path === '/admin' || (path.startsWith('/admin/') && !/^\/admin\/(login|setup)(\/|$)/.test(path));
+  if (consolePage && !signedIn(req)) return withHeaders(req, NextResponse.redirect(new URL('/admin/login', req.url)), true);
+
+  return withHeaders(req, NextResponse.next(), adminPath || onAdminHost);
+}
+
+/** Mirrors adminCookieName() in lib/admin/auth (not imported: the proxy must stay free of Prisma). */
+const signedIn = (req: NextRequest) => req.cookies.has(production ? '__Host-nutra_admin' : 'nutra_admin');
+
+function withHeaders(req: NextRequest, response: NextResponse, admin: boolean) {
   if (production && req.headers.get('x-forwarded-proto') === 'https')
     response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-  if (adminPath || onAdminHost) {
+  if (admin) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     response.headers.set('Cache-Control', 'no-store, max-age=0');
     response.headers.set('Referrer-Policy', 'no-referrer');
