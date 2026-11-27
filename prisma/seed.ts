@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import { hashPassword } from '../src/lib/security';
-import { sendTransactionalEmail } from '../src/lib/account-ops';
 const db = new PrismaClient();
 try {
   process.loadEnvFile();
@@ -81,11 +80,23 @@ async function bootstrapAdminFromEnvironment() {
     const appUrl = process.env.APP_URL || 'https://fitura.fit';
     const baseUrl = adminHost ? `https://${adminHost}` : appUrl.replace(/\/$/, '');
     const setupUrl = `${baseUrl}/admin/setup?token=${token}`;
-    await sendTransactionalEmail(
-      email,
-      'Set up your Fitura+ admin account',
-      `Use this one-time link within 72 hours to choose your admin password and enroll your authenticator app. Save the recovery codes shown after setup.\n\n${setupUrl}`,
+    const mailboxId = process.env.HOSTINGER_MAILBOX_ID;
+    const mailToken = process.env.HOSTINGER_MAIL_API_TOKEN;
+    if (!mailboxId || !mailToken) throw new Error('email_not_configured');
+    const response = await fetch(
+      `https://api.mail.hostinger.com/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/send`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${mailToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: [email],
+          display_name: 'Fitura+',
+          subject: 'Set up your Fitura+ admin account',
+          text: `Use this one-time link within 72 hours to choose your admin password and enroll your authenticator app. Save the recovery codes shown after setup.\n\n${setupUrl}`,
+        }),
+      },
     );
+    if (!response.ok) throw new Error(`mail_send_failed_${response.status}`);
     console.log(JSON.stringify({ event: 'admin_setup_invite_sent', role: invite.role }));
   } catch (error) {
     console.error(
