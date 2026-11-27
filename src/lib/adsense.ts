@@ -1,6 +1,6 @@
 /**
- * Google AdSense (web). The site-wide loader runs on public pages (site verification and
- * Auto ads). In-app units stay off until ADSENSE_SLOT is set; they are only sent to, and
+ * Google AdSense (web). Ownership is verified by a meta tag on every page; the loader (Auto
+ * ads) runs only on public pages other than home and sign-in. In-app units stay off until ADSENSE_SLOT is set; they are only sent to, and
  * only loaded for, accounts whose plan includes ads, so a
  * paying member never downloads AdSense code. The mobile app uses AdMob instead.
  */
