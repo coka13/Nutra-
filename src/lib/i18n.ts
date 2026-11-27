@@ -1102,6 +1102,15 @@ export const messages = {
   adPlusTitle: ['Enjoy Fitura+ without ads', 'Fitura+ בלי פרסומות'],
   adPlusBody: ['Upgrade to Plus for $5/month.', 'שדרגו לפלוס ב־5$ לחודש.'],
   adPlusCta: ['See plans', 'למסלולים'],
+  activatingPlan: [
+    'Confirming your payment… this usually takes a few seconds.',
+    'מאשרים את התשלום… זה לוקח בדרך כלל כמה שניות.',
+  ],
+  planActivated: [
+    'Your plan is active. Thank you! Ads are now removed.',
+    'המנוי פעיל. תודה! הפרסומות הוסרו.',
+  ],
+  removeAds: ['Remove ads', 'הסרת פרסומות'],
   upgradePlus: ['Upgrade to Plus', 'שדרוג לפלוס'],
   upgradeCoach: ['Upgrade to Coach', 'שדרוג למסלול מאמן'],
   upgradeSidebarPlus: ['No ads · $5/month', 'בלי פרסומות · 5$ לחודש'],

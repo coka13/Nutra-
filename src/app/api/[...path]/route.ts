@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adsenseUnit } from '@/lib/adsense';
 import { LEGACY_DEMO_EMAIL, createDemoAccount, demoEnabled, isDemoEmail } from '@/lib/demo';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -672,7 +673,10 @@ async function handleRequest(req: NextRequest, path: string) {
                     where: { userId: u.id, date, planId: { in: mealPlans.map((plan) => plan.id) } },
                     select: { planId: true, meal: true },
                   }),
-            entitlements: await planAccess(u),
+            ...(await (async () => {
+              const entitlements = await planAccess(u);
+              return { entitlements, adsense: entitlements.ads ? adsenseUnit() : null };
+            })()),
             integrations: await (async () => {
               const [ai, { ai: aiConfig }] = await Promise.all([aiConfigured(), getConfig()]);
               return {

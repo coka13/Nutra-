@@ -40,3 +40,11 @@ Inside the mobile app the billing page offers one wallet button (Apple Pay on iO
 **Store policy:** Apple (App Review Guideline 3.1.1) and Google Play require their own in-app purchase systems for digital subscriptions bought inside an app. Taking payment through Stripe (even with Apple Pay / Google Pay) from inside the app risks rejection, except where external purchase links are explicitly permitted (for example the US App Store storefront, or Google's alternative/user-choice billing programs). Confirm the approach for each storefront before submitting, or move mobile purchases to StoreKit / Google Play Billing.
 
 Implementation references: [Checkout session creation](https://docs.stripe.com/api/checkout/sessions/create), [webhook handling](https://docs.stripe.com/events/manage-webhook-endpoints), [subscription lifecycle](https://docs.stripe.com/billing/subscriptions/overview). No real payment was created during development.
+
+## Ads and paid plans
+
+Ads are shown only when the server computes `entitlements.ads` (Free plan, no coach, not a minor, no ad-free grant). An `ACTIVE` Plus or Coach subscription turns it off; a past-due, cancelled or inactive one turns it back on.
+
+- Web ads use Google AdSense: set `ADSENSE_CLIENT` (`ca-pub-…`) and `ADSENSE_SLOT` (a display unit ID). The server sends these only to accounts with ads, and the AdSense script is loaded only by the in-app ad slot, so paying members never download it. `/ads.txt` is generated from `ADSENSE_CLIENT`. Keep AdSense **Auto ads off** and use only this slot.
+- The mobile app uses AdMob (see `mobile/ADMOB.md`), gated by the same entitlement.
+- On return from checkout the billing page confirms PayPal subscriptions directly with PayPal (`billing/paypal-sync`, owner-checked) and waits for the card webhook, then reloads so no ad code remains on the page.

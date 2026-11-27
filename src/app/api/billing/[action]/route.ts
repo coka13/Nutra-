@@ -11,6 +11,7 @@ import {
   paypalConfigured,
   paypalStatus,
 } from '@/lib/paypal';
+import { applyPaypalSubscription } from '@/lib/paypal-sync';
 export const runtime = 'nodejs';
 export async function GET() {
   try {
@@ -47,6 +48,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
       const url = await createPaypalSubscription(u, tier);
       await audit(u.id, 'billing/paypal_checkout_created');
       return NextResponse.json({ url });
+    }
+    // Return from PayPal: confirm the subscription with PayPal now instead of waiting for
+    // the webhook. Only PayPal's canonical state counts, and only for its own subscriber.
+    if (action === 'paypal-sync') {
+      if (!paypalConfigured()) throw new ApiError('billingUnavailable', 503);
+      const { subscriptionId } = z
+        .object({ subscriptionId: z.string().regex(/^I-[A-Z0-9]{6,40}$/) })
+        .parse(await req.json());
+      const canonical = await getPaypalSubscription(subscriptionId);
+      if (canonical.custom_id !== u.id) throw new ApiError('forbidden', 403);
+      const status = await db.$transaction((tx) => applyPaypalSubscription(tx, u, canonical));
+      return NextResponse.json({ status });
     }
     if (action === 'paypal-cancel') {
       if (!paypalConfigured()) throw new ApiError('billingUnavailable', 503);

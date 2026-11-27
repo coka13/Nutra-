@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import {
-  getPaypalSubscription,
-  paypalConfigured,
-  paypalStatus,
-  tierForPaypalPlan,
-  verifyPaypalWebhook,
-} from '@/lib/paypal';
+import { getPaypalSubscription, paypalConfigured, verifyPaypalWebhook } from '@/lib/paypal';
+import { applyPaypalSubscription } from '@/lib/paypal-sync';
 export const runtime = 'nodejs';
 
 const eventSchema = z.object({
@@ -41,38 +36,9 @@ export async function POST(req: NextRequest) {
       const userId = subscription.custom_id;
       const user = userId ? await db.user.findUnique({ where: { id: userId } }) : null;
       if (user) {
-        const tier = tierForPaypalPlan(subscription.plan_id);
-        const permittedTier = tier && (tier !== 'COACH' || user.role === 'COACH') ? tier : 'FREE';
-        const status = permittedTier === 'FREE' ? 'INACTIVE' : paypalStatus(subscription.status);
-        const next = subscription.billing_info?.next_billing_time;
-        const data = {
-          provider: 'paypal',
-          providerId: subscription.id,
-          customerId: null,
-          tier: permittedTier,
-          status,
-          currentPeriodEnd: next ? new Date(next) : null,
-          cancelAtPeriodEnd: false,
-          canceledAt:
-            status === 'CANCELLED' && subscription.status_update_time
-              ? new Date(subscription.status_update_time)
-              : null,
-        };
         await db.$transaction(async (tx) => {
           if (await tx.webhookEvent.findUnique({ where: { id: eventId } })) return;
-          const current = await tx.subscription.findUnique({ where: { userId: user.id } });
-          // Never let a pending or ended PayPal subscription override another active one.
-          const otherActive =
-            current?.status === 'ACTIVE' &&
-            current.providerId &&
-            current.providerId !== subscription.id &&
-            status !== 'ACTIVE';
-          if (!otherActive)
-            await tx.subscription.upsert({
-              where: { userId: user.id },
-              create: { userId: user.id, ...data },
-              update: data,
-            });
+          await applyPaypalSubscription(tx, user, subscription);
           await tx.webhookEvent.create({ data: { id: eventId, type: event.event_type } });
         });
         return NextResponse.json({ received: true });

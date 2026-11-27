@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useNutri } from './workspace';
 
@@ -30,8 +30,46 @@ function track(placement: string, kind: 'impression' | 'click') {
   }).catch(() => {});
 }
 
-// Ad placement for plans that include ads (Free). Shows a house ad for Plus until an
-// ad network is connected; swap the body here for the network's unit when ready.
+/** Loads the AdSense library once, and only when an eligible page asks for it. */
+function loadAdsense(client: string) {
+  if (document.querySelector('script[data-adsense]')) return;
+  const script = document.createElement('script');
+  script.async = true;
+  script.crossOrigin = 'anonymous';
+  script.dataset.adsense = 'true';
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
+  document.head.appendChild(script);
+}
+
+/** One responsive AdSense unit; mounted only for accounts whose plan shows ads. */
+function AdsenseUnit({ client, slot }: { client: string; slot: string }) {
+  const ref = useRef<HTMLModElement>(null);
+  useEffect(() => {
+    loadAdsense(client);
+    if (!ref.current || ref.current.dataset.adsbygoogleStatus) return;
+    try {
+      const w = window as unknown as { adsbygoogle?: unknown[] };
+      (w.adsbygoogle = w.adsbygoogle || []).push({});
+    } catch {
+      /* Blocked or unavailable: the slot simply stays empty. */
+    }
+  }, [client, slot]);
+  return (
+    <ins
+      ref={ref}
+      className="adsbygoogle"
+      style={{ display: 'block' }}
+      data-ad-client={client}
+      data-ad-slot={slot}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
+  );
+}
+
+// Ad placement for plans that include ads (Free). Paid plans never render it, and the
+// server sends AdSense details only to accounts with ads. Without AdSense (or inside the
+// mobile app, which uses AdMob) a house ad for Plus is shown instead.
 // Administrators can switch placements off and set the refresh interval remotely.
 export function AdSlot({
   placement = 'dashboard',
@@ -58,7 +96,25 @@ export function AdSlot({
     countImpression();
     track(placement, 'impression');
   }, [state.entitlements.ads, placement, minIntervalSeconds, maxImpressionsPerDay]);
+  const [native, setNative] = useState(true);
+  useEffect(() => setNative('ReactNativeWebView' in window), []);
   if (!eligible) return null;
+  if (state.adsense && !native)
+    return (
+      <aside className="ad-slot adsense-slot" aria-label={t('adLabel')}>
+        <span className="ad-slot-label">{t('adLabel')}</span>
+        <AdsenseUnit client={state.adsense.client} slot={state.adsense.slot} />
+        <button
+          className="text-button muted ad-remove"
+          onClick={() => {
+            track(placement, 'click');
+            navigate('billing');
+          }}
+        >
+          {t('removeAds')}
+        </button>
+      </aside>
+    );
   return (
     <aside className="ad-slot" aria-label={t('adLabel')}>
       <span className="ad-slot-label">{t('adLabel')}</span>

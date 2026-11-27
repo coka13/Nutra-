@@ -97,6 +97,8 @@ export type State = {
   mealChecks: { planId: string; meal: string }[];
   entitlements: import('./plans').Entitlements;
   integrations: Record<string, boolean>;
+  /** AdSense unit, sent only to accounts whose plan shows ads. */
+  adsense?: { client: string; slot: string } | null;
   demo: boolean;
 };
 export type FoodWithUnits = Food & { units: FoodUnit[] };

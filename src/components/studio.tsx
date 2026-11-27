@@ -1040,7 +1040,8 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
 }
 export function BillingView() {
   const [loaded, setLoaded] = useState(false);
-  const { state, t, lang, formatDate } = useNutri(),
+  const { state, t, lang, formatDate, refresh } = useNutri(),
+    [activating, setActivating] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [payments, setPayments] = useState<
@@ -1062,6 +1063,36 @@ export function BillingView() {
       active = false;
     };
   }, []);
+  // Back from checkout: confirm the payment right away (PayPal is asked directly; card
+  // payments arrive by webhook), then reload so no ad code stays on the page.
+  const paidPlan = state.entitlements.plan !== 'FREE';
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('checkout') !== 'returned') return;
+    if (paidPlan) {
+      location.replace('/app/billing?checkout=active');
+      return;
+    }
+    setActivating(true);
+    const subscriptionId = params.get('subscription_id');
+    let tries = 0;
+    const check = () => {
+      if (++tries > 20) {
+        clearInterval(timer);
+        setActivating(false);
+        return;
+      }
+      void refresh().catch(() => {});
+    };
+    const timer = setInterval(check, 3000);
+    if (subscriptionId)
+      void api('billing/paypal-sync', { subscriptionId })
+        .catch(() => {})
+        .finally(() => void refresh().catch(() => {}));
+    return () => clearInterval(timer);
+  }, [paidPlan, refresh]);
+  const activated =
+    typeof location !== 'undefined' && location.search.includes('checkout=active') && paidPlan;
   // Inside the mobile app, offer the device wallet; checkout opens in the system browser,
   // where Apple Pay / Google Pay are available (they don't work inside a WebView).
   const [wallet, setWallet] = useState<'apple' | 'google' | null>(null);
@@ -1113,10 +1144,22 @@ export function BillingView() {
           </button>
         )}
       </PageHeading>
-      <div className="integration-notice">
-        <Shield size={22} />
-        <p>{t(state.integrations.billing ? 'checkoutHint' : 'providerDisabled')}</p>
-      </div>
+      {activating ? (
+        <div className="integration-notice">
+          <Loader2 size={22} className="spin" />
+          <p>{t('activatingPlan')}</p>
+        </div>
+      ) : activated ? (
+        <div className="integration-notice success-notice">
+          <Check size={22} />
+          <p>{t('planActivated')}</p>
+        </div>
+      ) : (
+        <div className="integration-notice">
+          <Shield size={22} />
+          <p>{t(state.integrations.billing ? 'checkoutHint' : 'providerDisabled')}</p>
+        </div>
+      )}
       {error && (
         <p className="form-error" role="alert">
           {t(error)}
