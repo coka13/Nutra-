@@ -1,20 +1,27 @@
 /**
- * Google AdSense (web). Off until ADSENSE_CLIENT (ca-pub-…) and ADSENSE_SLOT are set.
- * The unit is only sent to, and only loaded for, accounts whose plan includes ads, so a
+ * Google AdSense (web). The site-wide loader runs on public pages (site verification and
+ * Auto ads). In-app units stay off until ADSENSE_SLOT is set; they are only sent to, and
+ * only loaded for, accounts whose plan includes ads, so a
  * paying member never downloads AdSense code. The mobile app uses AdMob instead.
  */
+/** Publisher ID; ADSENSE_CLIENT overrides it. */
+const defaultClient = 'ca-pub-3933096627211440';
+
+/** Validated publisher ID (ca-pub-…), or null. */
+export function adsenseClient() {
+  const client = process.env.ADSENSE_CLIENT?.trim() || defaultClient;
+  return /^ca-pub-\d{10,20}$/.test(client) ? client : null;
+}
+
 export function adsenseUnit() {
-  const client = process.env.ADSENSE_CLIENT?.trim(),
+  const client = adsenseClient(),
     slot = process.env.ADSENSE_SLOT?.trim();
-  if (!client || !slot || !/^ca-pub-\d{10,20}$/.test(client) || !/^\d{6,20}$/.test(slot))
-    return null;
+  if (!client || !slot || !/^\d{6,20}$/.test(slot)) return null;
   return { client, slot };
 }
 
 /** ads.txt line authorising Google to sell this site's inventory. */
 export function adsTxt() {
-  const client = process.env.ADSENSE_CLIENT?.trim();
-  return client && /^ca-pub-\d{10,20}$/.test(client)
-    ? `google.com, ${client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`
-    : '';
+  const client = adsenseClient();
+  return client ? `google.com, ${client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n` : '';
 }

@@ -32,7 +32,7 @@ function track(placement: string, kind: 'impression' | 'click') {
 
 /** Loads the AdSense library once, and only when an eligible page asks for it. */
 function loadAdsense(client: string) {
-  if (document.querySelector('script[data-adsense]')) return;
+  if (document.querySelector('script[data-adsense], script[src*="adsbygoogle.js"]')) return;
   const script = document.createElement('script');
   script.async = true;
   script.crossOrigin = 'anonymous';
