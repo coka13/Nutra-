@@ -393,7 +393,6 @@ export function NutritionView() {
               {t('addWater')}
             </button>
           </section>
-          {!state.integrations.photo && <p className="muted small-copy">{t('photoDisabled')}</p>}
         </aside>
       </div>
       {modal === 'food' && (

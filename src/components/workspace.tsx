@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  ChevronRight,
   Dumbbell,
   Globe,
   LayoutDashboard,
@@ -43,7 +44,7 @@ import { CoachDashboard } from './coach-dashboard';
 import { CoachBusiness } from './coach-business';
 import { BrandMark } from './brand-logo';
 import { CoachInvitations } from './coach-invitations';
-import { Dashboard, ProgressView } from './dashboard';
+import { CoachView, Dashboard, ProgressView } from './dashboard';
 import { WorkoutsView, BuilderView, LibraryView, ActiveView } from './workouts';
 import { NutritionView, RecipesView, MealPlansView } from './nutrition';
 import { AdSlot } from './ad-slot';
@@ -420,7 +421,11 @@ export function Workspace({
               <X />
             </button>
           </div>
-          <button className="workspace-switch" onClick={() => navigate('settings')}>
+          <button
+            className="workspace-switch"
+            // Coaches edit their brand; clients open their coach's profile.
+            onClick={() => navigate(isCoach ? 'branding' : sidebarBrand ? 'coach' : 'settings')}
+          >
             {sidebarBrand?.branding?.logoAt ? (
               <BrandMark
                 coachId={sidebarBrand.id}
@@ -443,7 +448,7 @@ export function Workspace({
                   t('tagline')}
               </small>
             </span>
-            <ChevronDown size={14} />
+            <ChevronRight size={16} className="directional-icon" />
           </button>
           <span className="nav-caption">{t(isCoach ? 'coaching' : 'personal')}</span>
           <nav>
@@ -562,7 +567,9 @@ export function Workspace({
               <span className="breadcrumb">
                 {t('personal')}
                 <span>/</span>
-                <strong>{t(page === 'settings' ? 'profileSettings' : page)}</strong>
+                <strong>
+                  {t(page === 'settings' ? 'profileSettings' : page === 'coach' ? 'connectedCoach' : page)}
+                </strong>
               </span>
             </div>
             <div className="row top-actions">
@@ -737,6 +744,8 @@ export function Workspace({
               <MessagesView />
             ) : page === 'assistant' && state.entitlements.ai ? (
               <AssistantView />
+            ) : page === 'coach' && !isCoach ? (
+              <CoachView />
             ) : page === 'settings' || page === 'onboarding' ? (
               <SettingsView key={page} onboarding={page === 'onboarding'} />
             ) : page === 'billing' ? (

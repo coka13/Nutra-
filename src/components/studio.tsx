@@ -621,6 +621,13 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
   const birthYears = Array.from({ length: thisYear - 1920 + 1 }, (_, i) => 1920 + i);
   const latestWeight = weightMetrics(state.progress, '').latest?.value;
   const weightOptions = Array.from({ length: (250 - 30) * 2 + 1 }, (_, i) => 30 + i / 2);
+  const heightOptions = Array.from({ length: 230 - 100 + 1 }, (_, i) => 100 + i);
+  const timezone = p?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const supportedZones = Intl.supportedValuesOf('timeZone');
+  // Keep a stored zone selectable even if this browser lists it under another name (e.g. UTC).
+  const timezones = supportedZones.includes(timezone)
+    ? supportedZones
+    : [timezone, ...supportedZones];
   return (
     <>
       <PageHeading
@@ -641,11 +648,12 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
                 f.get('weightKg') && Number(f.get('weightKg')) !== latestWeight
                   ? Number(f.get('weightKg'))
                   : undefined,
-              goal: f.get('goal'),
-              experience: f.get('experience'),
-              equipment: f.get('equipment'),
-              frequency: Number(f.get('frequency')),
-              duration: Number(f.get('duration')),
+              // No longer edited here; keep the stored values.
+              goal: p?.goal || 'consistency',
+              experience: p?.experience || 'beginner',
+              equipment: p?.equipment || 'bodyweight',
+              frequency: p?.frequency ?? 3,
+              duration: p?.duration ?? 40,
               dietary: f.get('dietary'),
               limitations: f.get('limitations'),
               units: f.get('units'),
@@ -653,7 +661,10 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
             language: f.get('language'),
             theme: f.get('theme'),
             timezone: f.get('timezone'),
-            adult: f.get('adult') === 'on',
+            // Age is derived from the birth year; without one, keep the stored answer.
+            adult: f.get('birthYear')
+              ? thisYear - Number(f.get('birthYear')) >= 18
+              : (p?.adult ?? false),
             aiConsent: f.get('aiConsent') === 'on',
             reminders: f.get('reminders') === 'on',
             onboarded: true,
@@ -713,13 +724,15 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
                   </label>
                   <label>
                     {t('heightCm')}
-                    <input
+                    <WheelInput
                       name="heightCm"
-                      type="number"
+                      label={t('heightCm')}
+                      options={heightOptions}
+                      defaultValue={p?.heightCm}
+                      center={170}
                       min={50}
                       max={260}
                       step={0.1}
-                      defaultValue={p?.heightCm ?? ''}
                     />
                   </label>
                   <label>
@@ -734,65 +747,6 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
                       max={700}
                       step={0.1}
                     />
-                  </label>
-                  <label>
-                    {t('goal')}
-                    <select name="goal" defaultValue={p?.goal || 'consistency'}>
-                      {['consistency', 'strength', 'energy', 'mobility'].map((k) => (
-                        <option key={k} value={k}>
-                          {t(k)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {t('experience')}
-                    <select name="experience" defaultValue={p?.experience || 'beginner'}>
-                      {['beginner', 'intermediate', 'advanced'].map((k) => (
-                        <option key={k} value={k}>
-                          {t(k)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {t('equipment')}
-                    <select name="equipment" defaultValue={p?.equipment || 'bodyweight'}>
-                      {['bodyweight', 'dumbbells', 'gym'].map((k) => (
-                        <option value={k} key={k}>
-                          {t(k)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {t('frequency')}
-                    <input
-                      name="frequency"
-                      type="number"
-                      min={1}
-                      max={6}
-                      defaultValue={p?.frequency || 3}
-                      required
-                    />
-                  </label>
-                  <label>
-                    {t('duration')}
-                    <input
-                      type="number"
-                      name="duration"
-                      min={10}
-                      max={90}
-                      defaultValue={p?.duration || 40}
-                      required
-                    />
-                  </label>
-                  <label>
-                    {t('units')}
-                    <select name="units" defaultValue={p?.units || 'metric'}>
-                      <option value="metric">{t('metricUnits')}</option>
-                      <option value="imperial">{t('imperial')}</option>
-                    </select>
                   </label>
                 </div>
                 <label>
@@ -828,43 +782,48 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
                     <option value="dark">{t('dark')}</option>
                   </select>
                 </label>
+                {!isCoach && (
+                  <label>
+                    {t('units')}
+                    <select name="units" defaultValue={p?.units || 'metric'}>
+                      <option value="metric">{t('metricUnits')}</option>
+                      <option value="imperial">{t('imperial')}</option>
+                    </select>
+                  </label>
+                )}
               </div>
               <label>
                 {t('timezone')}
-                <input
-                  name="timezone"
-                  defaultValue={p?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
-                  required
-                />
+                <select name="timezone" defaultValue={timezone} required dir="ltr">
+                  {timezones.map((z) => (
+                    <option key={z} value={z}>
+                      {z.replace(/_/g, ' ')}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="checkbox-label">
                 <input type="checkbox" name="reminders" defaultChecked={p?.reminders ?? true} />
                 {t('reminders')}
               </label>
             </section>
-            <section className="panel">
-              <h2>{t('privacy')}</h2>
-              <label className="checkbox-label">
-                <input type="checkbox" name="adult" defaultChecked={p?.adult || false} />
-                {t('adult')}
-              </label>
-              {state.entitlements.ai ? (
-                <>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="aiConsent"
-                      defaultChecked={p?.aiConsent || false}
-                    />
-                    {t('aiConsent')}
-                  </label>
-                  <p className="muted small-copy">{t('aiDisclaimer')}</p>
-                </>
-              ) : (
-                // Keep an earlier AI consent intact while the plan has no AI.
-                p?.aiConsent && <input type="hidden" name="aiConsent" value="on" />
-              )}
-            </section>
+            {state.entitlements.ai ? (
+              <section className="panel">
+                <h2>{t('privacy')}</h2>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="aiConsent"
+                    defaultChecked={p?.aiConsent || false}
+                  />
+                  {t('aiConsent')}
+                </label>
+                <p className="muted small-copy">{t('aiDisclaimer')}</p>
+              </section>
+            ) : (
+              // Keep an earlier AI consent intact while the plan has no AI.
+              p?.aiConsent && <input type="hidden" name="aiConsent" value="on" />
+            )}
             <div className="form-actions">
               <Submit>{t(onboarding ? 'getStarted' : 'save')}</Submit>
             </div>

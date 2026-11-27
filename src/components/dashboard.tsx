@@ -36,6 +36,7 @@ import {
 } from 'recharts';
 import { DatePicker, Empty, PageHeading, localDay, useNutri } from './workspace';
 import { BrandMark, brandBackgroundUrl } from './brand-logo';
+import type { Relationship } from '@/lib/types';
 export function Dashboard() {
   const { state, t, lang, navigate, run, number, formatDate, setDate } = useNutri();
   useEffect(() => {
@@ -145,43 +146,7 @@ export function Dashboard() {
           ))}
         </div>
       )}
-      {coach && (
-        <section
-          className={`panel coach-hero ${coach.coach.branding?.backgroundAt ? 'has-background' : ''}`}
-          aria-label={t('connectedCoach')}
-          style={
-            {
-              '--brand': coach.coach.branding?.color || 'var(--green)',
-              ...(coach.coach.branding?.backgroundAt && {
-                '--brand-background': `url("${brandBackgroundUrl(coach.coach.id, coach.coach.branding.backgroundAt)}")`,
-              }),
-            } as CSSProperties
-          }
-        >
-          <BrandMark
-            coachId={coach.coach.id}
-            name={coach.coach.name}
-            branding={coach.coach.branding}
-            className="coach-hero-logo"
-          />
-          <div className="coach-hero-body">
-            <span className="eyebrow">{t('connectedCoach')}</span>
-            <h2>{coach.coach.branding?.businessName || coach.coach.name}</h2>
-            {coach.coach.branding?.businessName &&
-              coach.coach.branding.businessName !== coach.coach.name && (
-                <small className="coach-hero-name">{coach.coach.name}</small>
-              )}
-            {coach.coach.branding?.welcome && (
-              <p className="coach-hero-welcome">{coach.coach.branding.welcome}</p>
-            )}
-            <CoachContact coach={coach.coach} />
-          </div>
-          <button className="button primary coach-hero-cta" onClick={() => navigate('messages')}>
-            <MessageSquare size={16} />
-            {t('openMessages')}
-          </button>
-        </section>
-      )}
+      {coach && <CoachHero link={coach} />}
       <div className="stats-grid">
         <Stat
           icon={<Dumbbell size={18} />}
@@ -477,6 +442,60 @@ function Stat({
         <small>{suffix}</small>
       </div>
     </div>
+  );
+}
+/** Branded card for the client's active coach: logo, welcome note, contact and messages. */
+export function CoachHero({ link: coach }: { link: Relationship }) {
+  const { t, navigate } = useNutri();
+  return (
+    <section
+      className={`panel coach-hero ${coach.coach.branding?.backgroundAt ? 'has-background' : ''}`}
+      aria-label={t('connectedCoach')}
+      style={
+        {
+          '--brand': coach.coach.branding?.color || 'var(--green)',
+          ...(coach.coach.branding?.backgroundAt && {
+            '--brand-background': `url("${brandBackgroundUrl(coach.coach.id, coach.coach.branding.backgroundAt)}")`,
+          }),
+        } as CSSProperties
+      }
+    >
+      <BrandMark
+        coachId={coach.coach.id}
+        name={coach.coach.name}
+        branding={coach.coach.branding}
+        className="coach-hero-logo"
+      />
+      <div className="coach-hero-body">
+        <span className="eyebrow">{t('connectedCoach')}</span>
+        <h2>{coach.coach.branding?.businessName || coach.coach.name}</h2>
+        {coach.coach.branding?.businessName &&
+          coach.coach.branding.businessName !== coach.coach.name && (
+            <small className="coach-hero-name">{coach.coach.name}</small>
+          )}
+        {coach.coach.branding?.welcome && (
+          <p className="coach-hero-welcome">{coach.coach.branding.welcome}</p>
+        )}
+        <CoachContact coach={coach.coach} />
+      </div>
+      <button className="button primary coach-hero-cta" onClick={() => navigate('messages')}>
+        <MessageSquare size={16} />
+        {t('openMessages')}
+      </button>
+    </section>
+  );
+}
+/** The client's coach profile, opened from the coach card in the sidebar. */
+export function CoachView() {
+  const { state, t } = useNutri();
+  const link = state.relationships.find(
+    (l) => l.clientId === state.user.id && l.status === 'ACTIVE',
+  );
+  return (
+    <>
+      <PageHeading title={t('connectedCoach')} />
+      {link ? <CoachHero link={link} /> : <Empty text={t('noCoach')} />}
+    </>
   );
 }
 export function ProgressView({ reports = false }: { reports?: boolean }) {

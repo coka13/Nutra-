@@ -1409,6 +1409,7 @@ export const messages = {
   time: ['Time', 'זמן'],
   personalBest: ['Best recorded set', 'הסט הטוב ביותר שתועד'],
   connectedCoach: ['Your coach', 'המאמן שלך'],
+  noCoach: ['You are not connected to a coach yet.', 'עדיין אין לך מאמן מחובר.'],
   sharing: ['Coaching & sharing', 'אימון ושיתוף'],
   sharingHint: [
     'Accepted coaches can see your workouts, food diary, recipes and progress. You can end sharing at any time.',
