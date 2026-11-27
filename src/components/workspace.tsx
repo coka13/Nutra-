@@ -31,6 +31,7 @@ import {
   BookOpen,
   Palette,
   Utensils,
+  Crown,
 } from 'lucide-react';
 import { Language, setMessageOverrides, translate } from '@/lib/i18n';
 import { SupportView } from './support-center';
@@ -522,6 +523,21 @@ export function Workspace({
             </button>
           )}
           <div className="sidebar-bottom"></div>
+          {upgradeTarget(state) && page !== 'billing' && (
+            <button className="sidebar-upgrade" onClick={() => navigate('billing')}>
+              <Crown size={18} />
+              <span>
+                <strong>
+                  {t(upgradeTarget(state) === 'COACH' ? 'upgradeCoach' : 'upgradePlus')}
+                </strong>
+                <small>
+                  {t(
+                    upgradeTarget(state) === 'COACH' ? 'upgradeSidebarCoach' : 'upgradeSidebarPlus',
+                  )}
+                </small>
+              </span>
+            </button>
+          )}
           <div className="account-dock">
             <button
               className={`profile-switch ${page === 'settings' ? 'selected' : ''}`}
@@ -812,6 +828,25 @@ export function Workspace({
         )}
       </div>
     </Context.Provider>
+  );
+}
+/** The paid tier this account can move up to, or null when nothing applies. */
+export function upgradeTarget(state: State): 'PREMIUM' | 'COACH' | null {
+  if (state.user.role === 'ADMIN') return null;
+  if (state.user.role === 'COACH') return state.entitlements.plan === 'COACH' ? null : 'COACH';
+  // Plus only removes ads, so it is offered only to members who see them.
+  return state.entitlements.plan === 'FREE' && state.entitlements.ads ? 'PREMIUM' : null;
+}
+/** Opens the plans page; renders nothing when the account has no higher plan. */
+export function UpgradeButton({ className = 'button primary' }: { className?: string }) {
+  const { state, t, navigate } = useNutri();
+  const target = upgradeTarget(state);
+  if (!target) return null;
+  return (
+    <button className={`${className} upgrade-button`} onClick={() => navigate('billing')}>
+      <Crown size={16} />
+      {t(target === 'COACH' ? 'upgradeCoach' : 'upgradePlus')}
+    </button>
   );
 }
 export function PageHeading({

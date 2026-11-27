@@ -40,7 +40,18 @@ import { PLAN_PRICE_USD } from '@/lib/plans';
 import { calendarDate, workoutCalendar } from '@/lib/workout-calendar';
 import { weightMetrics } from '@/lib/weight-metrics';
 import { WheelInput } from './wheel-input';
-import { api, Empty, Form, localDay, Modal, PageHeading, Submit, useNutri } from './workspace';
+import {
+  api,
+  Empty,
+  Form,
+  localDay,
+  Modal,
+  PageHeading,
+  Submit,
+  UpgradeButton,
+  upgradeTarget,
+  useNutri,
+} from './workspace';
 export function CalendarView() {
   const { state, t, run, formatDate } = useNutri(),
     [open, setOpen] = useState(false),
@@ -378,6 +389,16 @@ export function ClientsView() {
           {t('inviteClient')}
         </button>
       </PageHeading>
+      {upgradeTarget(state) &&
+        state.relationships.filter(
+          (r) => r.coachId === state.user.id && (r.status === 'ACTIVE' || r.status === 'PENDING'),
+        ).length >= state.entitlements.clientLimit && (
+          <div className="integration-notice upgrade-notice">
+            <Users size={18} />
+            <p>{t(state.entitlements.clientLimit ? 'upgradeCapacity' : 'coachPlanRequired')}</p>
+            <UpgradeButton />
+          </div>
+        )}
       <div className="toolbar">
         <div className="search-field">
           <Search size={17} />
@@ -586,9 +607,10 @@ export function AssistantView() {
       <PageHeading title={t('assistant')} subtitle={t('assistantSub')} />
       <div className="assistant-layout">
         {!state.entitlements.ai && (
-          <div className="integration-notice">
+          <div className="integration-notice upgrade-notice">
             <Sparkles size={18} />
-            <p>{t('aiPlanRequired')}</p>
+            <p>{t(state.user.role === 'COACH' ? 'aiCoachPlanRequired' : 'aiPlanRequired')}</p>
+            {state.user.role === 'COACH' && <UpgradeButton />}
           </div>
         )}
         {state.entitlements.ai && !state.integrations.ai && (
@@ -901,6 +923,7 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
                   <Download size={16} />
                   {t('download')}
                 </a>
+                <UpgradeButton />
                 <button className="button secondary" onClick={() => navigate('billing')}>
                   <Wallet size={16} />
                   {t('billing')}

@@ -1102,6 +1102,18 @@ export const messages = {
   adPlusTitle: ['Enjoy Fitura+ without ads', 'Fitura+ בלי פרסומות'],
   adPlusBody: ['Upgrade to Plus for $5/month.', 'שדרגו לפלוס ב־5$ לחודש.'],
   adPlusCta: ['See plans', 'למסלולים'],
+  upgradePlus: ['Upgrade to Plus', 'שדרוג לפלוס'],
+  upgradeCoach: ['Upgrade to Coach', 'שדרוג למסלול מאמן'],
+  upgradeSidebarPlus: ['No ads · $5/month', 'בלי פרסומות · 5$ לחודש'],
+  upgradeSidebarCoach: ['Clients and AI planning', 'מתאמנים ותכנון AI'],
+  aiCoachPlanRequired: [
+    'AI planning is included in the Coach plan.',
+    'תכנון AI כלול במסלול המאמנים.',
+  ],
+  upgradeCapacity: [
+    'Upgrade your plan to add more clients.',
+    'שדרגו את המסלול כדי להוסיף מתאמנים.',
+  ],
   coachTier: ['Coach', 'מאמן'],
   providerDisabled: [
     'Billing provider is not connected. No payment will be collected.',

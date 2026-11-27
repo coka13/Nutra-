@@ -7841,3 +7841,58 @@ html[data-theme='dark'] .button.wallet-pay {
   border-color: #fff;
   color: #000;
 }
+
+/* Upgrade prompts */
+.sidebar-upgrade {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--green) 35%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--green) 10%, var(--panel));
+  color: var(--green);
+  text-align: start;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sidebar-upgrade:hover {
+  background: color-mix(in srgb, var(--green) 18%, var(--panel));
+}
+.sidebar-upgrade svg {
+  flex-shrink: 0;
+}
+.sidebar-upgrade span {
+  min-width: 0;
+}
+.sidebar-upgrade strong {
+  display: block;
+  font-size: 12px;
+}
+.sidebar-upgrade small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upgrade-notice p {
+  flex: 1;
+}
+.upgrade-notice .upgrade-button {
+  flex-shrink: 0;
+}
+@media (max-width: 650px) {
+  .upgrade-notice {
+    flex-wrap: wrap;
+  }
+}
+@media (max-height: 600px) {
+  .sidebar-upgrade small {
+    display: none;
+  }
+}
