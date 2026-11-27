@@ -5,7 +5,7 @@ import './globals.css';
 import './viewport-layout.css';
 export const metadata: Metadata = {
   title: 'Fitura+ · A healthier rhythm',
-  description: 'Your workouts, nutrition and coaching. Beautifully connected.',
+  description: 'Your workouts, nutrition and progress. Beautifully connected.',
   manifest: '/manifest.webmanifest',
 };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#16715b' };

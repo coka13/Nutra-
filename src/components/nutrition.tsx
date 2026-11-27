@@ -808,12 +808,14 @@ export function MealPlansView() {
             )}
             {p.items.length > 0 && <PlanFoods items={p.items} />}
             {p.content && <p className="pre-wrap">{p.content}</p>}
-            <span className="badge neutral">
-              {p.assignedClientId
-                ? state.relationships.find((r) => r.clientId === p.assignedClientId)?.client.name ||
-                  t('assignedPlan')
-                : t('mealTemplate')}
-            </span>
+            {p.assignedClientId !== state.user.id && (
+              <span className="badge neutral">
+                {p.assignedClientId
+                  ? state.relationships.find((r) => r.clientId === p.assignedClientId)?.client
+                      .name || t('assignedPlan')
+                  : t('mealTemplate')}
+              </span>
+            )}
             {p.userId === state.user.id && (
               <div className="row wrap">
                 {state.user.role === 'COACH' && (
