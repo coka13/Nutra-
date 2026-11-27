@@ -12,6 +12,7 @@ import {
   paypalStatus,
 } from '@/lib/paypal';
 import { applyPaypalSubscription } from '@/lib/paypal-sync';
+import { discountPlanFor, findDiscount } from '@/lib/discounts';
 export const runtime = 'nodejs';
 export async function GET() {
   try {
@@ -36,18 +37,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
     if (!acceptsOrigin(req))
       throw new ApiError('forbidden', 403);
     const u = await requireUser();
-    await rateLimit(`billing:${u.id}`, 5);
+    await rateLimit(`billing:${u.id}`, 10);
     const action = (await params).action;
     const activePaid = !!u.subscription?.providerId && u.subscription.status === 'ACTIVE';
     // PayPal (web): hosted approval page; access is granted only by the verified webhook.
     if (action === 'paypal') {
       if (!paypalConfigured()) throw new ApiError('billingUnavailable', 503);
-      const { tier } = z.object({ tier: z.enum(['PREMIUM', 'COACH']) }).parse(await req.json());
+      const { tier, code } = z
+        .object({ tier: z.enum(['PREMIUM', 'COACH']), code: z.string().max(32).optional() })
+        .parse(await req.json());
       if (tier === 'COACH' && u.role !== 'COACH') throw new ApiError('forbidden', 403);
       if (activePaid) throw new ApiError('subscriptionActive', 409);
-      const url = await createPaypalSubscription(u, tier);
+      const planId = code
+        ? await discountPlanFor(db, await findDiscount(db, code, u), tier)
+        : undefined;
+      const url = await createPaypalSubscription(u, tier, planId);
       await audit(u.id, 'billing/paypal_checkout_created');
       return NextResponse.json({ url });
+    }
+    // Checks a discount code before checkout; the price is applied by PayPal.
+    if (action === 'discount') {
+      const { code } = z.object({ code: z.string().max(32) }).parse(await req.json());
+      const promotion = await findDiscount(db, code, u);
+      return NextResponse.json({
+        code: promotion.code,
+        percentOff: promotion.percentOff,
+        months: promotion.months,
+      });
     }
     // Return from PayPal: confirm the subscription with PayPal now instead of waiting for
     // the webhook. Only PayPal's canonical state counts, and only for its own subscriber.

@@ -1104,11 +1104,43 @@ export function BillingView() {
     paypal = !!state.integrations.paypal && !wallet,
     paypalSubscriber =
       state.subscription?.provider === 'paypal' && state.subscription.status === 'ACTIVE';
+  const [discount, setDiscount] = useState<{ code: string; percentOff: number; months: number } | null>(null),
+    [codeInput, setCodeInput] = useState(''),
+    [redeemed, setRedeemed] = useState('');
+  async function applyDiscount() {
+    if (!codeInput.trim()) return;
+    setBusy(true);
+    setError('');
+    setRedeemed('');
+    const code = codeInput.trim();
+    try {
+      setDiscount(await api('billing/discount', { code }));
+    } catch (e) {
+      setDiscount(null);
+      const reason = e instanceof Error ? e.message : 'promoInvalid';
+      // Not a discount: it may be a free-access code, which is redeemed right away.
+      if (reason !== 'promoInvalid') setError(reason);
+      else
+        try {
+          const { grant } = await api<{ grant: { endsAt: string } }>('promo', { code });
+          setRedeemed(t('promoRedeemed').replace('{date}', formatDate(grant.endsAt)));
+          setCodeInput('');
+          await refresh();
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : 'promoInvalid');
+        }
+    } finally {
+      setBusy(false);
+    }
+  }
   async function redirect(action: string, tier?: string) {
     setBusy(true);
     setError('');
     try {
-      const result = await api<{ url: string }>(`billing/${action}`, { tier });
+      const result = await api<{ url: string }>(`billing/${action}`, {
+        tier,
+        ...(action === 'paypal' && discount && { code: discount.code }),
+      });
       location.href = result.url;
       // The mobile app opens checkout externally and stays on this page.
       if (wallet) setBusy(false);
@@ -1165,6 +1197,46 @@ export function BillingView() {
           {t(error)}
         </p>
       )}
+      {state.entitlements.plan === 'FREE' && (
+        <form
+          className="panel discount-code"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void applyDiscount();
+          }}
+        >
+          <label className="grow">
+            {t('promoCode')}
+            <input
+              value={codeInput}
+              maxLength={32}
+              autoComplete="off"
+              style={{ textTransform: 'uppercase' }}
+              onChange={(e) => {
+                setCodeInput(e.target.value);
+                if (discount) setDiscount(null);
+              }}
+            />
+          </label>
+          <button className="button secondary" disabled={busy || !codeInput.trim()}>
+            {t('applyCode')}
+          </button>
+          {redeemed && (
+            <p className="discount-applied" role="status">
+              <Check size={16} />
+              {redeemed}
+            </p>
+          )}
+          {discount && (
+            <p className="discount-applied" role="status">
+              <Check size={16} />
+              {t('discountApplied')
+                .replace('{p}', String(discount.percentOff))
+                .replace('{m}', String(discount.months))}
+            </p>
+          )}
+        </form>
+      )}
       <div className="pricing-cards">
         {['free', 'premium', ...(state.user.role === 'COACH' ? ['coachTier'] : [])].map(
           (key, i) => {
@@ -1176,13 +1248,22 @@ export function BillingView() {
                 <Wallet size={26} />
                 <h2>{t(key)}</h2>
                 <strong className="price">
-                  {price ? (
+                  {price && discount && paypal && !current ? (
+                    <>
+                      <s className="price-was">${price}</s> $
+                      {Math.round(price * (100 - discount.percentOff)) / 100}
+                      <small> {t('perMonth')}</small>
+                    </>
+                  ) : price ? (
                     <>
                       ${price}
                       <small> {t('perMonth')}</small>
                     </>
                   ) : (
-                    t('free')
+                    <>
+                      $0
+                      <small> {t('perMonth')}</small>
+                    </>
                   )}
                 </strong>
                 <p>
@@ -1276,7 +1357,7 @@ export function BillingView() {
             <Empty text={t(error ? 'billingHistoryUnavailable' : 'noPaymentsYet')} />
           )}
         </section>
-        <PromoRedeem />
+        {state.entitlements.plan !== 'FREE' && <PromoRedeem />}
       </div>
     </>
   );

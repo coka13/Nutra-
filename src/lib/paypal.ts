@@ -82,21 +82,79 @@ export type PaypalSubscription = {
   status_update_time?: string;
 };
 
+type PaypalPlan = {
+  id: string;
+  product_id: string;
+  name: string;
+  billing_cycles: {
+    tenure_type: string;
+    frequency: { interval_unit: string; interval_count: number };
+    pricing_scheme: { fixed_price: { value: string; currency_code: string } };
+  }[];
+};
+
+/** Price after a percentage discount, in PayPal's two-decimal format. */
+export const discountedPrice = (value: string, percentOff: number) =>
+  (Math.round(Number(value) * (100 - percentOff)) / 100).toFixed(2);
+
+/**
+ * Creates a PayPal plan for a discount: `months` billing cycles at the discounted price, then
+ * the regular price of the tier's standard plan. Product, interval and currency are copied
+ * from that plan, so the only difference is the introductory price.
+ */
+export async function createDiscountPlan(tier: Tier, percentOff: number, months: number, code: string) {
+  const base = await paypal<PaypalPlan>(
+    `/v1/billing/plans/${encodeURIComponent(paypalPlanForTier(tier))}`,
+  );
+  const regular = base.billing_cycles.find((cycle) => cycle.tenure_type === 'REGULAR');
+  if (!regular) throw new Error('billingUnavailable');
+  const price = regular.pricing_scheme.fixed_price;
+  const created = await paypal<{ id: string }>('/v1/billing/plans', {
+    method: 'POST',
+    requestId: `discount-${code}-${tier}`,
+    body: {
+      product_id: base.product_id,
+      name: `${base.name} · ${code} (${percentOff}% off ${months} mo)`.slice(0, 127),
+      status: 'ACTIVE',
+      billing_cycles: [
+        {
+          frequency: regular.frequency,
+          tenure_type: 'TRIAL',
+          sequence: 1,
+          total_cycles: months,
+          pricing_scheme: {
+            fixed_price: { value: discountedPrice(price.value, percentOff), currency_code: price.currency_code },
+          },
+        },
+        {
+          frequency: regular.frequency,
+          tenure_type: 'REGULAR',
+          sequence: 2,
+          total_cycles: 0,
+          pricing_scheme: { fixed_price: price },
+        },
+      ],
+      payment_preferences: { auto_bill_outstanding: true, payment_failure_threshold: 2 },
+    },
+  });
+  return created.id;
+}
+
 /** Creates a pending subscription and returns PayPal's approval URL. */
 export async function createPaypalSubscription(user: {
   id: string;
   email: string;
   language: string;
-}, tier: Tier) {
+}, tier: Tier, planId = paypalPlanForTier(tier)) {
   const appUrl = process.env.APP_URL!.replace(/\/$/, '');
   const result = await paypal<{ id: string; links: { rel: string; href: string }[] }>(
     '/v1/billing/subscriptions',
     {
       method: 'POST',
       // Same idempotency window as Stripe checkout: repeated clicks reuse one subscription.
-      requestId: `checkout-${user.id}-${tier}-${Math.floor(Date.now() / 300000)}`,
+      requestId: `checkout-${user.id}-${planId}-${Math.floor(Date.now() / 300000)}`,
       body: {
-        plan_id: paypalPlanForTier(tier),
+        plan_id: planId,
         custom_id: user.id,
         subscriber: { email_address: user.email },
         application_context: {

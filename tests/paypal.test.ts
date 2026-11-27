@@ -34,3 +34,10 @@ test('maps PayPal plans to tiers and requires full configuration', () => {
     process.env = saved;
   }
 });
+
+test('discount prices round to cents', async () => {
+  const { discountedPrice } = await import('../src/lib/paypal');
+  assert.equal(discountedPrice('5.00', 20), '4.00');
+  assert.equal(discountedPrice('30.00', 15), '25.50');
+  assert.equal(discountedPrice('5', 33), '3.35');
+});

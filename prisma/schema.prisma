@@ -456,6 +456,8 @@ model Subscription {
   currentPeriodEnd DateTime?
   cancelAtPeriodEnd Boolean @default(false)
   canceledAt DateTime?
+  /// Discount promotion this subscription was bought with, if any.
+  promotionId String?
 }
 model Payment {
   id String @id
@@ -550,9 +552,15 @@ model EntitlementGrant {
 model Promotion {
   id String @id @default(cuid())
   code String @unique
-  /// PREMIUM | AD_FREE
+  /// PREMIUM | AD_FREE (free access for `days`) | DISCOUNT (percentOff for `months`)
   kind String
   days Int
+  percentOff Int?
+  /// Discounted billing months; the regular price applies afterwards.
+  months Int?
+  /// PayPal plans created for this discount on first use.
+  paypalPlanPremium String? @unique
+  paypalPlanCoach String? @unique
   maxRedemptions Int?
   redemptions Int @default(0)
   /// ALL | INDEPENDENT | COACH

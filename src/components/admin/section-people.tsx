@@ -441,7 +441,7 @@ function GrantDialog({ userId, role, onClose, onSaved }: { userId: string; role:
         <Notice>{t('storeNotice')}</Notice>
         <Field label={t('grantKind')}>
           <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            {['PREMIUM', 'AD_FREE', 'AI', ...(role === 'COACH' ? ['COACH'] : [])].map((k) => (
+            {['PREMIUM', 'AI', ...(role === 'COACH' ? ['COACH'] : [])].map((k) => (
               <option key={k} value={k}>{t(k)}</option>
             ))}
           </select>

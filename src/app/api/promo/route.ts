@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
         (promotion.audience !== 'ALL' && promotion.audience !== user.role)
       )
         throw new ApiError('promoInvalid', 400);
+      // Discount codes lower the price at checkout instead of granting access here.
+      if (promotion.kind === 'DISCOUNT') throw new ApiError('promoUseAtCheckout', 400);
       const claimed = await tx.promotion.updateMany({
         where: { id: promotion.id, ...(promotion.maxRedemptions != null && { redemptions: { lt: promotion.maxRedemptions } }) },
         data: { redemptions: { increment: 1 } },

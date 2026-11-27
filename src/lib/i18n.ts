@@ -82,6 +82,17 @@ export const messages = {
   promoInvalid: ['This code is not valid.', 'הקוד אינו תקף.'],
   promoExhausted: ['This code has been fully redeemed.', 'הקוד נוצל עד תומו.'],
   promoUsed: ['You already used this code.', 'כבר השתמשתם בקוד הזה.'],
+  promoUseAtCheckout: [
+    'This is a discount code. Enter it on the plans page when you subscribe.',
+    'זה קוד הנחה. הזינו אותו בדף המסלולים בזמן ההרשמה למנוי.',
+  ],
+  discountCode: ['Discount code', 'קוד הנחה'],
+  applyCode: ['Apply', 'החלה'],
+  discountApplied: [
+    '{p}% off for the first {m} months',
+    '{p}% הנחה ל־{m} החודשים הראשונים',
+  ],
+  removeCode: ['Remove', 'הסרה'],
   pageErrorTitle: ['This screen could not load', 'לא ניתן לטעון את המסך'],
   pageErrorHint: [
     'Try again to reconnect. Saved workouts and entries remain in your account.',

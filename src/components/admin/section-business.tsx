@@ -30,9 +30,10 @@ type Plans = {
   coachClientsGetAi: boolean;
   tiers: { FREE: TierFeatures; PREMIUM: TierFeatures; COACH: TierFeatures };
 };
-type Promotion = { id: string; code: string; kind: string; days: number; maxRedemptions: number | null; redemptions: number; audience: string; endsAt: string | null; active: boolean; createdAt: string };
+type Promotion = { id: string; code: string; kind: string; days: number; percentOff: number | null; months: number | null; maxRedemptions: number | null; redemptions: number; audience: string; endsAt: string | null; active: boolean; createdAt: string };
 type BillingData = {
   configured: boolean;
+  providers: { paypal: 'live' | 'sandbox' | null; stripe: boolean };
   plans: Plans;
   subscriptions: { tier: string; status: string; count: number }[];
   payments: { items: { id: string; amount: number; currency: string; status: string; createdAt: string; user: { id: string; name: string } }[]; total: number; page: number; pageSize: number };
@@ -61,7 +62,23 @@ export function BillingSection() {
     <>
       <PageHead title={t('navBilling')} subtitle={t('billingSub')} />
       {!data.configured && <Notice kind="warn">{t('billingOff')}</Notice>}
-      <Notice>{t('storeNotice')}</Notice>
+      <Card title={t('paymentProviders')} className="adm-space-bottom">
+        <div className="adm-list">
+          <div>
+            <span style={{ flex: 1 }}>{t('providerWeb')}</span>
+            {data.providers.paypal ? (
+              <Badge kind={data.providers.paypal === 'live' ? 'green' : 'amber'} label={t(data.providers.paypal === 'live' ? 'paypalLive' : 'paypalSandbox')} />
+            ) : (
+              <Badge kind="red" label={t('notConnected')} />
+            )}
+          </div>
+          <div>
+            <span style={{ flex: 1 }}>{t('providerMobile')}</span>
+            <Badge kind="amber" label={t('mobileBillingPending')} />
+          </div>
+        </div>
+        <p className="adm-small adm-muted" style={{ margin: '10px 0 0' }}>{t('storeNotice')}</p>
+      </Card>
       <div className="adm-grid stats" style={{ marginBottom: 16 }}>
         <Stat label={t('premiumSubscribers')} value={formatNumber(count('PREMIUM'))} />
         <Stat label={t('coachSubscribers')} value={formatNumber(count('COACH'))} />
@@ -77,9 +94,9 @@ export function BillingSection() {
                 <Field label={t('displayPrice')}>
                   <input type="number" min={0} step="0.01" disabled={!manage} value={plans.pricesUsd[tier]} onChange={(e) => setPlans({ ...plans, pricesUsd: { ...plans.pricesUsd, [tier]: Number(e.target.value) } })} />
                 </Field>
-                <Field label={t('stripePrice')}>
+                {data.providers.stripe && <Field label={t('stripePrice')}>
                   <input className="adm-mono" disabled={!manage} placeholder="price_…" value={plans.stripePriceIds[tier]} onChange={(e) => setPlans({ ...plans, stripePriceIds: { ...plans.stripePriceIds, [tier]: e.target.value.trim() } })} />
-                </Field>
+                </Field>}
               </div>
             ))}
             <Field label={t('defaultClientLimit')}>
@@ -142,7 +159,14 @@ export function BillingSection() {
               rows={data.promotions}
               columns={[
                 { key: 'code', label: t('promoCode'), render: (p) => <span className="adm-mono">{p.code}</span> },
-                { key: 'kind', label: t('grantKind'), render: (p) => `${t(p.kind)} · ${p.days} ${t('days').toLowerCase()}` },
+                {
+                  key: 'kind',
+                  label: t('promoType'),
+                  render: (p) =>
+                    p.kind === 'DISCOUNT'
+                      ? t('percentOffMonths').replace('{p}', String(p.percentOff)).replace('{m}', String(p.months))
+                      : `${t(p.kind)} · ${p.days} ${t('days').toLowerCase()}`,
+                },
                 { key: 'red', label: t('redemptions'), className: 'num', render: (p) => `${formatNumber(p.redemptions)} / ${p.maxRedemptions ?? '∞'}` },
                 { key: 'end', label: t('endsOn'), render: (p) => (p.endsAt ? formatDate(p.endsAt) : '—') },
                 {
@@ -203,7 +227,7 @@ export function BillingSection() {
 
 function PromotionDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { t, api, toast, fail } = useAdmin();
-  const [form, setForm] = useState({ code: '', kind: 'PREMIUM', days: '30', maxRedemptions: '', audience: 'ALL', endsAt: '' }),
+  const [form, setForm] = useState({ code: '', kind: 'PREMIUM', days: '30', percentOff: '20', months: '3', maxRedemptions: '', audience: 'ALL', endsAt: '' }),
     [busy, setBusy] = useState(false);
   const set = (patch: Partial<typeof form>) => setForm({ ...form, ...patch });
   return (
@@ -219,7 +243,7 @@ function PromotionDialog({ onClose, onSaved }: { onClose: () => void; onSaved: (
             onClick={async () => {
               setBusy(true);
               try {
-                await api('billing/promotions', { code: form.code, kind: form.kind, days: Number(form.days), maxRedemptions: form.maxRedemptions ? Number(form.maxRedemptions) : null, audience: form.audience, endsAt: form.endsAt || null });
+                await api('billing/promotions', { code: form.code, kind: form.kind, ...(form.kind === 'DISCOUNT' ? { percentOff: Number(form.percentOff), months: Number(form.months) } : { days: Number(form.days) }), maxRedemptions: form.maxRedemptions ? Number(form.maxRedemptions) : null, audience: form.audience, endsAt: form.endsAt || null });
                 toast(t('saved'));
                 onSaved();
               } catch (e) {
@@ -233,19 +257,31 @@ function PromotionDialog({ onClose, onSaved }: { onClose: () => void; onSaved: (
         </>
       }
     >
+      {form.kind === 'DISCOUNT' && <Notice>{t('discountHint')}</Notice>}
       <div className="adm-form cols">
         <Field label={t('promoCode')}>
           <input className="adm-mono" value={form.code} maxLength={32} onChange={(e) => set({ code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '') })} />
         </Field>
-        <Field label={t('grantKind')}>
+        <Field label={t('promoType')}>
           <select value={form.kind} onChange={(e) => set({ kind: e.target.value })}>
-            <option value="PREMIUM">{t('PREMIUM')}</option>
-            <option value="AD_FREE">{t('AD_FREE')}</option>
+            <option value="PREMIUM">{t('promoFreePlus')}</option>
+            <option value="DISCOUNT">{t('promoDiscount')}</option>
           </select>
         </Field>
-        <Field label={t('days')}>
-          <input type="number" min={1} max={365} value={form.days} onChange={(e) => set({ days: e.target.value })} />
-        </Field>
+        {form.kind === 'DISCOUNT' ? (
+          <>
+            <Field label={t('percentOff')}>
+              <input type="number" min={1} max={99} value={form.percentOff} onChange={(e) => set({ percentOff: e.target.value })} />
+            </Field>
+            <Field label={t('discountMonths')}>
+              <input type="number" min={1} max={24} value={form.months} onChange={(e) => set({ months: e.target.value })} />
+            </Field>
+          </>
+        ) : (
+          <Field label={t('days')}>
+            <input type="number" min={1} max={365} value={form.days} onChange={(e) => set({ days: e.target.value })} />
+          </Field>
+        )}
         <Field label={t('maxRedemptions')} hint={t('unlimited') + ': —'}>
           <input type="number" min={1} value={form.maxRedemptions} onChange={(e) => set({ maxRedemptions: e.target.value })} />
         </Field>

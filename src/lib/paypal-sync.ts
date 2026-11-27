@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
-import { paypalStatus, tierForPaypalPlan, type PaypalSubscription } from './paypal';
+import { paypalStatus, type PaypalSubscription } from './paypal';
+import { resolvePaypalPlan } from './discounts';
 
 /**
  * Stores PayPal's canonical subscription state for its owner. Used by the verified webhook
@@ -10,7 +11,7 @@ export async function applyPaypalSubscription(
   user: { id: string; role: string },
   subscription: PaypalSubscription,
 ) {
-  const tier = tierForPaypalPlan(subscription.plan_id);
+  const { tier, promotionId } = await resolvePaypalPlan(tx, subscription.plan_id);
   const permittedTier = tier && (tier !== 'COACH' || user.role === 'COACH') ? tier : 'FREE';
   const status = permittedTier === 'FREE' ? 'INACTIVE' : paypalStatus(subscription.status);
   const next = subscription.billing_info?.next_billing_time;
@@ -26,6 +27,7 @@ export async function applyPaypalSubscription(
       status === 'CANCELLED' && subscription.status_update_time
         ? new Date(subscription.status_update_time)
         : null,
+    promotionId,
   };
   const current = await tx.subscription.findUnique({ where: { userId: user.id } });
   // Never let a pending or ended PayPal subscription override another active one.
@@ -34,11 +36,18 @@ export async function applyPaypalSubscription(
     current.providerId &&
     current.providerId !== subscription.id &&
     status !== 'ACTIVE';
-  if (!otherActive)
-    await tx.subscription.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id, ...data },
-      update: data,
-    });
+  if (otherActive) return status;
+  // A discount is counted once, when the subscription bought with it first becomes active.
+  // (A pending approval is stored as INACTIVE; PAST_DUE or CANCELLED means it was active before.)
+  const firstActivation =
+    status === 'ACTIVE' &&
+    !(current?.providerId === subscription.id && current.status !== 'INACTIVE');
+  if (promotionId && firstActivation)
+    await tx.promotion.update({ where: { id: promotionId }, data: { redemptions: { increment: 1 } } });
+  await tx.subscription.upsert({
+    where: { userId: user.id },
+    create: { userId: user.id, ...data },
+    update: data,
+  });
   return status;
 }

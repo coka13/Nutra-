@@ -8013,3 +8013,39 @@ html[data-theme='dark'] .button.wallet-pay {
     animation: none;
   }
 }
+.discount-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 520px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+}
+.discount-code label {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.discount-code input {
+  height: 40px;
+}
+.discount-code .button {
+  height: 40px;
+}
+.discount-applied {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--green);
+  font-weight: 600;
+}
+.price-was {
+  color: var(--muted);
+  font-size: 0.6em;
+  font-weight: 500;
+}

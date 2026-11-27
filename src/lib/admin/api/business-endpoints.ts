@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { ApiError } from '@/lib/auth';
 import { billingConfigured, stripeClient } from '@/lib/billing';
+import { cancelPaypalSubscription, getPaypalSubscription, paypalConfigured, paypalStatus } from '@/lib/paypal';
 import { configSchema, getConfigVersion, publishConfig } from '@/lib/remote-config';
 import { activeGrantWhere } from '@/lib/access';
 import { encryptSecret, decryptSecret, secretHint } from '../crypto';
@@ -50,7 +51,11 @@ export const billingEndpoints: Endpoint[] = [
         }),
       ]);
       return {
-        configured: billingConfigured(),
+        configured: paypalConfigured(),
+        providers: {
+          paypal: paypalConfigured() ? (process.env.PAYPAL_ENV === 'live' ? 'live' : 'sandbox') : null,
+          stripe: billingConfigured(),
+        },
         plans: config.plans,
         subscriptions: bySub.map((s) => ({ tier: s.tier, status: s.status, count: s._count })),
         payments: { items: payments, total: paymentTotal, page, pageSize },
@@ -82,18 +87,33 @@ export const billingEndpoints: Endpoint[] = [
     pattern: 'billing/promotions',
     permission: 'billing.manage',
     async handler({ body, admin }) {
+      const common = {
+        code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{4,32}$/),
+        maxRedemptions: z.number().int().min(1).max(1000000).nullable(),
+        audience: z.enum(['ALL', 'INDEPENDENT', 'COACH']),
+        endsAt: z.iso.date().nullable(),
+      };
+      // Free access for a number of days, or a percentage off the first months of a paid plan.
       const input = z
-        .object({
-          code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{4,32}$/),
-          kind: z.enum(['PREMIUM', 'AD_FREE']),
-          days: z.number().int().min(1).max(365),
-          maxRedemptions: z.number().int().min(1).max(1000000).nullable(),
-          audience: z.enum(['ALL', 'INDEPENDENT', 'COACH']),
-          endsAt: z.iso.date().nullable(),
-        })
+        .discriminatedUnion('kind', [
+          z.object({ ...common, kind: z.literal('PREMIUM'), days: z.number().int().min(1).max(365) }),
+          z.object({
+            ...common,
+            kind: z.literal('DISCOUNT'),
+            percentOff: z.number().int().min(1).max(99),
+            months: z.number().int().min(1).max(24),
+          }),
+        ])
         .parse(body);
+      if (await db.promotion.findUnique({ where: { code: input.code } }))
+        throw new ApiError('promoCodeTaken', 409);
       const promotion = await db.promotion.create({
-        data: { ...input, endsAt: input.endsAt ? new Date(input.endsAt + 'T23:59:59.999Z') : null, createdBy: admin.id },
+        data: {
+          ...input,
+          days: input.kind === 'PREMIUM' ? input.days : 0,
+          endsAt: input.endsAt ? new Date(input.endsAt + 'T23:59:59.999Z') : null,
+          createdBy: admin.id,
+        },
       });
       return { promotion };
     },
@@ -114,9 +134,20 @@ export const billingEndpoints: Endpoint[] = [
     permission: 'billing.manage',
     stepUp: true,
     async handler({ params }) {
-      // Cancellation goes through Stripe; the webhook then updates local state.
       const sub = await db.subscription.findUnique({ where: { userId: params.userId } });
       if (!sub?.providerId) throw new ApiError('noProviderSubscription', 400);
+      // PayPal ends the subscription at once; PayPal's canonical state is stored right away.
+      if (sub.provider === 'paypal') {
+        if (!paypalConfigured()) throw new ApiError('billingUnavailable', 503);
+        await cancelPaypalSubscription(sub.providerId);
+        const canonical = await getPaypalSubscription(sub.providerId);
+        await db.subscription.update({
+          where: { userId: params.userId },
+          data: { status: paypalStatus(canonical.status), canceledAt: new Date() },
+        });
+        return { ok: true };
+      }
+      // Stripe cancels at period end; the webhook then updates local state.
       if (!billingConfigured()) throw new ApiError('billingUnavailable', 503);
       await stripeClient().subscriptions.update(sub.providerId, { cancel_at_period_end: true });
       await db.subscription.update({ where: { userId: params.userId }, data: { cancelAtPeriodEnd: true } });
