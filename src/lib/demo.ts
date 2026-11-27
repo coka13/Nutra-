@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import { hashPassword } from './security';
 
 /**
@@ -19,6 +19,14 @@ export const demoEnabled = () => process.env.DEMO_ENABLED === 'true';
 /** True for any account created for, or seeded as, the demo workspace. */
 export const isDemoEmail = (email: string) =>
   email === LEGACY_DEMO_EMAIL || email.endsWith(`@${DEMO_DOMAIN}`);
+
+/**
+ * Excludes demo accounts. Demo visitors are stored as users so the app works for them, but
+ * they are not real registrations: every admin count, list, export and send must use this.
+ */
+export const realUserWhere = {
+  NOT: [{ email: LEGACY_DEMO_EMAIL }, { email: { endsWith: `@${DEMO_DOMAIN}` } }],
+} satisfies Prisma.UserWhereInput;
 
 const unusablePassword = () => hashPassword(randomBytes(32).toString('hex'));
 

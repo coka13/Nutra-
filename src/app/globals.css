@@ -7816,6 +7816,69 @@ html[data-theme='dark'] .store-link {
   border-color: #f4f6f5;
 }
 
+/* Landing hero: CTAs and store badges share one row so the page fits a screen. */
+.landing-overview .hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.landing-overview .hero-actions .store-links {
+  margin: 0;
+  gap: 8px;
+  padding-inline-start: 14px;
+  border-inline-start: 1px solid var(--line);
+}
+.landing-overview .store-link {
+  min-height: 36px;
+  padding: 4px 12px 4px 10px;
+  gap: 7px;
+  border-radius: 10px;
+}
+.landing-overview .store-link svg {
+  width: 18px;
+  height: 18px;
+}
+.landing-overview .store-link small {
+  font-size: 8.5px;
+}
+.landing-overview .store-link strong {
+  font-size: 13px;
+}
+@media (max-width: 860px) {
+  .landing-overview .hero-actions {
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .landing-overview .hero-actions .row {
+    flex: 1;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+  .landing-overview .hero-actions .store-links {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-inline-start: 8px;
+  }
+  /* Phones: icon-only badges (the link keeps its full aria-label). */
+  .landing-overview .store-link {
+    justify-content: center;
+    width: 36px;
+    min-height: 36px;
+    padding: 0;
+  }
+  .landing-overview .store-link span {
+    display: none;
+  }
+}
+@media (max-width: 860px) and (max-height: 650px) {
+  .landing-overview .store-link {
+    width: 30px;
+    min-height: 30px;
+  }
+}
+
 /* Billing: payment method buttons. */
 .checkout-options {
   display: grid;

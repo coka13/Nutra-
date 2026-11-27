@@ -1,13 +1,14 @@
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { activeGrantWhere } from './access';
+import { realUserWhere } from './demo';
 
 export const AUDIENCES = ['ALL', 'COACHES', 'INDEPENDENT', 'COACH_CLIENTS', 'PREMIUM', 'USERS'] as const;
 export type Audience = (typeof AUDIENCES)[number];
 
 /** Recipients are always active (not suspended) accounts. */
 export function audienceWhere(audience: Audience, userIds: string[] = []): Prisma.UserWhereInput {
-  const base: Prisma.UserWhereInput = { status: 'ACTIVE', role: { not: 'ADMIN' } };
+  const base: Prisma.UserWhereInput = { status: 'ACTIVE', role: { not: 'ADMIN' }, ...realUserWhere };
   switch (audience) {
     case 'COACHES':
       return { ...base, role: 'COACH' };

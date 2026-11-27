@@ -8,6 +8,7 @@ import { activeGrantWhere } from '@/lib/access';
 import { encryptSecret, decryptSecret, secretHint } from '../crypto';
 import { invalidateProviders, probeProvider, PROVIDER_IDS, PROVIDER_PRESETS, type ProviderId } from '@/lib/ai-governance';
 import { dateRange, isoDayOf, pagination, text, type Endpoint } from './types';
+import { realUserWhere } from '@/lib/demo';
 
 const DAY = 86400000;
 
@@ -34,7 +35,7 @@ export const billingEndpoints: Endpoint[] = [
       const { skip, take, page, pageSize } = pagination(query, 20);
       const [{ config }, bySub, payments, paymentTotal, promotions, grants, cancelling] = await Promise.all([
         getConfigVersion(),
-        db.subscription.groupBy({ by: ['tier', 'status'], _count: true }),
+        db.subscription.groupBy({ by: ['tier', 'status'], where: { user: realUserWhere }, _count: true }),
         db.payment.findMany({
           orderBy: { createdAt: 'desc' },
           skip,
@@ -43,9 +44,9 @@ export const billingEndpoints: Endpoint[] = [
         }),
         db.payment.count(),
         db.promotion.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-        db.entitlementGrant.groupBy({ by: ['kind', 'source'], where: activeGrantWhere(), _count: true }),
+        db.entitlementGrant.groupBy({ by: ['kind', 'source'], where: { user: realUserWhere, ...activeGrantWhere() }, _count: true }),
         db.subscription.findMany({
-          where: { status: 'ACTIVE', cancelAtPeriodEnd: true },
+          where: { user: realUserWhere, status: 'ACTIVE', cancelAtPeriodEnd: true },
           select: { tier: true, currentPeriodEnd: true, user: { select: { id: true, name: true } } },
           take: 50,
         }),
@@ -322,12 +323,13 @@ export const adEndpoints: Endpoint[] = [
           where: {
             role: 'INDEPENDENT',
             status: 'ACTIVE',
+            ...realUserWhere,
             clientLinks: { none: { status: 'ACTIVE' } },
             OR: [{ subscription: null }, { subscription: { OR: [{ status: { not: 'ACTIVE' } }, { tier: 'FREE' }] } }],
           },
         }),
-        db.user.count({ where: { role: 'INDEPENDENT', clientLinks: { some: { status: 'ACTIVE' } } } }),
-        db.entitlementGrant.groupBy({ by: ['userId'], where: { ...activeGrantWhere(), kind: { in: ['AD_FREE', 'PREMIUM'] } } }),
+        db.user.count({ where: { role: 'INDEPENDENT', ...realUserWhere, clientLinks: { some: { status: 'ACTIVE' } } } }),
+        db.entitlementGrant.groupBy({ by: ['userId'], where: { user: realUserWhere, ...activeGrantWhere(), kind: { in: ['AD_FREE', 'PREMIUM'] } } }),
       ]);
       const byPlacement: Record<string, { impressions: number; clicks: number }> = {};
       const byDay = new Map<string, { date: string; impressions: number; clicks: number }>();

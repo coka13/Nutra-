@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { randomBytes } from 'node:crypto';
 import { db } from './db';
 import { tokenHash } from './security';
+import { isDemoEmail } from './demo';
 export class ApiError extends Error {
   constructor(
     public code: string,
@@ -23,7 +24,9 @@ export async function currentUser() {
 }
 const ACTIVITY_THROTTLE_MS = 5 * 60 * 1000;
 /** Feeds DAU/MAU/retention. Throttled so most requests do not write. */
-async function trackActivity(user: { id: string; lastActiveAt: Date | null }) {
+async function trackActivity(user: { id: string; email: string; lastActiveAt: Date | null }) {
+  // Demo visitors are not real users; keep them out of activity metrics.
+  if (isDemoEmail(user.email)) return;
   const now = new Date();
   if (user.lastActiveAt && +now - +user.lastActiveAt < ACTIVITY_THROTTLE_MS) return;
   const today = now.toISOString().slice(0, 10);

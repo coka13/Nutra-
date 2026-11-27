@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client';
-import { isDemoEmail } from '@/lib/demo';
+import { isDemoEmail, realUserWhere } from '@/lib/demo';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { ApiError } from '@/lib/auth';
@@ -10,7 +10,7 @@ import { can } from '../rbac';
 import { id, maskEmail, pagination, text, toCsv, type Endpoint } from './types';
 
 const DAY = 86400000;
-const appUser = { role: { not: 'ADMIN' } } satisfies Prisma.UserWhereInput;
+const appUser = { role: { not: 'ADMIN' }, ...realUserWhere } satisfies Prisma.UserWhereInput;
 
 function userFilter(query: URLSearchParams): Prisma.UserWhereInput {
   const q = (query.get('q') || '').trim().slice(0, 100);
@@ -289,6 +289,7 @@ const coachFilter = (query: URLSearchParams): Prisma.UserWhereInput => {
   const status = query.get('status');
   return {
     role: 'COACH',
+    ...realUserWhere,
     ...(q && { OR: [{ email: { contains: q.toLowerCase() } }, { name: { contains: q } }] }),
     ...(status && ['APPROVED', 'PENDING', 'REJECTED', 'REVOKED'].includes(status) && { coachStatus: status }),
     ...(query.get('verified') === 'yes' && { coachVerifiedAt: { not: null } }),
@@ -325,7 +326,7 @@ export const coachEndpoints: Endpoint[] = [
           },
         }),
         db.user.count({ where }),
-        db.user.groupBy({ by: ['coachStatus'], where: { role: 'COACH' }, _count: true }),
+        db.user.groupBy({ by: ['coachStatus'], where: { role: 'COACH', ...realUserWhere }, _count: true }),
       ]);
       const ids = items.map((c) => c.id);
       const [pending, complaints] = await Promise.all([

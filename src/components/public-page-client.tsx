@@ -60,8 +60,8 @@ export function PublicPageClient({
     mode === 'verify-email'
       ? t('verifyEmailTitle')
       : account && (mode === 'login' || mode === 'register')
-      ? t(account + (mode === 'login' ? 'LoginTitle' : 'RegisterTitle'))
-      : t(mode === 'coach-login' ? 'coachLogin' : mode);
+        ? t(account + (mode === 'login' ? 'LoginTitle' : 'RegisterTitle'))
+        : t(mode === 'coach-login' ? 'coachLogin' : mode);
   const verificationToken =
     typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('token');
   const authUrl = (screen: string) => (account ? `/auth/${account}/${screen}` : `/${screen}`);
@@ -206,7 +206,8 @@ export function PublicPageClient({
         mode === 'reset' ||
         mode === 'verify-email' ||
         (mode === 'register' && data.verificationRequired)
-      ) setSuccess(true);
+      )
+        setSuccess(true);
       else location.href = mode === 'register' && account !== 'coach' ? '/app/onboarding' : '/app';
     } catch (e) {
       setError(e instanceof Error ? e.message : 'offline');
@@ -312,53 +313,71 @@ export function PublicPageClient({
               </span>
               <h1>{t('landingTitle')}</h1>
               <p>{t('landingSub')}</p>
-              <div className="row wrap">
-                <a className="button primary large" href="/auth">
-                  {t('getStarted')}
-                  <ArrowRight size={18} />
-                </a>
-                <button className="button secondary large" onClick={demo} disabled={!ready || busy}>
-                  {busy ? <Loader2 className="spin" size={18} /> : t('tryDemo')}
-                </button>
-              </div>
-              <div className="store-links">
-                {(
-                  [
-                    [APP_STORE_URL, 'appStoreTop', 'App Store', 'apple'],
-                    [GOOGLE_PLAY_URL, 'googlePlayTop', 'Google Play', 'play'],
-                  ] as const
-                ).map(([href, top, name, icon]) => (
-                  <a
-                    key={name}
-                    className="store-link"
-                    href={href}
-                    aria-label={`${t(top)} ${name}`}
-                    onClick={(e) => {
-                      // Listings aren't published yet.
-                      if (isStorePlaceholder(href)) e.preventDefault();
-                    }}
-                  >
-                    {icon === 'apple' ? (
-                      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                        <path
-                          fill="currentColor"
-                          d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.15.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"
-                        />
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                        <path fill="#34a853" d="M3.6 2.2 13.5 12 3.6 21.8c-.36-.2-.6-.6-.6-1.1V3.3c0-.5.24-.9.6-1.1z" />
-                        <path fill="#fbbc04" d="m16.8 15.3-3.3-3.3 3.3-3.3 3.7 2.1c1 .6 1 1.8 0 2.4z" />
-                        <path fill="#4285f4" d="M13.5 12 3.6 2.2c.3-.17.7-.18 1.1.04l12.1 6.96z" />
-                        <path fill="#ea4335" d="m13.5 12 3.3 3.3-12.1 6.96c-.4.22-.8.21-1.1.04z" />
-                      </svg>
-                    )}
-                    <span>
-                      <small>{t(top)}</small>
-                      <strong>{name}</strong>
-                    </span>
+              <div className="hero-actions">
+                <div className="row wrap">
+                  <a className="button primary large" href="/auth">
+                    {t('getStarted')}
+                    <ArrowRight size={18} />
                   </a>
-                ))}
+                  <button
+                    className="button secondary large"
+                    onClick={demo}
+                    disabled={!ready || busy}
+                  >
+                    {busy ? <Loader2 className="spin" size={18} /> : t('tryDemo')}
+                  </button>
+                </div>
+                <div className="store-links">
+                  {(
+                    [
+                      [APP_STORE_URL, 'appStoreTop', 'App Store', 'apple'],
+                      [GOOGLE_PLAY_URL, 'googlePlayTop', 'Google Play', 'play'],
+                    ] as const
+                  ).map(([href, top, name, icon]) => (
+                    <a
+                      key={name}
+                      className="store-link"
+                      href={href}
+                      aria-label={`${t(top)} ${name}`}
+                      onClick={(e) => {
+                        // Listings aren't published yet.
+                        if (isStorePlaceholder(href)) e.preventDefault();
+                      }}
+                    >
+                      {icon === 'apple' ? (
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                          <path
+                            fill="currentColor"
+                            d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.15.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                          <path
+                            fill="#34a853"
+                            d="M3.6 2.2 13.5 12 3.6 21.8c-.36-.2-.6-.6-.6-1.1V3.3c0-.5.24-.9.6-1.1z"
+                          />
+                          <path
+                            fill="#fbbc04"
+                            d="m16.8 15.3-3.3-3.3 3.3-3.3 3.7 2.1c1 .6 1 1.8 0 2.4z"
+                          />
+                          <path
+                            fill="#4285f4"
+                            d="M13.5 12 3.6 2.2c.3-.17.7-.18 1.1.04l12.1 6.96z"
+                          />
+                          <path
+                            fill="#ea4335"
+                            d="m13.5 12 3.3 3.3-12.1 6.96c-.4.22-.8.21-1.1.04z"
+                          />
+                        </svg>
+                      )}
+                      <span>
+                        <small>{t(top)}</small>
+                        <strong>{name}</strong>
+                      </span>
+                    </a>
+                  ))}
+                </div>
               </div>
               {error && (
                 <p className="form-error" role="alert">

@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { getConfig } from '@/lib/remote-config';
 import { activeGrantWhere } from '@/lib/access';
 import { databaseFile } from '@/lib/jobs';
+import { realUserWhere } from '@/lib/demo';
 
 const DAY = 86400000;
 export const isoDay = (date: Date) => date.toISOString().slice(0, 10);
@@ -15,10 +16,11 @@ export function dayRange(from: Date, to: Date) {
 export const growth = (current: number, previous: number) =>
   previous === 0 ? (current === 0 ? 0 : null) : Math.round(((current - previous) / previous) * 1000) / 10;
 
-const appUsers = { role: { not: 'ADMIN' } };
+const appUsers = { role: { not: 'ADMIN' }, ...realUserWhere };
+const realUser = { user: realUserWhere };
 
 async function distinctActive(fromDay: string, toDay: string) {
-  const rows = await db.userActivityDay.groupBy({ by: ['userId'], where: { date: { gte: fromDay, lte: toDay } } });
+  const rows = await db.userActivityDay.groupBy({ by: ['userId'], where: { ...realUser, date: { gte: fromDay, lte: toDay } } });
   return rows.length;
 }
 
@@ -74,7 +76,7 @@ async function periodNumbers(from: Date, to: Date) {
     }),
     db.aIUsage.count({ where: { createdAt: { gte: from, lte: to }, success: false } }),
     db.payment.findMany({ where: { createdAt: { gte: from, lte: to }, status: 'paid' }, select: { amount: true, currency: true } }),
-    db.subscription.count({ where: { canceledAt: { gte: from, lte: to } } }),
+    db.subscription.count({ where: { ...realUser, canceledAt: { gte: from, lte: to } } }),
     db.apiMetric.aggregate({
       where: { hour: { gte: from.toISOString().slice(0, 13), lte: to.toISOString().slice(0, 13) } },
       _sum: { count: true, errors: true, totalMs: true },
@@ -110,16 +112,16 @@ export async function dashboard(from: Date, to: Date) {
       const [users, coaches, trainees, coached, suspended, pendingCoaches, premium, coachSubs, adFreeGrants, compGrants, pendingCancel] =
         await Promise.all([
           db.user.count({ where: appUsers }),
-          db.user.count({ where: { role: 'COACH' } }),
-          db.user.count({ where: { role: 'INDEPENDENT' } }),
-          db.user.count({ where: { role: 'INDEPENDENT', clientLinks: { some: { status: 'ACTIVE' } } } }),
+          db.user.count({ where: { ...appUsers, role: 'COACH' } }),
+          db.user.count({ where: { ...appUsers, role: 'INDEPENDENT' } }),
+          db.user.count({ where: { ...appUsers, role: 'INDEPENDENT', clientLinks: { some: { status: 'ACTIVE' } } } }),
           db.user.count({ where: { ...appUsers, status: 'SUSPENDED' } }),
-          db.user.count({ where: { role: 'COACH', coachStatus: 'PENDING' } }),
-          db.subscription.count({ where: { status: 'ACTIVE', tier: 'PREMIUM' } }),
-          db.subscription.count({ where: { status: 'ACTIVE', tier: 'COACH' } }),
-          db.entitlementGrant.groupBy({ by: ['userId'], where: { ...activeGrantWhere(), kind: { in: ['AD_FREE', 'PREMIUM'] } } }),
-          db.entitlementGrant.count({ where: activeGrantWhere() }),
-          db.subscription.count({ where: { status: 'ACTIVE', cancelAtPeriodEnd: true } }),
+          db.user.count({ where: { ...appUsers, role: 'COACH', coachStatus: 'PENDING' } }),
+          db.subscription.count({ where: { ...realUser, status: 'ACTIVE', tier: 'PREMIUM' } }),
+          db.subscription.count({ where: { ...realUser, status: 'ACTIVE', tier: 'COACH' } }),
+          db.entitlementGrant.groupBy({ by: ['userId'], where: { ...realUser, ...activeGrantWhere(), kind: { in: ['AD_FREE', 'PREMIUM'] } } }),
+          db.entitlementGrant.count({ where: { ...realUser, ...activeGrantWhere() } }),
+          db.subscription.count({ where: { ...realUser, status: 'ACTIVE', cancelAtPeriodEnd: true } }),
         ]);
       return { users, coaches, trainees, coached, independent: trainees - coached, suspended, pendingCoaches, premium, coachSubs, adFreeGrants: adFreeGrants.length, compGrants, pendingCancel };
     })(),
@@ -127,7 +129,7 @@ export async function dashboard(from: Date, to: Date) {
       const days = dayRange(from, to);
       const [signups, active, ai, pay, errs] = await Promise.all([
         db.user.findMany({ where: { ...appUsers, createdAt: { gte: from, lte: to } }, select: { createdAt: true } }),
-        db.userActivityDay.groupBy({ by: ['date'], where: { date: { gte: days[0], lte: days[days.length - 1] } }, _count: true }),
+        db.userActivityDay.groupBy({ by: ['date'], where: { ...realUser, date: { gte: days[0], lte: days[days.length - 1] } }, _count: true }),
         db.aIUsage.findMany({ where: { createdAt: { gte: from, lte: to } }, select: { createdAt: true, costMicros: true } }),
         db.payment.findMany({ where: { createdAt: { gte: from, lte: to }, status: 'paid' }, select: { createdAt: true, amount: true } }),
         db.apiMetric.findMany({ where: { hour: { gte: from.toISOString().slice(0, 13), lte: to.toISOString().slice(0, 13) } }, select: { hour: true, count: true, errors: true } }),

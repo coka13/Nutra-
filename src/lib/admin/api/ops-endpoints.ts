@@ -17,6 +17,7 @@ import { ADMIN_ROLES, can } from '../rbac';
 import { adminHostAllowed } from '../auth';
 import { dateRange, pagination, text, toCsv, type Endpoint } from './types';
 import packageJson from '../../../../package.json';
+import { realUserWhere } from '@/lib/demo';
 
 const INVITE_MS = 72 * 3600 * 1000;
 const inviteUrl = (token: string) => {
@@ -52,7 +53,7 @@ export const dashboardEndpoints: Endpoint[] = [
       const results: { type: string; id: string; title: string; subtitle: string }[] = [];
       if (can(admin.role, 'users.view')) {
         const users = await db.user.findMany({
-          where: { role: { not: 'ADMIN' }, OR: [{ email: { contains: q.toLowerCase() } }, { name: { contains: q } }, { id: q }] },
+          where: { role: { not: 'ADMIN' }, ...realUserWhere, OR: [{ email: { contains: q.toLowerCase() } }, { name: { contains: q } }, { id: q }] },
           take: 6,
           select: { id: true, name: true, email: true, role: true },
         });
