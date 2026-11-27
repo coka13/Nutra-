@@ -30,7 +30,8 @@ process.env.ADMIN_ENCRYPTION_KEY ||= persistentSecret('.admin-encryption-key', 3
 process.env.CRON_SECRET ||= persistentSecret('.cron-secret', 24);
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-for (const script of ['db:migrate', 'db:seed']) {
+// photos:encrypt is idempotent and runs here so it always uses the key set above.
+for (const script of ['db:migrate', 'db:seed', 'photos:encrypt']) {
   const result = spawnSync(npm, ['run', script], { env: process.env, stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);

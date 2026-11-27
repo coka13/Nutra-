@@ -28,6 +28,7 @@ for (const language of ['en', 'he'] as const) {
         await page.locator('[name=password]').fill(password);
         if (kind === 'coach') await page.locator('[name=phone]').fill('+972501234567');
         await page.locator('[name=acceptTerms]').check();
+  await page.locator('[name=healthConsent]').check();
         await page.locator('form button').click();
         await expect(page).toHaveURL(/\/app(?:\/onboarding)?$/);
         const { user } = await auth();
@@ -80,6 +81,7 @@ for (const language of ['en', 'he'] as const) {
                 data: {
                   email: emails.user,
                   acceptTerms: true,
+                  healthConsent: true,
                   password,
                   name: 'Duplicate',
                   phone: '+972501234567',

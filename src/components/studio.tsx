@@ -1,4 +1,5 @@
 'use client';
+import { coachBrandStyle } from '@/lib/brand-theme';
 import { PromoRedeem } from './support-center';
 import { CoachContact } from './coach-contact';
 import { BrandMark, brandBackgroundUrl, encodeBackground, encodeLogo } from './brand-logo';
@@ -40,6 +41,7 @@ import { PLAN_PRICE_USD } from '@/lib/plans';
 import { calendarDate, workoutCalendar } from '@/lib/workout-calendar';
 import { weightMetrics } from '@/lib/weight-metrics';
 import { WheelInput } from './wheel-input';
+import { openCookieSettings } from '@/lib/cookie-consent';
 import {
   api,
   Empty,
@@ -73,6 +75,9 @@ export function CalendarView() {
   const contacts = state.relationships
     .filter((r) => r.status === 'ACTIVE')
     .map((r) => (r.coachId === state.user.id ? r.client : r.coach));
+  // Sessions with a coach, and workouts a coach wrote, carry that coach's brand color.
+  const otherParty = (appointment: State['appointments'][number]) =>
+    appointment.ownerId === state.user.id ? appointment.guestId : appointment.ownerId;
   const participantName = (appointment: State['appointments'][number]) => {
     const otherId =
       appointment.ownerId === state.user.id ? appointment.guestId : appointment.ownerId;
@@ -144,6 +149,7 @@ export function CalendarView() {
                       type="button"
                       className={`calendar-event workout-status ${workout.status}`}
                       key={workout.id}
+                      style={coachBrandStyle(state, workout.ownerId)}
                       title={`${workout.name} · ${t(workout.status)}`}
                       onClick={() =>
                         document
@@ -159,6 +165,7 @@ export function CalendarView() {
                   <button
                     className="calendar-event"
                     key={a.id}
+                    style={coachBrandStyle(state, otherParty(a))}
                     onClick={() =>
                       document
                         .getElementById(a.id)
@@ -184,7 +191,12 @@ export function CalendarView() {
         </div>
         {workouts.length ? (
           workouts.map((workout) => (
-            <div id={workout.id} className="list-row appointment-row" key={workout.id}>
+            <div
+              id={workout.id}
+              className="list-row appointment-row"
+              key={workout.id}
+              style={coachBrandStyle(state, workout.ownerId)}
+            >
               <span className="tile-icon">
                 <Dumbbell size={20} />
               </span>
@@ -207,7 +219,7 @@ export function CalendarView() {
       </section>
       <section className="panel">
         <div className="section-heading">
-          <h2>{t('sessions')}</h2>
+          <h2>{t('calendarAppointments')}</h2>
           <span className="muted small-copy">
             {t('timezone')}:{' '}
             {state.profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -215,7 +227,12 @@ export function CalendarView() {
         </div>
         {state.appointments.length ? (
           state.appointments.map((a) => (
-            <div id={a.id} className="list-row appointment-row" key={a.id}>
+            <div
+              id={a.id}
+              className="list-row appointment-row"
+              key={a.id}
+              style={coachBrandStyle(state, otherParty(a))}
+            >
               <span className="tile-icon">
                 {a.kind === 'PERSONAL_TRAINING' ? (
                   <Dumbbell size={20} />
@@ -381,24 +398,30 @@ export function ClientsView() {
   );
   if (client)
     return <ClientProfile key={client.clientId} link={client} onBack={() => setClientId(null)} />;
+  const atCapacity =
+    !!upgradeTarget(state) &&
+    state.relationships.filter(
+      (r) => r.coachId === state.user.id && (r.status === 'ACTIVE' || r.status === 'PENDING'),
+    ).length >= state.entitlements.clientLimit;
   return (
     <>
       <PageHeading title={t('clients')} subtitle={t('clientsSub')}>
-        <button className="button primary" onClick={() => setInvite(true)}>
-          <Plus size={16} />
+        {/* At the plan's limit, upgrading is the next step, so inviting steps back. */}
+        <button
+          className={`button ${atCapacity ? 'secondary' : 'primary'}`}
+          onClick={() => setInvite(true)}
+        >
+          <Plus size={16} aria-hidden="true" />
           {t('inviteClient')}
         </button>
       </PageHeading>
-      {upgradeTarget(state) &&
-        state.relationships.filter(
-          (r) => r.coachId === state.user.id && (r.status === 'ACTIVE' || r.status === 'PENDING'),
-        ).length >= state.entitlements.clientLimit && (
-          <div className="integration-notice upgrade-notice">
-            <Users size={18} />
-            <p>{t(state.entitlements.clientLimit ? 'upgradeCapacity' : 'coachPlanRequired')}</p>
-            <UpgradeButton />
-          </div>
-        )}
+      {atCapacity && (
+        <div className="integration-notice upgrade-notice">
+          <Users size={18} />
+          <p>{t(state.entitlements.clientLimit ? 'upgradeCapacity' : 'coachPlanRequired')}</p>
+          <UpgradeButton />
+        </div>
+      )}
       <div className="toolbar">
         <div className="search-field">
           <Search size={17} />
@@ -657,6 +680,7 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
         subtitle={t(onboarding ? 'onboardingSub' : 'settingsSub')}
       />
       <Form
+        className="settings-form"
         onSubmit={async (f) => {
           if (isCoach && !isInternationalPhone(String(f.get('phone') || '')))
             throw new Error('invalidPhone');
@@ -833,11 +857,7 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
               <section className="panel">
                 <h2>{t('privacy')}</h2>
                 <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="aiConsent"
-                    defaultChecked={p?.aiConsent || false}
-                  />
+                  <input type="checkbox" name="aiConsent" defaultChecked={p?.aiConsent || false} />
                   {t('aiConsent')}
                 </label>
                 <p className="muted small-copy">{t('aiDisclaimer')}</p>
@@ -854,19 +874,6 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
       </Form>
       {!onboarding && (
         <>
-          <section className="panel">
-            <h2 className="danger-text">{t('resetData')}</h2>
-            <p className="muted">{t('resetDataHint')}</p>
-            <button
-              className="button danger"
-              onClick={() => {
-                setResetConfirmed(false);
-                setResetting(true);
-              }}
-            >
-              {t('resetData')}
-            </button>
-          </section>
           <section className="panel sharing-panel">
             <h2>{t('sharing')}</h2>
             <p className="muted">{t('sharingHint')}</p>
@@ -917,6 +924,21 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
               <div>
                 <h2>{t('privacy')}</h2>
                 <p className="muted small-copy">{state.user.email}</p>
+                <p className="small-copy row wrap">
+                  <a href="/privacy">{t('privacyPolicy')}</a>
+                  <a href="/terms">{t('termsOfUse')}</a>
+                  <a href="/accessibility">{t('accessibilityStatement')}</a>
+                  {typeof document !== 'undefined' &&
+                    !document.documentElement.dataset.nativeShell && (
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => openCookieSettings()}
+                      >
+                        {t('cookieSettings')}
+                      </button>
+                    )}
+                </p>
               </div>
               <div className="row wrap">
                 <a href="/api/export" className="button secondary">
@@ -942,10 +964,40 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
                   <LogOut size={16} />
                   {t('logout')}
                 </button>
-                <button className="text-button danger-text" onClick={() => setDeleting(true)}>
-                  {t('deleteAccount')}
-                </button>
               </div>
+            </div>
+          </section>
+          {/* Irreversible actions live together, apart from everyday settings. */}
+          <section className="panel danger-zone" aria-labelledby="danger-zone-title">
+            <h2 id="danger-zone-title">{t('dangerZone')}</h2>
+            <div className="danger-zone-row">
+              <div>
+                <strong>{t('resetData')}</strong>
+                <p className="muted">{t('resetDataHint')}</p>
+              </div>
+              <button
+                type="button"
+                className="button danger-outline"
+                onClick={() => {
+                  setResetConfirmed(false);
+                  setResetting(true);
+                }}
+              >
+                {t('resetData')}
+              </button>
+            </div>
+            <div className="danger-zone-row">
+              <div>
+                <strong>{t('deleteAccount')}</strong>
+                <p className="muted">{t('deleteAccountHint')}</p>
+              </div>
+              <button
+                type="button"
+                className="button danger-outline"
+                onClick={() => setDeleting(true)}
+              >
+                {t('deleteAccount')}
+              </button>
             </div>
           </section>
         </>
@@ -1042,6 +1094,7 @@ export function BillingView() {
   const [loaded, setLoaded] = useState(false);
   const { state, t, lang, formatDate, refresh } = useNutri(),
     [activating, setActivating] = useState(false),
+    [confirmingCancel, setConfirmingCancel] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [payments, setPayments] = useState<
@@ -1104,7 +1157,11 @@ export function BillingView() {
     paypal = !!state.integrations.paypal && !wallet,
     paypalSubscriber =
       state.subscription?.provider === 'paypal' && state.subscription.status === 'ACTIVE';
-  const [discount, setDiscount] = useState<{ code: string; percentOff: number; months: number } | null>(null),
+  const [discount, setDiscount] = useState<{
+      code: string;
+      percentOff: number;
+      months: number;
+    } | null>(null),
     [codeInput, setCodeInput] = useState(''),
     [redeemed, setRedeemed] = useState('');
   async function applyDiscount() {
@@ -1150,7 +1207,7 @@ export function BillingView() {
     }
   }
   async function cancelPaypal() {
-    if (!confirm(t('cancelPaypalConfirm'))) return;
+    setConfirmingCancel(false);
     setBusy(true);
     setError('');
     try {
@@ -1171,11 +1228,36 @@ export function BillingView() {
           </button>
         )}
         {paypalSubscriber && (
-          <button className="button secondary" disabled={busy} onClick={cancelPaypal}>
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={() => setConfirmingCancel(true)}
+          >
             {t('cancelPaypal')}
           </button>
         )}
       </PageHeading>
+      {confirmingCancel && (
+        <Modal
+          title={t('cancelPaypal')}
+          role="alertdialog"
+          onClose={() => setConfirmingCancel(false)}
+        >
+          <p>{t('cancelPaypalConfirm')}</p>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => setConfirmingCancel(false)}
+            >
+              {t('keepSubscription')}
+            </button>
+            <button type="button" className="button danger" onClick={cancelPaypal}>
+              {t('cancelPaypal')}
+            </button>
+          </div>
+        </Modal>
+      )}
       {activating ? (
         <div className="integration-notice">
           <Loader2 size={22} className="spin" />
@@ -1318,15 +1400,26 @@ export function BillingView() {
       <div className="billing-summary">
         <section className="panel">
           <h2>{t('status')}</h2>
+          {/* The plan the account actually has: a paid subscription or access granted by an
+              administrator or promo code, which the subscription row alone doesn't show. */}
           <p>
             {t(
-              state.subscription?.tier === 'COACH'
+              state.entitlements.plan === 'COACH'
                 ? 'coachTier'
-                : state.subscription?.tier === 'PREMIUM'
+                : state.entitlements.plan === 'PREMIUM'
                   ? 'premium'
                   : 'free',
-            )}{' '}
-            · {t(state.subscription?.status || 'ACTIVE')}
+            )}
+            {state.entitlements.ai && state.entitlements.plan === 'FREE' && ' · AI'} ·{' '}
+            {t(
+              state.entitlements.plan !== 'FREE' &&
+                !(
+                  state.subscription?.tier === state.entitlements.plan &&
+                  state.subscription.status === 'ACTIVE'
+                )
+                ? 'grantedAccess'
+                : state.subscription?.status || 'ACTIVE',
+            )}
           </p>
           {state.subscription?.currentPeriodEnd && (
             <small>

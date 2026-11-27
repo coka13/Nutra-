@@ -131,6 +131,18 @@ export async function recordAiUsage(entry: {
       },
     })
     .catch(() => {});
+  // Real calls keep the provider's status current, so the admin panel doesn't show "unknown"
+  // (or an old failure) for a provider that is working. A busy free model (429) or a timeout says
+  // nothing about the connection itself, so only a success or a rejected key changes it.
+  const status = entry.success
+    ? 'ok'
+    : /^HTTP (401|403)$/.test(entry.error ?? '')
+      ? `http_${entry.error!.slice(5)}`
+      : null;
+  if (status)
+    await db.aIProvider
+      .updateMany({ where: { id: entry.route.provider }, data: { lastStatus: status, lastCheckedAt: new Date() } })
+      .catch(() => {});
 }
 
 export const monthStart = (now = new Date()) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));

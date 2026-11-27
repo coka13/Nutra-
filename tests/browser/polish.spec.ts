@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { grantCoachPlan } from './coach-plan';
 
 const password = 'Polish-Regression-2026!';
 async function register(
@@ -14,6 +15,7 @@ async function register(
       role,
       email,
       acceptTerms: true,
+      healthConsent: true,
       password,
       language,
       phone: role === 'COACH' ? '+972501234567' : undefined,
@@ -30,7 +32,7 @@ test('repeat invitations keep consent and ad entitlements; retained private food
     client = await browser.newContext(),
     outsider = await browser.newContext();
   try {
-    await register(coach, 'Coach', 'COACH');
+    await grantCoachPlan((await register(coach, 'Coach', 'COACH')).email);
     const user = await register(client, 'Client');
     await register(outsider, 'Outsider');
     const invite = () => coach.request.post('/api/clients/invite', { data: { email: user.email } });

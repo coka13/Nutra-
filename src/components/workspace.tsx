@@ -1,9 +1,11 @@
 'use client';
-import { brandTokens } from '@/lib/brand-theme';
+import type { CSSProperties } from 'react';
+import { brandTokens, coachBrandStyle } from '@/lib/brand-theme';
 import { useRestAlert } from './workout-rest';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  AlertCircle,
   Footprints,
   TrendingUp,
   Trophy,
@@ -36,6 +38,7 @@ import {
 } from 'lucide-react';
 import { Language, setMessageOverrides, translate } from '@/lib/i18n';
 import { SupportView } from './support-center';
+import { ConsentGate } from './consent-gate';
 import { persistLanguage } from '@/lib/language-preference';
 import { api } from '@/lib/api-client';
 export { api } from '@/lib/api-client';
@@ -44,7 +47,7 @@ import type { CatalogPage } from '@/lib/exercise-catalog';
 import { seedCatalogPage, warmCatalogImages } from '@/lib/catalog-client';
 import { CoachDashboard } from './coach-dashboard';
 import { CoachBusiness } from './coach-business';
-import { BrandMark } from './brand-logo';
+import { BrandMark, brandBackgroundUrl } from './brand-logo';
 import { CoachInvitations } from './coach-invitations';
 import { CoachView, Dashboard, ProgressView } from './dashboard';
 import { WorkoutsView, BuilderView, LibraryView, ActiveView } from './workouts';
@@ -255,12 +258,8 @@ export function Workspace({
   useEffect(() => {
     document.documentElement.dataset.theme = state?.user.theme || 'light';
   }, [state?.user.theme]);
-  // White label: a coach sees their own brand color as the app accent, and so do their trainees.
-  const brandColor =
-    state?.user.role === 'COACH'
-      ? state.branding?.color
-      : state?.relationships.find((r) => r.clientId === state.user.id && r.status === 'ACTIVE')
-          ?.coach.branding?.color;
+  // A coach sees their own brand color as the app accent. Trainees keep the default theme.
+  const brandColor = state?.user.role === 'COACH' ? state.branding?.color : undefined;
   useEffect(() => {
     const root = document.documentElement;
     const tokens = brandColor
@@ -274,9 +273,44 @@ export function Workspace({
   }, [brandColor, state?.user.theme]);
   useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => setToast(''), 3500);
+    // Errors stay up longer: they need reading, and often acting on.
+    const timer = setTimeout(() => setToast(''), toastTone(toast) === 'error' ? 7000 : 3500);
     return () => clearTimeout(timer);
   }, [toast]);
+  const notificationButton = useRef<HTMLButtonElement>(null),
+    notificationPopover = useRef<HTMLDivElement>(null);
+  // The notifications popover closes on Escape or a click elsewhere, like any menu.
+  useEffect(() => {
+    if (!notifications) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setNotifications(false);
+      notificationButton.current?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !notificationPopover.current?.contains(target) &&
+        !notificationButton.current?.contains(target)
+      )
+        setNotifications(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [notifications]);
+  // The mobile menu drawer closes on Escape too.
+  useEffect(() => {
+    if (!mobile) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobile(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobile]);
   function navigate(p: string) {
     router.push(`/app/${p === 'dashboard' ? '' : p}`);
     setMobile(false);
@@ -448,7 +482,17 @@ export function Workspace({
           {/* Independent users have no workspace to switch to or trainer to open. */}
           {(isCoach || sidebarBrand) && (
             <button
-              className="workspace-switch"
+              className={`workspace-switch${!isCoach && sidebarBrand?.branding?.color ? ' coach-branded' : ''}${!isCoach && sidebarBrand?.branding?.backgroundAt ? ' has-background' : ''}`}
+              style={
+                isCoach || !sidebarBrand
+                  ? undefined
+                  : ({
+                      ...coachBrandStyle(state, sidebarBrand.id),
+                      ...(sidebarBrand.branding?.backgroundAt && {
+                        '--brand-background': `url("${brandBackgroundUrl(sidebarBrand.id, sidebarBrand.branding.backgroundAt)}")`,
+                      }),
+                    } as CSSProperties)
+              }
               // Coaches edit their brand; clients open their coach's profile.
               onClick={() => navigate(isCoach ? 'branding' : sidebarBrand ? 'coach' : 'settings')}
             >
@@ -486,9 +530,10 @@ export function Workspace({
                 <button
                   key={key}
                   className={`nav-item ${page === key ? 'selected' : ''}`}
+                  aria-current={page === key ? 'page' : undefined}
                   onClick={() => navigate(key)}
                 >
-                  <Icon size={19} />
+                  <Icon size={19} aria-hidden="true" />
                   <span>
                     {t(
                       isCoach && key === 'dashboard'
@@ -504,15 +549,16 @@ export function Workspace({
           </nav>
           {isCoach ? (
             <>
-              <span className="nav-caption">{t('coaching')}</span>
+              <span className="nav-caption">{t('clientsCaption')}</span>
               <nav>
                 {studio.map(([key, Icon]) => (
                   <button
                     key={key}
                     className={`nav-item ${page === key ? 'selected' : ''}`}
+                    aria-current={page === key ? 'page' : undefined}
                     onClick={() => navigate(key)}
                   >
-                    <Icon size={19} />
+                    <Icon size={19} aria-hidden="true" />
                     <span>{t(key)}</span>
                     {key === 'messages' && unread > 0 && <b className="count">{unread}</b>}
                   </button>
@@ -523,20 +569,26 @@ export function Workspace({
             <nav className="secondary-nav">
               <button
                 className={`nav-item ${page === 'library' ? 'selected' : ''}`}
+                aria-current={page === 'library' ? 'page' : undefined}
                 onClick={() => navigate('library')}
               >
-                <BookOpen size={19} />
+                <BookOpen size={19} aria-hidden="true" />
                 {t('library')}
               </button>
-              <button className="nav-item" onClick={() => navigate('mealPlans')}>
-                <Utensils size={18} />
+              <button
+                className={`nav-item ${page === 'mealPlans' ? 'selected' : ''}`}
+                aria-current={page === 'mealPlans' ? 'page' : undefined}
+                onClick={() => navigate('mealPlans')}
+              >
+                <Utensils size={19} aria-hidden="true" />
                 {t('myMealPlans')}
               </button>
               <button
                 className={`nav-item ${page === 'messages' ? 'selected' : ''}`}
+                aria-current={page === 'messages' ? 'page' : undefined}
                 onClick={() => navigate('messages')}
               >
-                <MessageSquare size={19} />
+                <MessageSquare size={19} aria-hidden="true" />
                 {t('messages')}
                 {unread > 0 && <b className="count">{unread}</b>}
               </button>
@@ -607,8 +659,10 @@ export function Workspace({
                 <Menu />
               </button>
               <span className="breadcrumb">
-                {t('personal')}
-                <span>/</span>
+                <span className="breadcrumb-root">{t('personal')}</span>
+                <span className="breadcrumb-separator" aria-hidden="true">
+                  /
+                </span>
                 <strong>
                   {t(
                     page === 'settings'
@@ -654,20 +708,32 @@ export function Workspace({
                 {state.user.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
               <button
+                ref={notificationButton}
                 className="icon-btn notification-button"
                 aria-label={t('notifications')}
+                aria-expanded={notifications}
+                aria-haspopup="dialog"
                 onClick={() => setNotifications(!notifications)}
               >
                 <Bell size={19} />
                 {state.notifications.some((n) => !n.read) && <i />}
               </button>
-              <button className="avatar small" onClick={() => navigate('settings')}>
+              <button
+                className="avatar small"
+                aria-label={t('profileSettings')}
+                onClick={() => navigate('settings')}
+              >
                 {state.user.name[0]}
               </button>
             </div>
           </header>
           {notifications && (
-            <div className="notification-popover panel">
+            <div
+              ref={notificationPopover}
+              className="notification-popover panel"
+              role="dialog"
+              aria-label={t('notifications')}
+            >
               <div className="section-heading">
                 <h3>{t('notifications')}</h3>
                 <button
@@ -925,9 +991,19 @@ export function Workspace({
             </div>
           </Modal>
         )}
+        <ConsentGate />
         {toast && (
-          <div className={`toast ${toast === 'saved' ? 'success' : ''}`} role="status">
-            {toast === 'saved' ? <Check size={18} /> : <Bell size={18} />}
+          <div
+            className={`toast ${toastTone(toast)}`}
+            role={toastTone(toast) === 'error' ? 'alert' : 'status'}
+          >
+            {toastTone(toast) === 'success' ? (
+              <Check size={18} aria-hidden="true" />
+            ) : toastTone(toast) === 'error' ? (
+              <AlertCircle size={18} aria-hidden="true" />
+            ) : (
+              <Bell size={18} aria-hidden="true" />
+            )}
             <span>{t(toast)}</span>
             <button className="icon-btn" aria-label={t('close')} onClick={() => setToast('')}>
               <X size={16} />
@@ -937,6 +1013,12 @@ export function Workspace({
       </div>
     </Context.Provider>
   );
+}
+/** Toasts confirm a save, report a failure, or carry neutral information. */
+function toastTone(key: string): 'success' | 'info' | 'error' {
+  if (key === 'saved' || key === 'newRecord') return 'success';
+  if (key === 'savedRefreshPending') return 'info';
+  return 'error';
 }
 /** The paid tier this account can move up to, or null when nothing applies. */
 export function upgradeTarget(state: State): 'PREMIUM' | 'COACH' | null {
@@ -1013,7 +1095,21 @@ export function Modal({
           'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
         ) || [],
       );
-    if (!panel.current?.contains(document.activeElement)) focusable()[0]?.focus();
+    // Start on the dialog's first action (not the close button, and not a text field that
+    // would pop up the phone keyboard); fall back to the dialog itself.
+    if (!panel.current?.contains(document.activeElement)) {
+      const nodes = focusable();
+      const first = nodes.find(
+        (node) =>
+          !node.closest('.modal > .section-heading') &&
+          // Never pre-select a destructive action.
+          !node.matches('.danger, .danger-outline, .danger-text') &&
+          !node.matches(
+            'textarea, select, input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"])',
+          ),
+      );
+      (first ?? panel.current)?.focus({ preventScroll: true });
+    }
     const listener = (e: KeyboardEvent) => {
       // Only the top dialog owns Escape and keyboard focus when dialogs are nested.
       const dialogs = document.querySelectorAll('[aria-modal="true"]');
@@ -1048,6 +1144,7 @@ export function Modal({
     >
       <section
         ref={panel}
+        tabIndex={-1}
         role={role}
         aria-modal="true"
         aria-label={title}

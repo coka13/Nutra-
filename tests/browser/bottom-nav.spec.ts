@@ -23,6 +23,7 @@ for (const language of ['en', 'he'] as const) {
             name: 'Bottom nav',
             email: `bottom-nav-${language}-${Date.now()}@example.test`,
             acceptTerms: true,
+            healthConsent: true,
             password,
             role: 'INDEPENDENT',
             language,
@@ -32,6 +33,16 @@ for (const language of ['en', 'he'] as const) {
     ).toBeTruthy();
     try {
       await page.setViewportSize({ width: 390, height: 844 });
+      // The development-only Next.js badge sits bottom-left, over the RTL "More" tab.
+      await page.addInitScript(() => {
+        const hide = () => {
+          const style = document.createElement('style');
+          style.textContent = 'nextjs-portal { display: none !important; }';
+          document.head.append(style);
+        };
+        if (document.head) hide();
+        else document.addEventListener('DOMContentLoaded', hide);
+      });
       await page.goto('/app/dashboard');
       const nav = page.getByRole('navigation', { name: he ? 'ניווט ראשי' : 'Main navigation' });
       await expect(nav).toBeVisible();
@@ -46,7 +57,8 @@ for (const language of ['en', 'he'] as const) {
       // "More" opens the full menu drawer.
       await tab(he ? 'עוד' : 'More').click();
       await expect(page.locator('.sidebar.open')).toBeVisible();
-      await page.locator('.sidebar-scrim').click({ position: { x: 5, y: 5 } });
+      // Tap the dimmed page beside the drawer (the drawer opens from the start edge).
+      await page.locator('.sidebar-scrim').click({ position: { x: he ? 5 : 385, y: 150 } });
       await expect(page.locator('.sidebar.open')).toHaveCount(0);
 
       // Workout builder: its action bar stacks directly above the tab bar.

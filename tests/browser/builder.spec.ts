@@ -76,6 +76,7 @@ for (const language of ['en', 'he'] as const) {
             name: 'Builder layout',
             email: `builder-${language}-${Date.now()}@example.test`,
             acceptTerms: true,
+            healthConsent: true,
             password,
             role: 'INDEPENDENT',
             language,

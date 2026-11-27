@@ -18,6 +18,10 @@ export function CoachBusiness({
   const [modal, setModal] = useState<'package' | 'training' | 'receipt' | null>(null);
   const [selected, setSelected] = useState('');
   const [busy, setBusy] = useState(false);
+  const [removingReceipt, setRemovingReceipt] = useState<{
+    packageId: string;
+    receiptId: string;
+  } | null>(null);
   const links = state.relationships.filter(
     (r) => r.coachId === state.user.id && r.status === 'ACTIVE',
   );
@@ -330,16 +334,9 @@ export function CoachBusiness({
                     </p>
                     <p className="business-notes">{r.notes}</p>
                     <button
-                      className="text-button"
+                      className="text-button danger-text"
                       disabled={busy}
-                      onClick={() => {
-                        if (window.confirm(t('removeReceiptConfirm')))
-                          change({
-                            action: 'removeReceipt',
-                            packageId: r.pack.id,
-                            receiptId: r.id,
-                          });
-                      }}
+                      onClick={() => setRemovingReceipt({ packageId: r.pack.id, receiptId: r.id })}
                     >
                       {t('delete')}
                     </button>
@@ -409,6 +406,31 @@ export function CoachBusiness({
             </>
           )}
         </>
+      )}
+      {removingReceipt && (
+        <Modal title={t('delete')} role="alertdialog" onClose={() => setRemovingReceipt(null)}>
+          <p>{t('removeReceiptConfirm')}</p>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => setRemovingReceipt(null)}
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              className="button danger"
+              disabled={busy}
+              onClick={async () => {
+                await change({ action: 'removeReceipt', ...removingReceipt });
+                setRemovingReceipt(null);
+              }}
+            >
+              {t('delete')}
+            </button>
+          </div>
+        </Modal>
       )}
       {modal && (
         <Modal

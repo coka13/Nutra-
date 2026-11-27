@@ -1,4 +1,5 @@
 'use client';
+import { coachBrandStyle } from '@/lib/brand-theme';
 import { CoachContact } from './coach-contact';
 import { currentWorkout } from '@/lib/workout-clock';
 import { PersonalRecords } from './exercise-details';
@@ -446,14 +447,17 @@ function Stat({
 }
 /** Branded card for the client's active coach: logo, welcome note, contact and messages. */
 export function CoachHero({ link: coach }: { link: Relationship }) {
-  const { t, navigate } = useNutri();
+  const { state, t, navigate } = useNutri();
+  // The coach's card is theirs, so it wears their brand color (contrast-adjusted for the theme).
+  const tokens = coachBrandStyle(state, coach.coach.id);
   return (
     <section
       className={`panel coach-hero ${coach.coach.branding?.backgroundAt ? 'has-background' : ''}`}
       aria-label={t('connectedCoach')}
       style={
         {
-          '--brand': coach.coach.branding?.color || 'var(--green)',
+          ...tokens,
+          '--brand': 'var(--green)',
           ...(coach.coach.branding?.backgroundAt && {
             '--brand-background': `url("${brandBackgroundUrl(coach.coach.id, coach.coach.branding.backgroundAt)}")`,
           }),
@@ -564,7 +568,7 @@ export function ProgressView({ reports = false }: { reports?: boolean }) {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 4" stroke="var(--line)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted)' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--muted)' }} />
                   <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} width={40} />
                   <Tooltip
                     contentStyle={{ background: 'var(--panel)', border: '1px solid var(--line)' }}

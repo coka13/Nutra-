@@ -40,6 +40,29 @@ export function decryptSecret(sealed: string) {
   return Buffer.concat([decipher.update(Buffer.from(body, 'base64')), decipher.final()]).toString('utf8');
 }
 
+/**
+ * Binary data at rest (progress photos): MAGIC + 12-byte IV + 16-byte GCM tag + ciphertext.
+ * Rows written before encryption existed are plain JPEG and are returned unchanged.
+ */
+const SEALED_MAGIC = Buffer.from('FPE1');
+export const isSealedBytes = (data: Uint8Array) =>
+  data.length > 32 && Buffer.from(data.subarray(0, 4)).equals(SEALED_MAGIC);
+
+export function sealBytes(plain: Uint8Array): Uint8Array<ArrayBuffer> {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', encryptionKey(), iv);
+  const body = Buffer.concat([cipher.update(plain), cipher.final()]);
+  return new Uint8Array(Buffer.concat([SEALED_MAGIC, iv, cipher.getAuthTag(), body]));
+}
+
+export function openBytes(stored: Uint8Array): Buffer {
+  if (!isSealedBytes(stored)) return Buffer.from(stored);
+  const data = Buffer.from(stored);
+  const decipher = createDecipheriv('aes-256-gcm', encryptionKey(), data.subarray(4, 16));
+  decipher.setAuthTag(data.subarray(16, 32));
+  return Buffer.concat([decipher.update(data.subarray(32)), decipher.final()]);
+}
+
 /** Shows only enough of a saved key to recognise it. */
 export function secretHint(secret: string) {
   const trimmed = secret.trim();

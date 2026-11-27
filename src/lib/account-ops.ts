@@ -20,6 +20,13 @@ export async function deleteAccountData(tx: Prisma.TransactionClient, user: { id
     },
     data: { ownerId: null, source: 'private-retained' },
   });
+  // Support tickets keep a copy of the email and the conversation; they go with the account
+  // (messages cascade), and reports about this account no longer point to it.
+  await tx.supportTicket.deleteMany({ where: { userId: user.id } });
+  await tx.supportTicket.updateMany({
+    where: { reportedUserId: user.id },
+    data: { reportedUserId: null },
+  });
   await tx.user.delete({ where: { id: user.id } });
   await tx.auditLog.deleteMany({ where: { actorId: user.id } });
   await tx.aIUsage.updateMany({ where: { userId: user.id }, data: { userId: null } });

@@ -3,9 +3,13 @@ import { DM_Sans, Heebo } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { adsenseClient } from '@/lib/adsense';
 import { languagePreferenceKey, parseLanguage } from '@/lib/language-preference';
+import { a11yBootScript } from '@/lib/accessibility';
+import { AccessibilityMenu } from '@/components/accessibility-menu';
+import { CookieConsent } from '@/components/cookie-consent';
 import './globals.css';
 import './viewport-layout.css';
 import './workout-builder.css';
+import './design-system.css';
 export const metadata: Metadata = {
   title: 'Fitura+ · A healthier rhythm',
   description: 'Your workouts, nutrition and progress. Beautifully connected.',
@@ -30,7 +34,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
-      <body>{children}</body>
+      <head>
+        {/* Saved accessibility settings, applied before first paint. It has already run when
+            React hydrates, and third-party code (AdSense) may insert scripts beside it. */}
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: a11yBootScript }} />
+      </head>
+      <body>
+        {children}
+        <AccessibilityMenu />
+        <CookieConsent />
+      </body>
     </html>
   );
 }

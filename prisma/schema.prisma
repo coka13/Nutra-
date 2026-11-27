@@ -27,6 +27,10 @@ model User {
   coachCredentials String @default("")
   /// Per-coach override of the plan's client allowance. NULL = plan default.
   coachClientLimit Int?
+  /// Version of the Terms of Use and Privacy Policy the user last accepted (lib/legal consentVersion).
+  consentVersion String?
+  /// Explicit consent to processing health data; required before using the app as a trainee.
+  healthConsentAt DateTime?
   activityDays UserActivityDay[]
   grants EntitlementGrant[]
   tickets SupportTicket[] @relation("TicketAuthor")

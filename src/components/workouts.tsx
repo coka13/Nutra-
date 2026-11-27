@@ -1,4 +1,5 @@
 'use client';
+import { coachBrandStyle } from '@/lib/brand-theme';
 import { useEffect, useState, type FocusEvent, type MouseEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { currentWorkout, workoutMillis } from '@/lib/workout-clock';
@@ -184,10 +185,14 @@ export function WorkoutsView() {
               muscleOf.get(id) ?? p.exercises.find((row) => row.exerciseId === id)?.exercise.muscle,
           );
           return (
-            <article className="panel program-card" key={p.id}>
+            <article
+              className="panel program-card"
+              key={p.id}
+              style={coachBrandStyle(state, p.ownerId)}
+            >
               <div className={`program-art art-${i % 3}`}>
                 <Dumbbell size={65} strokeWidth={1} />
-                <span>N+ / {String(i + 1).padStart(2, '0')}</span>
+                <span aria-hidden="true">N+ / {String(i + 1).padStart(2, '0')}</span>
                 <span className="badge program-day-label">
                   <CalendarDays size={15} aria-hidden="true" />
                   {week.list(parseDays(p.days)) || t('unscheduled')}
@@ -360,19 +365,26 @@ export function WorkoutsView() {
         </Modal>
       )}
       {confirm && (
-        <Modal title={t('remove')} onClose={() => setConfirm(null)}>
-          <p>{confirm.name}</p>
-          <button
-            className="button danger"
-            onClick={async () => {
-              try {
-                await run('programs/delete', { id: confirm.id });
-                setConfirm(null);
-              } catch {}
-            }}
-          >
-            {t('remove')}
-          </button>
+        <Modal title={t('remove')} role="alertdialog" onClose={() => setConfirm(null)}>
+          <p className="confirm-subject">{confirm.name}</p>
+          <div className="form-actions">
+            <button type="button" className="button secondary" onClick={() => setConfirm(null)}>
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              className="button danger"
+              onClick={async () => {
+                try {
+                  await run('programs/delete', { id: confirm.id });
+                  setConfirm(null);
+                } catch {}
+              }}
+            >
+              <Trash2 size={16} aria-hidden="true" />
+              {t('remove')}
+            </button>
+          </div>
         </Modal>
       )}
     </>

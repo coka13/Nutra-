@@ -17,6 +17,7 @@
     "setup": "npm run db:generate && npm run db:migrate && npm run db:seed && npm run db:foods",
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:provision": "tsx scripts/admin-provision.ts",
+    "photos:encrypt": "tsx scripts/encrypt-progress-photos.ts",
     "test:admin": "tsx --test tests/admin.integration.ts",
     "catalog:images": "node scripts/sync-exercise-images.mjs",
     "catalog:animations": "node scripts/build-exercise-animations.mjs",

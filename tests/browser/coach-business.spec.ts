@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { grantCoachPlan } from './coach-plan';
 
 test('coach packages, balances, payment privacy and trainee activity placement', async ({
   browser,
@@ -22,11 +23,13 @@ test('coach packages, balances, payment privacy and trainee activity placement',
           email: `business-${name}-${suffix}@example.test`,
           phone: '+972501234567',
           acceptTerms: true,
+          healthConsent: true,
           password,
           language: 'he',
         },
       });
       expect(response.ok()).toBeTruthy();
+      if (role === 'COACH') await grantCoachPlan(`business-${name}-${suffix}@example.test`);
     }
     expect(
       (

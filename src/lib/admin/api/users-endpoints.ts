@@ -74,6 +74,8 @@ export const userEndpoints: Endpoint[] = [
   {
     method: 'GET',
     pattern: 'users',
+    // Lists names and email addresses: record who looked (personal data access log).
+    auditRead: true,
     permission: 'users.view',
     async handler({ query }) {
       const { skip, take, page, pageSize } = pagination(query);
@@ -301,6 +303,8 @@ export const coachEndpoints: Endpoint[] = [
   {
     method: 'GET',
     pattern: 'coaches',
+    // Lists names and email addresses: record who looked (personal data access log).
+    auditRead: true,
     permission: 'coaches.view',
     async handler({ query }) {
       const { skip, take, page, pageSize } = pagination(query);

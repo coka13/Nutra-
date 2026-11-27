@@ -20,6 +20,7 @@ for (const language of ['he', 'en'] as const) {
         email: `calendar-coach-${suffix}@example.test`,
         phone: '+972501234567',
         acceptTerms: true,
+        healthConsent: true,
         password,
         language,
       });
@@ -27,6 +28,7 @@ for (const language of ['he', 'en'] as const) {
         name: 'Calendar Client',
         email,
         acceptTerms: true,
+        healthConsent: true,
         password,
         language,
       });
@@ -34,6 +36,7 @@ for (const language of ['he', 'en'] as const) {
         name: 'Unrelated Client',
         email: `calendar-outsider-${suffix}@example.test`,
         acceptTerms: true,
+        healthConsent: true,
         password,
         language,
       });

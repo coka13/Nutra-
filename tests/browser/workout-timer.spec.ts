@@ -14,6 +14,7 @@ test('workout starts at zero, survives reopening, and keeps a separate clock per
         data: {
           email,
           acceptTerms: true,
+          healthConsent: true,
           password,
           name: 'Timer test',
           role: 'INDEPENDENT',

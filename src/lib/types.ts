@@ -100,6 +100,8 @@ export type State = {
   /** AdSense unit, sent only to accounts whose plan shows ads. */
   adsense?: { client: string; slot: string } | null;
   demo: boolean;
+  /** Consent on record: current Terms/Privacy version, and health-data consent for trainees. */
+  consent?: { terms: boolean; health: boolean };
 };
 export type FoodWithUnits = Food & { units: FoodUnit[] };
 export type Library = {

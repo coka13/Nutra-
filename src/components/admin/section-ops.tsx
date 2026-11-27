@@ -481,7 +481,7 @@ export function SystemSection() {
                 ))}
                 {data.aiProviders.map((p) => (
                   <div key={p.id}>
-                    {p.lastStatus === 'ok' ? <CheckCircle2 size={16} color="var(--a-brand)" /> : <XCircle size={16} color={p.enabled ? 'var(--a-danger)' : 'var(--a-muted)'} />}
+                    {p.lastStatus === 'ok' ? <CheckCircle2 size={16} color="var(--a-brand)" /> : <XCircle size={16} color={p.enabled && p.lastStatus !== 'unknown' ? 'var(--a-danger)' : 'var(--a-muted)'} />}
                     <span style={{ flex: 1 }}>{p.name}</span>
                     <span className="adm-small adm-muted">{p.lastStatus}</span>
                   </div>

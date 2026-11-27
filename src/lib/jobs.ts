@@ -44,6 +44,7 @@ async function cleanup() {
     db.adminSession.deleteMany({ where: { expiresAt: { lt: now } } }),
     db.adminChallenge.deleteMany({ where: { expiresAt: { lt: now } } }),
     db.passwordReset.deleteMany({ where: { expiresAt: { lt: now } } }),
+    db.emailVerification.deleteMany({ where: { expiresAt: { lt: now } } }),
     db.rateLimit.deleteMany({ where: { resetsAt: { lt: now } } }),
     db.requestError.deleteMany({ where: { createdAt: { lt: monthAgo } } }),
     db.apiMetric.deleteMany({ where: { hour: { lt: new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 13) } } }),

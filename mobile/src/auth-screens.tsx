@@ -139,6 +139,7 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [healthConsent, setHealthConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [sent, setSent] = useState(false);
@@ -176,8 +177,8 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
       submitting.current = false;
       return;
     }
-    if (registration && !acceptTerms) {
-      setError('termsRequired');
+    if (registration && (!acceptTerms || (!isCoach && !healthConsent))) {
+      setError(acceptTerms ? 'healthConsentRequired' : 'termsRequired');
       submitting.current = false;
       return;
     }
@@ -190,7 +191,7 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
         ...(!recovery && { password }),
         ...(registration && { name: name.trim() }),
         ...(registration && isCoach && { phone: phone.trim() }),
-        ...(registration && { acceptTerms }),
+        ...(registration && { acceptTerms, healthConsent: !isCoach && healthConsent }),
       });
       setPassword('');
       if (recovery) setSent(true);
@@ -343,6 +344,35 @@ export function AuthScreen({ account, mode }: { account: Account; mode: AuthMode
                   {t('privacyPolicy')}
                 </Text>
                 {t('termsConsentAfter')}
+              </Text>
+            </View>
+          )}
+          {registration && !isCoach && (
+            <View style={[styles.consent, { flexDirection: he ? 'row-reverse' : 'row' }]}>
+              <Pressable
+                testID="health-consent"
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: healthConsent }}
+                accessibilityLabel={t('healthConsentLabel')}
+                hitSlop={8}
+                onPress={() => setHealthConsent((value) => !value)}
+              >
+                <Ionicons
+                  name={healthConsent ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color={healthConsent ? colors.accent : colors.muted}
+                />
+              </Pressable>
+              <Text
+                style={{
+                  flex: 1,
+                  color: colors.ink,
+                  lineHeight: 21,
+                  textAlign: he ? 'right' : 'left',
+                }}
+                onPress={() => setHealthConsent((value) => !value)}
+              >
+                {t('healthConsentLabel')}
               </Text>
             </View>
           )}

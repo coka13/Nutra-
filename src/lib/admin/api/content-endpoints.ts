@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { ApiError } from '@/lib/auth';
-import { catalogExercises, freeExerciseDemonstration } from '@/lib/free-exercises';
+import { catalogExercises, demonstratedExercises, freeExerciseDemonstration } from '@/lib/free-exercises';
 import { invalidateContentCaches, overlayExercise } from '@/lib/content-overrides';
 import { foodNameKey } from '@/lib/food-dedupe';
 import { messages } from '@/lib/i18n';
@@ -82,7 +82,7 @@ export const contentEndpoints: Endpoint[] = [
       const muscle = query.get('muscle') || '';
       const overrides = new Map((await db.exerciseOverride.findMany()).map((o) => [o.exerciseId, o]));
       const filter = query.get('filter');
-      const rows = catalogExercises
+      const rows = demonstratedExercises
         .map((row) => ({ row: overlayExercise(row, overrides.get(row.id)), override: overrides.get(row.id) }))
         .filter(({ row, override }) =>
           (!q || row.nameEn.toLowerCase().includes(q) || row.nameHe.includes(q) || row.id === q) &&
@@ -95,7 +95,7 @@ export const contentEndpoints: Endpoint[] = [
         total: rows.length,
         page,
         pageSize,
-        muscles: [...new Set(catalogExercises.map((e) => e.muscle))].sort(),
+        muscles: [...new Set(demonstratedExercises.map((e) => e.muscle))].sort(),
         items: rows.slice(skip, skip + take).map(({ row, override }) => ({
           ...row,
           hidden: !!override?.hidden,

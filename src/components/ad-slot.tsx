@@ -32,6 +32,11 @@ function track(placement: string, kind: 'impression' | 'click') {
 
 /** Loads the AdSense library once, and only when an eligible page asks for it. */
 function loadAdsense(client: string) {
+  // In-app units sit beside health, meal and workout data, so they are never personalized
+  // (as with AdMob in the mobile app). Must be set before the library processes any slot.
+  const w = window as unknown as { adsbygoogle?: unknown[] & { requestNonPersonalizedAds?: number } };
+  w.adsbygoogle = w.adsbygoogle || [];
+  w.adsbygoogle.requestNonPersonalizedAds = 1;
   if (document.querySelector('script[data-adsense], script[src*="adsbygoogle.js"]')) return;
   const script = document.createElement('script');
   script.async = true;

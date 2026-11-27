@@ -21,6 +21,7 @@ for (const language of ['en', 'he'] as const) {
             name: role === 'COACH' ? 'Weight Coach' : 'Weight Client',
             email: accountEmail,
             acceptTerms: true,
+            healthConsent: true,
             password,
             role,
             phone: role === 'COACH' ? '+972501234567' : undefined,

@@ -52,6 +52,7 @@ for (const language of ['en', 'he'] as const) {
               name: 'Contact client',
               email: clientEmail,
               acceptTerms: true,
+              healthConsent: true,
               password,
               language,
             },

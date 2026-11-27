@@ -13,7 +13,14 @@ import {
 import { Language, translate } from '@/lib/i18n';
 import { COACH_PACKAGES, PLAN_PRICE_USD } from '@/lib/plans';
 import { languagePreferenceKey, parseLanguage, persistLanguage } from '@/lib/language-preference';
-import { privacyContact, privacyVersion, termsVersion } from '@/lib/legal';
+import {
+  accessibilityContact,
+  accessibilityVersion,
+  privacyContact,
+  privacyVersion,
+  termsVersion,
+} from '@/lib/legal';
+import { openCookieSettings } from '@/lib/cookie-consent';
 import { APP_STORE_URL, GOOGLE_PLAY_URL, isStorePlaceholder } from '@/lib/app-stores';
 const privacySections = [
   'privacyCollect',
@@ -22,11 +29,18 @@ const privacySections = [
   'privacyCoaches',
   'privacyProviders',
   'privacyAds',
+  'privacyCookies',
   'privacyRetention',
   'privacyRights',
   'privacySecurity',
   'privacyAge',
   'privacyChanges',
+];
+const accessibilitySections = [
+  'accessibilityCommitment',
+  'accessibilityLevel',
+  'accessibilityFeatures',
+  'accessibilityLimits',
 ];
 const termsSections = [
   'termsAge',
@@ -184,7 +198,9 @@ export function PublicPageClient({
   );
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const { acceptTerms, ...values } = Object.fromEntries(new FormData(e.currentTarget));
+    const { acceptTerms, healthConsent, ...values } = Object.fromEntries(
+      new FormData(e.currentTarget),
+    );
     setBusy(true);
     setError('');
     try {
@@ -200,7 +216,10 @@ export function PublicPageClient({
             ...values,
             language: lang,
             token,
-            ...(mode === 'register' && { acceptTerms: acceptTerms === 'on' }),
+            ...(mode === 'register' && {
+              acceptTerms: acceptTerms === 'on',
+              healthConsent: healthConsent === 'on',
+            }),
           }),
         },
       );
@@ -304,11 +323,57 @@ export function PublicPageClient({
             <section>
               <h2>{t('privacyContactTitle')}</h2>
               <p>
-                {t('privacyContactBody')}{' '}
-                {privacyContact && <a href={`mailto:${privacyContact}`}>{privacyContact}</a>}
+                {t('privacyContactBody')}
+                {privacyContact ? (
+                  <>
+                    {t('privacyContactEmail')}{' '}
+                    <a href={`mailto:${privacyContact}`}>{privacyContact}</a>
+                  </>
+                ) : (
+                  '.'
+                )}
               </p>
             </section>
           )}
+        </main>
+      ) : mode === 'accessibility' ? (
+        <main className="legal-page">
+          <h1>{t('accessibilityStatement')}</h1>
+          <p className="legal-updated">
+            {t('termsUpdated')} {accessibilityVersion}
+          </p>
+          {accessibilitySections.map((key) => (
+            <section key={key}>
+              <h2>{t(key + 'Title')}</h2>
+              <p>{t(key + 'Body')}</p>
+            </section>
+          ))}
+          <section>
+            <h2>{t('accessibilityContactTitle')}</h2>
+            <p>{t('accessibilityContactBody')}</p>
+            <ul>
+              {accessibilityContact.name && (
+                <li>
+                  {t('accessibilityCoordinator')} {accessibilityContact.name}
+                </li>
+              )}
+              {accessibilityContact.phone && (
+                <li>
+                  {t('accessibilityPhone')}{' '}
+                  <a href={`tel:${accessibilityContact.phone.replace(/[^\d+]/g, '')}`} dir="ltr">
+                    {accessibilityContact.phone}
+                  </a>
+                </li>
+              )}
+              {accessibilityContact.email && (
+                <li>
+                  {t('accessibilityEmail')}{' '}
+                  <a href={`mailto:${accessibilityContact.email}`}>{accessibilityContact.email}</a>
+                </li>
+              )}
+              <li>{t('accessibilitySupport')}</li>
+            </ul>
+          </section>
         </main>
       ) : home ? (
         <main className="landing-overview">
@@ -519,6 +584,12 @@ export function PublicPageClient({
                     </span>
                   </label>
                 )}
+                {mode === 'register' && account !== 'coach' && (account || role !== 'COACH') && (
+                  <label className="checkbox-label terms-consent">
+                    <input name="healthConsent" type="checkbox" required />
+                    <span>{t('healthConsentLabel')}</span>
+                  </label>
+                )}
                 {error && (
                   <p className="form-error" role="alert">
                     {t(error)}
@@ -577,6 +648,10 @@ export function PublicPageClient({
         <span>{t('tagline')}</span>
         <a href="/terms">{t('termsOfUse')}</a>
         <a href="/privacy">{t('privacyPolicy')}</a>
+        <a href="/accessibility">{t('accessibilityStatement')}</a>
+        <button type="button" className="text-button" onClick={() => openCookieSettings()}>
+          {t('cookieSettings')}
+        </button>
         <span>© {new Date().getFullYear()} Fitura+</span>
       </footer>
     </div>

@@ -4,6 +4,9 @@
  * text on it has 4.5:1 contrast; in the dark theme it is lightened until it has 4.5:1 against
  * the dark panel (primary buttons there use dark text on the accent).
  */
+import type { CSSProperties } from 'react';
+import type { State } from './types';
+
 type Rgb = [number, number, number];
 
 const DARK_PANEL: Rgb = [0x1c, 0x26, 0x22];
@@ -61,4 +64,21 @@ export function brandTokens(color: string, theme: 'light' | 'dark'): BrandTokens
     '--green-dark': toHex(mix(accent, BLACK, 0.25)),
     '--soft-green': toHex(mix(WHITE, accent, 0.08)),
   };
+}
+
+/**
+ * A trainee keeps the default theme; only what their coach made (workouts, menus, sessions)
+ * carries the coach's brand color. Returns the accent tokens as inline CSS variables for that
+ * item, or undefined when `creatorId` is not one of the viewer's active coaches with a color.
+ */
+export function coachBrandStyle(
+  state: Pick<State, 'user' | 'relationships'>,
+  creatorId: string | null | undefined,
+): CSSProperties | undefined {
+  if (!creatorId || creatorId === state.user.id) return undefined;
+  const color = state.relationships.find(
+    (r) => r.coachId === creatorId && r.clientId === state.user.id && r.status === 'ACTIVE',
+  )?.coach.branding?.color;
+  const tokens = color && brandTokens(color, state.user.theme === 'dark' ? 'dark' : 'light');
+  return tokens ? (tokens as CSSProperties) : undefined;
 }

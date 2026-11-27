@@ -11,6 +11,8 @@ export type WorkoutCalendarEntry = {
   date: string;
   name: string;
   status: 'workoutDone' | 'workoutMissed' | 'workoutPending';
+  /** Who wrote the workout (the program's owner), when it came from a program. */
+  ownerId?: string;
 };
 
 export function calendarDate(date: Date | string, timeZone: string) {
@@ -53,6 +55,7 @@ export function workoutCalendar(
         date,
         name: program.name,
         status: date < today ? 'workoutMissed' : 'workoutPending',
+        ownerId: program.ownerId,
       };
       entries.push(entry);
       scheduled.set(`${program.id}:${date}`, entry);
@@ -71,6 +74,7 @@ export function workoutCalendar(
         date,
         name: workout.name,
         status: done ? 'workoutDone' : date < today ? 'workoutMissed' : 'workoutPending',
+        ownerId: programs.find((program) => program.id === workout.programId)?.ownerId,
       });
     }
   }

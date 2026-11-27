@@ -331,7 +331,7 @@ label select {
   inset-inline-end: -8px;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.5px;
   font-weight: 600;
   color: var(--muted);
@@ -379,7 +379,7 @@ label select {
   color: var(--green);
   border-radius: 6px;
   padding: 5px 8px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   width: max-content;
   white-space: nowrap;
@@ -505,13 +505,13 @@ label select {
   min-width: 0;
 }
 .workspace-switch strong {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.5px;
   display: block;
 }
 .workspace-switch small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 3px;
   white-space: nowrap;
@@ -526,8 +526,8 @@ label select {
   background: var(--panel);
 }
 .nav-caption {
-  font-size: 8px;
-  color: #9ca29f;
+  font-size: 11px;
+  color: var(--muted);
   letter-spacing: 1.3px;
   padding: 0 13px;
   margin: 6px 0 10px;
@@ -544,7 +544,7 @@ label select {
   border-radius: 8px;
   width: 100%;
   text-align: start;
-  color: #7d8782;
+  color: var(--text-secondary);
   font-size: 12px;
   min-height: 42px;
   position: relative;
@@ -570,16 +570,16 @@ label select {
 .nav-new {
   background: #e5eddf;
   padding: 1px 5px;
-  font-size: 9px;
+  font-size: 11px;
   border-radius: 4px;
   margin-inline-start: auto;
-  color: #7e966f;
+  color: var(--green);
 }
 .count {
   margin-inline-start: auto;
   background: var(--green);
   color: #fff;
-  font-size: 9px;
+  font-size: 11px;
   padding: 1px 5px;
   border-radius: 10px;
 }
@@ -657,7 +657,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 .profile-switch small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   margin-top: 2px;
 }
 .main-shell {
@@ -676,8 +676,8 @@ html[data-theme='dark'] .sidebar .logout-item {
 .breadcrumb {
   display: flex;
   gap: 13px;
-  font-size: 9px;
-  color: #a1a7a4;
+  font-size: 11px;
+  color: var(--muted);
   letter-spacing: 0.6px;
   align-items: center;
 }
@@ -691,7 +691,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   gap: 15px;
 }
 .top-date {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   border-inline-end: 1px solid var(--line);
   padding-inline-end: 20px;
@@ -714,9 +714,9 @@ html[data-theme='dark'] .sidebar .logout-item {
   padding: 29px 36px 0;
 }
 .demo-label {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.3px;
-  color: #9a9f99;
+  color: var(--muted);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -748,16 +748,16 @@ html[data-theme='dark'] .sidebar .logout-item {
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--line);
-  color: #a9afab;
+  color: var(--muted);
   padding: 20px 0;
-  font-size: 9px;
+  font-size: 11px;
   margin-top: 25px;
 }
 .app-footer > span:first-child {
   font-size: 15px;
   letter-spacing: -1px;
   font-weight: 700;
-  color: #8b9790;
+  color: var(--text-secondary);
 }
 .onboarding-banner {
   display: flex;
@@ -841,11 +841,11 @@ html[data-theme='dark'] .sidebar .logout-item {
   border-radius: 8px;
 }
 .stat-period {
-  font-size: 9px;
-  color: #9ba39f;
+  font-size: 11px;
+  color: var(--muted);
 }
 .stat-card p {
-  color: #929b95;
+  color: var(--muted);
   font-size: 11px;
   margin: 16px 0 4px;
 }
@@ -858,8 +858,8 @@ html[data-theme='dark'] .sidebar .logout-item {
   font-weight: 600;
 }
 .stat-value small {
-  font-size: 10px;
-  color: #a1a8a3;
+  font-size: 11px;
+  color: var(--muted);
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -897,7 +897,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.4px;
   color: #b9d0bf;
@@ -908,7 +908,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .workout-chip {
   display: inline-block;
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 0.8px;
   color: #c2d0c5;
   background: #ffffff0c;
@@ -925,7 +925,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   font-weight: 500;
 }
 .workout-hero p {
-  font-size: 10px;
+  font-size: 11px;
   color: #9fb8aa;
   margin-bottom: 16px;
   max-width: 260px;
@@ -934,7 +934,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   display: flex;
   gap: 16px;
   color: #becdc3;
-  font-size: 10px;
+  font-size: 11px;
   margin-bottom: 18px;
 }
 .hero-metadata span {
@@ -1031,7 +1031,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   margin-bottom: 25px;
 }
 .nutrition-overview .section-heading p {
-  font-size: 10px;
+  font-size: 11px;
 }
 .macro-row {
   display: grid;
@@ -1041,8 +1041,8 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .macro-mini .row {
   gap: 6px;
-  font-size: 10px;
-  color: #87908a;
+  font-size: 11px;
+  color: var(--muted);
 }
 .dot {
   height: 6px;
@@ -1066,7 +1066,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   margin: 8px 0;
 }
 .macro-mini small {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   font-weight: 400;
 }
@@ -1076,7 +1076,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   opacity: 0.7;
 }
 .nutrition-overview > .text-button {
-  font-size: 10px;
+  font-size: 11px;
 }
 .rhythm-card {
   padding: 20px 20px 16px;
@@ -1109,12 +1109,12 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .progress-ring strong span {
   font-size: 20px;
-  color: #a5afa7;
+  color: var(--muted);
   font-weight: 400;
 }
 .progress-ring small {
-  font-size: 10px;
-  color: #939d94;
+  font-size: 11px;
+  color: var(--muted);
 }
 .week-dots {
   display: flex;
@@ -1128,8 +1128,8 @@ html[data-theme='dark'] .sidebar .logout-item {
   flex-direction: column;
 }
 .week-dots small {
-  font-size: 8px;
-  color: #9ca79f;
+  font-size: 11px;
+  color: var(--muted);
 }
 .week-dots > div > span {
   height: 24px;
@@ -1151,7 +1151,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   color: var(--green);
 }
 .rhythm-card > p {
-  font-size: 9px;
+  font-size: 11px;
   margin: 18px 0 0;
 }
 .water-card {
@@ -1167,7 +1167,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   color: #4a697c;
 }
 .water-card p {
-  font-size: 10px;
+  font-size: 11px;
   position: relative;
   max-width: 200px;
   margin: 12px 0 17px;
@@ -1212,34 +1212,34 @@ html[data-theme='dark'] .sidebar .logout-item {
   background: #ffffff99;
   border-color: #e0eaf0;
   min-height: 34px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .coach-note {
   padding: 19px;
 }
 .coach-note > .eyebrow {
-  font-size: 7px;
+  font-size: 11px;
   margin-bottom: 16px;
   letter-spacing: 1.3px;
 }
 .coach-note .avatar {
   width: 31px;
   height: 31px;
-  font-size: 9px;
+  font-size: 11px;
 }
 .coach-note strong {
   font-size: 11px;
   display: block;
 }
 .coach-note small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   display: block;
   margin-top: 2px;
 }
 .coach-note .text-button {
   margin-top: 15px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .coach-stats {
   display: grid;
@@ -1376,7 +1376,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .list-row small {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -1488,7 +1488,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   min-height: 33px;
 }
 .program-info .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
 }
 .program-art .program-day-label {
   display: flex;
@@ -1507,7 +1507,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 .program-meta {
   display: flex;
   gap: 13px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   padding: 12px 0;
   border-top: 1px solid var(--line);
@@ -1522,7 +1522,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   margin-top: 10px;
 }
 .program-actions .button {
-  font-size: 10px;
+  font-size: 11px;
   padding: 9px 12px;
 }
 .coach-program-grid .program-card {
@@ -1593,7 +1593,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 .coach-invite-eyebrow {
   display: block;
   margin-bottom: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--green);
   letter-spacing: 0.05em;
@@ -1805,7 +1805,7 @@ html[data-theme='dark'] .sidebar .logout-item {
     gap: 6px;
   }
   .builder-review-exercise .exercise-inputs label {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 .builder-details {
@@ -1952,7 +1952,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .builder-equipment {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   margin-top: 3px;
   color: var(--muted);
 }
@@ -2070,7 +2070,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   line-height: 1.5;
 }
 .builder-library .library-add-row small {
-  font-size: 10px;
+  font-size: 11px;
 }
 .builder-exercise-thumb {
   display: inline-flex;
@@ -2150,7 +2150,7 @@ html[data-theme='dark'] .sidebar .logout-item {
     gap: 6px;
   }
   .builder-exercise .exercise-inputs label {
-    font-size: 10px;
+    font-size: 11px;
   }
   .builder-form .builder-savebar {
     display: grid;
@@ -2180,7 +2180,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .library-add-row small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -2202,7 +2202,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .day-picker .picked {
   background: var(--green);
@@ -2240,7 +2240,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   gap: 10px;
 }
 .exercise-inputs label {
-  font-size: 10px;
+  font-size: 11px;
 }
 .exercise-inputs input {
   padding: 8px;
@@ -2265,7 +2265,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   margin-top: 10px;
 }
 .exercise-card p {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
 }
 .exercise-illustration {
@@ -2323,13 +2323,13 @@ html[data-theme='dark'] .sidebar .logout-item {
   font-size: 14px;
 }
 .active-exercise .text-button {
-  font-size: 10px;
+  font-size: 11px;
 }
 .active-exercise .section-heading .text-button {
   max-width: 100px;
 }
 .previous-set {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   border-bottom: 1px solid var(--line);
   padding-bottom: 12px;
@@ -2451,7 +2451,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   text-align: center;
 }
 .set-table-heading {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   padding: 10px 0;
 }
@@ -2557,7 +2557,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 .macro-stat small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .energy-card strong,
 .macro-stat strong {
@@ -2568,7 +2568,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .energy-card strong span,
 .macro-stat strong span {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
   color: var(--muted);
   margin-inline-start: 5px;
@@ -2642,7 +2642,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   display: block;
 }
 .food-row small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   display: block;
   margin-top: 3px;
@@ -2678,7 +2678,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   font-size: 18px;
 }
 .portion-preview small {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
 }
 .food-search-results {
@@ -2731,7 +2731,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .heat.active {
   background: #dae9dc;
@@ -2745,7 +2745,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   border-inline-start: 1px solid var(--line);
 }
 .month-weekday {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   padding: 12px;
   border-bottom: 1px solid var(--line);
@@ -2776,7 +2776,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   color: #fff;
 }
 .calendar-event {
-  font-size: 9px;
+  font-size: 11px;
   background: var(--soft-green);
   color: var(--green);
   display: block;
@@ -2790,7 +2790,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .calendar-event span {
   display: block;
-  font-size: 8px;
+  font-size: 11px;
 }
 .workout-calendar-legend {
   margin-bottom: 16px;
@@ -2816,7 +2816,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .client-table-head {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   padding: 5px 0 15px;
   border-bottom: 1px solid var(--line);
 }
@@ -2831,11 +2831,11 @@ html[data-theme='dark'] .sidebar .logout-item {
 .client-table-row small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   margin-top: 4px;
 }
 .client-table-row .button {
-  font-size: 10px;
+  font-size: 11px;
   justify-self: end;
 }
 .client-summary {
@@ -2856,7 +2856,7 @@ html[data-theme='dark'] .sidebar .logout-item {
 }
 .client-summary small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .messaging-layout {
   display: grid;
@@ -2926,7 +2926,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   align-items: center;
   justify-content: flex-end;
   gap: 5px;
-  font-size: 8px;
+  font-size: 11px;
   margin-top: 8px;
 }
 .message.outgoing {
@@ -2972,7 +2972,7 @@ html[data-theme='dark'] .sidebar .logout-item {
   transform: rotate(-7deg);
 }
 .assistant-panel > .eyebrow {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--green);
 }
 .assistant-panel > h2 {
@@ -3065,7 +3065,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
@@ -3073,7 +3073,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 }
 .picker-attribution {
   margin-top: 10px;
-  font-size: 9px;
+  font-size: 11px;
 }
 .food-picker .food-search-results {
   max-height: 340px;
@@ -3113,7 +3113,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 .plan-meal-title small {
   font-weight: 400;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .plan-meal ul {
   list-style: none;
@@ -3144,7 +3144,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 }
 .plan-item-row small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -3154,7 +3154,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   align-items: center;
   gap: 4px;
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
 }
 .grams-input input {
@@ -3214,7 +3214,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 }
 .amount-input small {
   width: 100%;
-  font-size: 10px;
+  font-size: 11px;
 }
 .plan-picker {
   margin-top: 8px;
@@ -3253,7 +3253,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   gap: 12px;
   padding: 16px;
   background: #f7f2e6;
-  color: #9c8a56;
+  color: var(--warning-text);
   border: 1px solid #eee6cf;
   border-radius: 10px;
   margin-bottom: 20px;
@@ -3429,7 +3429,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 .public-popup-grid p {
   font-size: 13px;
   line-height: 1.8;
-  color: #939e8f;
+  color: var(--muted);
 }
 .public-popup-grid .button {
   margin-top: 12px;
@@ -3447,7 +3447,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   margin: auto;
 }
 .landing-hero .eyebrow {
-  font-size: 9px;
+  font-size: 11px;
   color: #63846b;
   letter-spacing: 1.6px;
 }
@@ -3462,7 +3462,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 .landing-hero p {
   font-size: 15px;
   line-height: 1.9;
-  color: #859185;
+  color: var(--muted);
   max-width: 450px;
   margin-bottom: 30px;
 }
@@ -3472,7 +3472,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   gap: 12px;
   margin-top: 35px;
   font-size: 11px;
-  color: #92a08f;
+  color: var(--muted);
 }
 .mini-mark {
   height: 32px;
@@ -3592,8 +3592,8 @@ html[data-theme='dark'] .weekday-chips button.active {
   z-index: 4;
 }
 .floating-card small {
-  color: #96a08e;
-  font-size: 9px;
+  color: var(--muted);
+  font-size: 11px;
   display: block;
   margin-bottom: 4px;
 }
@@ -3623,7 +3623,7 @@ html[data-theme='dark'] .weekday-chips button.active {
 .feature-grid p {
   font-size: 12px;
   line-height: 1.8;
-  color: #939e8f;
+  color: var(--muted);
   margin: 0;
 }
 .public-site footer {
@@ -3636,7 +3636,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   padding: 30px 0;
   margin: auto;
   font-size: 11px;
-  color: #99a28f;
+  color: var(--muted);
 }
 .public-site footer .brand {
   font-size: 26px;
@@ -3674,7 +3674,7 @@ html[data-theme='dark'] .weekday-chips button.active {
   overflow: hidden;
 }
 .auth-story .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
   color: var(--lime);
   letter-spacing: 1.4px;
 }
@@ -3874,7 +3874,7 @@ html[dir='rtl'] .public-nav .brand {
     padding: 24px;
   }
   .rhythm-card > p {
-    font-size: 10px;
+    font-size: 11px;
   }
   .water-card p {
     font-size: 11px;
@@ -3891,7 +3891,7 @@ html[dir='rtl'] .public-nav .brand {
     inset-inline-start: -13px;
   }
   .workspace-switch small {
-    font-size: 8px;
+    font-size: 11px;
   }
   .main-content {
     padding: 25px 25px 0;
@@ -4005,13 +4005,13 @@ html[dir='rtl'] .public-nav .brand {
     display: none;
   }
   .stat-card .stat-period {
-    font-size: 8px;
+    font-size: 11px;
   }
   .page-heading {
     align-items: flex-start;
   }
   .page-heading > .row .button {
-    font-size: 10px;
+    font-size: 11px;
   }
   .top-date {
     display: none;
@@ -4082,10 +4082,10 @@ html[dir='rtl'] .public-nav .brand {
     padding: 5px;
   }
   .calendar-event {
-    font-size: 8px;
+    font-size: 11px;
   }
   .calendar-day-number {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 @media (max-width: 820px) {
@@ -4116,10 +4116,10 @@ html[dir='rtl'] .public-nav .brand {
     padding: 8px 6px;
   }
   .workspace-switch strong {
-    font-size: 8px;
+    font-size: 11px;
   }
   .workspace-switch small {
-    font-size: 7px;
+    font-size: 11px;
   }
   .nav-item {
     font-size: 11px;
@@ -4127,7 +4127,7 @@ html[dir='rtl'] .public-nav .brand {
     gap: 9px;
   }
   .nav-caption {
-    font-size: 7px;
+    font-size: 11px;
   }
   .sidebar-bottom {
     padding-top: 25px;
@@ -4158,7 +4158,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 28px;
   }
   .stat-card .stat-period {
-    font-size: 9px;
+    font-size: 11px;
   }
   .workout-hero-content {
     max-width: 80%;
@@ -4284,10 +4284,10 @@ html[dir='rtl'] .public-nav .brand {
     bottom: 55px;
   }
   .floating-card strong {
-    font-size: 10px;
+    font-size: 11px;
   }
   .floating-card small {
-    font-size: 8px;
+    font-size: 11px;
   }
   .feature-grid {
     padding: 0 30px 50px;
@@ -4363,17 +4363,17 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 36px;
   }
   .sidebar .workspace-switch strong {
-    font-size: 9px;
+    font-size: 11px;
   }
   .sidebar .workspace-switch small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .sidebar .nav-item {
     font-size: 12px;
     gap: 12px;
   }
   .sidebar .nav-caption {
-    font-size: 8px;
+    font-size: 11px;
   }
   .main-shell {
     margin: 0;
@@ -4398,7 +4398,7 @@ html[dir='rtl'] .public-nav .brand {
     gap: 5px;
   }
   .breadcrumb {
-    font-size: 8px;
+    font-size: 11px;
     gap: 8px;
   }
   .breadcrumb > span:first-of-type {
@@ -4422,7 +4422,7 @@ html[dir='rtl'] .public-nav .brand {
     height: 27px;
   }
   .top-actions .icon-btn > span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .page-heading {
     margin-bottom: 23px;
@@ -4444,7 +4444,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 11px;
   }
   .demo-label {
-    font-size: 8px;
+    font-size: 11px;
     margin-bottom: 16px;
   }
   .stats-grid {
@@ -4456,7 +4456,7 @@ html[dir='rtl'] .public-nav .brand {
   }
   .stat-card p {
     margin-top: 13px;
-    font-size: 10px;
+    font-size: 11px;
   }
   .stat-value {
     font-size: 27px;
@@ -4532,7 +4532,7 @@ html[dir='rtl'] .public-nav .brand {
     margin-top: 0;
   }
   .dashboard-side .coach-note > .eyebrow {
-    font-size: 6px;
+    font-size: 11px;
   }
   .dashboard-side .coach-note .row {
     flex-wrap: wrap;
@@ -4547,7 +4547,7 @@ html[dir='rtl'] .public-nav .brand {
   }
   .workout-hero p {
     max-width: 230px;
-    font-size: 10px;
+    font-size: 11px;
   }
   .dumbbell-art {
     right: -10%;
@@ -4556,7 +4556,7 @@ html[dir='rtl'] .public-nav .brand {
     transform: rotate(-38deg) scale(0.9);
   }
   .hero-metadata {
-    font-size: 9px;
+    font-size: 11px;
   }
   .hero-lines {
     right: -240px;
@@ -4576,7 +4576,7 @@ html[dir='rtl'] .public-nav .brand {
   }
   .nutrition-overview .section-heading p {
     display: block;
-    font-size: 9px;
+    font-size: 11px;
     max-width: 200px;
   }
   .nutrition-overview .tile-icon {
@@ -4641,13 +4641,13 @@ html[dir='rtl'] .public-nav .brand {
   }
   .builder-exercise .exercise-number {
     width: 24px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .exercise-inputs {
     gap: 7px;
   }
   .exercise-inputs label {
-    font-size: 9px;
+    font-size: 11px;
   }
   .exercise-grid {
     gap: 13px;
@@ -4662,10 +4662,10 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 12px;
   }
   .exercise-card p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .exercise-card .text-button {
-    font-size: 10px;
+    font-size: 11px;
   }
   .exercise-illustration {
     height: 115px;
@@ -4699,14 +4699,14 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 18px;
   }
   .macro-stat strong span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .macro-stat > .dot {
     width: 4px;
     height: 4px;
   }
   .macro-stat small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .nutrition-stats .energy-card {
     padding: 18px;
@@ -4727,7 +4727,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 11px;
   }
   .food-row small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .food-row .food-icon {
     width: 29px;
@@ -4765,23 +4765,23 @@ html[dir='rtl'] .public-nav .brand {
     width: 100%;
   }
   .sharing-panel .button {
-    font-size: 10px;
+    font-size: 11px;
   }
   .heatmap {
     gap: 6px;
   }
   .heat {
-    font-size: 9px;
+    font-size: 11px;
     min-height: 36px;
   }
   .list-row {
     gap: 10px;
   }
   .list-row > .badge {
-    font-size: 8px;
+    font-size: 11px;
   }
   .list-row > span:last-child {
-    font-size: 10px;
+    font-size: 11px;
   }
   .assistant-panel {
     padding: 25px 20px;
@@ -4794,7 +4794,7 @@ html[dir='rtl'] .public-nav .brand {
     padding: 8px 12px;
   }
   .assistant-panel > small {
-    font-size: 10px;
+    font-size: 11px;
     display: block;
     line-height: 1.9;
   }
@@ -4805,29 +4805,29 @@ html[dir='rtl'] .public-nav .brand {
   }
   .month-weekday {
     padding: 10px 3px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .calendar-day {
     height: 80px !important;
     padding: 3px !important;
   }
   .calendar-day-number {
-    font-size: 9px;
+    font-size: 11px;
     width: 21px;
     height: 21px;
   }
   .calendar-event {
-    font-size: 7px;
+    font-size: 11px;
     padding: 3px;
   }
   .calendar-event span {
-    font-size: 6px;
+    font-size: 11px;
   }
   .calendar-day.outside {
     min-height: 80px;
   }
   .appointment-row small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .contact-list {
     padding: 8px;
@@ -4861,7 +4861,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 11px;
   }
   .client-table-row small {
-    font-size: 8px;
+    font-size: 11px;
   }
   .client-summary {
     gap: 10px;
@@ -4870,7 +4870,7 @@ html[dir='rtl'] .public-nav .brand {
     padding: 10px;
   }
   .client-summary small {
-    font-size: 8px;
+    font-size: 11px;
   }
   .client-summary strong {
     font-size: 20px;
@@ -4885,7 +4885,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 13px;
   }
   .active-exercise .section-heading .text-button {
-    font-size: 9px;
+    font-size: 11px;
   }
   .active-exercise .section-heading .row {
     gap: 8px;
@@ -4957,7 +4957,7 @@ html[dir='rtl'] .public-nav .brand {
   }
   .hero-foot {
     margin-top: 24px;
-    font-size: 10px;
+    font-size: 11px;
   }
   .landing-art {
     height: 380px;
@@ -4974,7 +4974,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 12px;
   }
   .floating-card small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .feature-grid {
     padding: 0 22px 40px;
@@ -4987,13 +4987,13 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 13px;
   }
   .feature-grid p {
-    font-size: 10px;
+    font-size: 11px;
   }
   .public-site footer {
     margin: 0 22px;
     padding: 25px 0;
     flex-wrap: wrap;
-    font-size: 9px;
+    font-size: 11px;
   }
   .public-site footer .brand {
     font-size: 24px;
@@ -5002,7 +5002,7 @@ html[dir='rtl'] .public-nav .brand {
     font-size: 24px;
   }
   .public-site footer > span:last-child {
-    font-size: 8px;
+    font-size: 11px;
   }
   .auth-wrap {
     display: flex;
@@ -5051,7 +5051,7 @@ html[dir='rtl'] .public-nav .brand {
     padding: 17px;
   }
   .coach-stats small {
-    font-size: 10px;
+    font-size: 11px;
   }
   .coach-stats h2 {
     font-size: 25px;
@@ -5077,7 +5077,7 @@ html[dir='rtl'] .public-nav .brand {
     height: 18px;
   }
   .rhythm-card .week-dots small {
-    font-size: 7px;
+    font-size: 11px;
   }
   .dashboard-side .rhythm-card {
     grid-template-columns: 140px minmax(0, 1fr);
@@ -5755,6 +5755,29 @@ html[dir='rtl'] .public-nav .brand {
 .weight-month-chart {
   height: 200px;
   margin-top: 16px;
+}
+.weight-tooltip {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.08);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.weight-tooltip span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.weight-tooltip strong {
+  font-size: 16px;
+  color: var(--green-dark);
+}
+.weight-tooltip small {
+  font-size: 12px;
+  font-weight: 500;
 }
 .weight-month-empty {
   margin: 18px 0 0;
@@ -6687,7 +6710,7 @@ html {
   margin-bottom: 6px;
 }
 .coach-monthly {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
   color: #6b7469;
 }
@@ -6716,13 +6739,13 @@ html {
   white-space: nowrap;
 }
 .coach-package-price small {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
 }
 .coach-package-capacity {
   grid-column: 1 / -1;
   color: #6b7469;
-  font-size: 10px;
+  font-size: 11px;
 }
 .coach-package-contact {
   margin: 4px 0 0;
@@ -6745,10 +6768,10 @@ html {
   }
   .coach-package-price small {
     display: block;
-    font-size: 9px;
+    font-size: 11px;
   }
   .coach-package-capacity {
-    font-size: 9px;
+    font-size: 11px;
   }
 }
 
@@ -6774,7 +6797,7 @@ html {
   width: 100%;
   max-width: 1150px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 11px;
 }
 .public-home footer .brand {
   display: none;
@@ -6812,7 +6835,7 @@ html {
   .landing-overview .landing-hero .eyebrow {
     grid-column: 1;
     margin: 0;
-    font-size: 8px;
+    font-size: 11px;
     letter-spacing: 0.5px;
   }
   .landing-overview .landing-hero h1 {
@@ -6985,7 +7008,7 @@ html {
     gap: 3px 6px;
   }
   .landing-overview .public-plan li {
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
   }
   .landing-overview .public-plan > .button {
@@ -7050,7 +7073,7 @@ html {
     height: 64px;
   }
   .landing-overview .public-plan li {
-    font-size: 10.5px;
+    font-size: 11px;
     line-height: 1.2;
     margin-bottom: 2px;
   }
@@ -7219,7 +7242,7 @@ html {
     row-gap: 1px;
   }
   .coach-package {
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1.1;
     padding: 2px;
     gap: 1px;
@@ -7229,7 +7252,7 @@ html {
     letter-spacing: -0.2px;
   }
   .coach-package-price {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 @media (min-width: 861px) and (max-height: 650px) {
@@ -7402,7 +7425,7 @@ html {
   position: absolute;
   top: 4px;
   inset-inline-end: 10px;
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -7592,7 +7615,8 @@ button.macro-stat.target-stat {
 }
 /* Coach brand background: a cover image under a panel-colored wash so text stays readable. */
 .coach-hero.has-background,
-.brand-preview.has-background {
+.brand-preview.has-background,
+.workspace-switch.has-background {
   background-image:
     linear-gradient(
       color-mix(in srgb, var(--panel) 78%, transparent),
@@ -8243,7 +8267,7 @@ html[data-theme='dark'] .button.wallet-pay {
     top: -2px;
     inset-inline-end: 6px;
     margin: 0;
-    font-size: 10px;
+    font-size: 11px;
   }
   .bottom-nav-live {
     position: absolute;
@@ -8268,4 +8292,191 @@ html[data-theme='dark'] .button.wallet-pay {
   .builder-selection-tray {
     bottom: calc(var(--bottom-nav) + 14px);
   }
+}
+
+/* ---- Accessibility menu (components/accessibility-menu.tsx) ---- */
+.a11y-trigger {
+  position: fixed;
+  inset-inline-end: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-start-start-radius: 12px;
+  border-end-start-radius: 12px;
+  background: var(--green-dark);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+.a11y-trigger:focus-visible {
+  outline: 3px solid #ffbf47;
+  outline-offset: 2px;
+}
+.a11y-panel {
+  position: fixed;
+  inset-inline-end: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1300;
+  width: min(280px, calc(100vw - 72px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+}
+.a11y-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+}
+.a11y-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.a11y-size span {
+  flex: 1;
+}
+.a11y-size button,
+.a11y-toggle {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--subtle);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.a11y-size button {
+  width: 40px;
+  font-weight: 700;
+}
+.a11y-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  text-align: start;
+}
+.a11y-size button[aria-pressed='true'],
+.a11y-toggle[aria-pressed='true'] {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+  color: #fff;
+}
+.a11y-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  font-size: 13px;
+}
+/* Adjustments, applied as classes on <html> (lib/accessibility.ts). */
+html.a11y-zoom-1 {
+  zoom: 1.15;
+}
+html.a11y-zoom-2 {
+  zoom: 1.3;
+}
+html.a11y-contrast {
+  filter: contrast(1.35);
+}
+html.a11y-grayscale {
+  filter: grayscale(1);
+}
+html.a11y-contrast.a11y-grayscale {
+  filter: contrast(1.35) grayscale(1);
+}
+html.a11y-links a {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+html.a11y-font body,
+html.a11y-font body * {
+  font-family: Arial, 'Segoe UI', Helvetica, sans-serif !important;
+  letter-spacing: 0.02em;
+}
+html.a11y-motion *,
+html.a11y-motion *::before,
+html.a11y-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* ---- Cookie banner (components/cookie-consent.tsx) ---- */
+.cookie-banner {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: calc(var(--bottom-nav, 0px) + 12px);
+  z-index: 1250;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 14px 16px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+}
+.cookie-banner > svg {
+  color: var(--green);
+  flex: none;
+}
+.cookie-banner-text {
+  flex: 1 1 280px;
+}
+.cookie-banner-text p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+.cookie-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.consent-form {
+  display: grid;
+  gap: 14px;
+}
+.consent-form a {
+  color: var(--green);
+  text-decoration: underline;
+}
+
+/* A trainee's sidebar card for their coach, in the coach's brand color. */
+.workspace-switch.coach-branded {
+  background-color: var(--soft-green);
+  border-color: color-mix(in srgb, var(--green) 30%, var(--line));
+}
+.workspace-switch.coach-branded strong {
+  color: var(--green);
+}
+.coach-hero .coach-contact a {
+  color: var(--green);
+}
+.coach-hero .button.primary.coach-hero-cta {
+  background: var(--green);
+  border-color: var(--green);
+}
+.coach-hero .button.primary.coach-hero-cta:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
 }

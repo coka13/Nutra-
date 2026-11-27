@@ -30,6 +30,7 @@ import {
   signOut,
 } from '@/lib/auth';
 import { hashPassword, tokenHash, verifyPassword } from '@/lib/security';
+import { openBytes, sealBytes } from '@/lib/admin/crypto';
 import { clientCapacity } from '@/lib/plans';
 import { billingConfigured, paymentsConfigured } from '@/lib/billing';
 import { paypalConfigured } from '@/lib/paypal';
@@ -42,13 +43,14 @@ import {
 } from '@/lib/account-ops';
 import { aiConfigured, aiContext, assertAiAllowed } from '@/lib/ai-governance';
 import { getConfig } from '@/lib/remote-config';
-import { termsVersion } from '@/lib/legal';
+import { consentVersion, termsVersion } from '@/lib/legal';
 import { recordRequest, routeGroup } from '@/lib/metrics';
 import { applyExerciseOverrides } from '@/lib/content-overrides';
 import { menuApplies, serializeWeekdays } from '@/lib/meal-schedule';
 import { searchLocalFoods } from '@/lib/food-search';
 import { foodAccess } from '@/lib/food-access';
 import { clientAdherence } from '@/lib/adherence';
+import { calendarDate } from '@/lib/workout-calendar';
 import { workoutClockTransition } from '@/lib/workout-clock';
 import { recordPerformance, recordLivePerformance } from '@/lib/performance';
 import { planLiveSync, type PlanRow } from '@/lib/live-sync';
@@ -313,9 +315,14 @@ async function handleRequest(req: NextRequest, path: string) {
         if (await db.user.findUnique({ where: { email: data.email.toLowerCase() } }))
           throw new ApiError('emailTaken', 409);
         const { password, ...rest } = data;
+        // Trainees log health data, so they also give explicit consent for it (GDPR art. 9).
+        // Older app versions do not send it yet; the app then asks once after sign-in.
+        const healthConsent = data.role !== 'COACH' && body.healthConsent === true;
         const u = await db.user.create({
           data: {
             ...rest,
+            consentVersion,
+            ...(healthConsent && { healthConsentAt: new Date() }),
             emailVerified: !verificationRequired,
             ...(data.role === 'COACH' &&
               features.coachApprovalRequired && { coachStatus: 'PENDING' }),
@@ -329,6 +336,7 @@ async function handleRequest(req: NextRequest, path: string) {
         else await createSession(u.id);
         await audit(u.id, 'REGISTER');
         await audit(u.id, `TERMS_ACCEPTED:${termsVersion}`);
+        if (healthConsent) await audit(u.id, `HEALTH_CONSENT:${consentVersion}`);
         return NextResponse.json(
           verificationRequired ? { verificationRequired: true } : { user: safeUser(u) },
         );
@@ -457,7 +465,7 @@ async function handleRequest(req: NextRequest, path: string) {
             where: { id: photoId, userId: target },
           });
           if (!photo) throw new ApiError('notFound', 404);
-          return new NextResponse(Buffer.from(photo.image), {
+          return new NextResponse(new Uint8Array(openBytes(photo.image)), {
             headers: { ...headers, 'Content-Type': 'image/jpeg' },
           });
         }
@@ -516,8 +524,20 @@ async function handleRequest(req: NextRequest, path: string) {
         );
       }
       if (path === 'state') {
+        // Without an explicit date, "today" is the user's own calendar day, not UTC's:
+        // late in the evening in Israel the UTC date is still yesterday.
+        const requestedDate = req.nextUrl.searchParams.get('date');
         const date = day.parse(
-          req.nextUrl.searchParams.get('date') || new Date().toISOString().slice(0, 10),
+          requestedDate ||
+            calendarDate(
+              new Date(),
+              (
+                await db.profile.findUnique({
+                  where: { userId: u.id },
+                  select: { timezone: true },
+                })
+              )?.timezone || 'Asia/Jerusalem',
+            ),
         );
         const activeLinks = await db.coachRelationship.findMany({
           where: { OR: [{ coachId: u.id }, { clientId: u.id }] },
@@ -656,6 +676,11 @@ async function handleRequest(req: NextRequest, path: string) {
         return NextResponse.json(
           {
             user: safeUser(u),
+            // Whether the current Terms/Privacy and (for trainees) health-data consent are on record.
+            consent: {
+              terms: u.consentVersion === consentVersion,
+              health: u.role === 'COACH' || u.role === 'ADMIN' || !!u.healthConsentAt,
+            },
             clockAt: Date.now(),
             // A coach viewing a client sees the client's profile (e.g. nutrition targets).
             profile:
@@ -808,6 +833,40 @@ async function handleRequest(req: NextRequest, path: string) {
           }),
           meals: await db.mealEntry.findMany({ where: { userId: u.id }, include: { food: true } }),
           progress: await db.progressRecord.findMany({ where: { userId: u.id } }),
+          // Complete copy for data-access requests: photos are included as base64 JPEG.
+          progressPhotos: (
+            await db.progressPhoto.findMany({ where: { userId: u.id }, orderBy: { createdAt: 'asc' } })
+          ).map(({ image, ...photo }) => ({
+            ...photo,
+            jpegBase64: openBytes(image).toString('base64'),
+          })),
+          exercisePerformance: await db.exercisePerformance.findMany({ where: { userId: u.id } }),
+          mealPlanChecks: await db.mealPlanCheck.findMany({ where: { userId: u.id } }),
+          grants: await db.entitlementGrant.findMany({
+            where: { userId: u.id },
+            select: { kind: true, source: true, startsAt: true, endsAt: true, revokedAt: true },
+          }),
+          supportTickets: await db.supportTicket.findMany({
+            where: { userId: u.id },
+            select: {
+              id: true,
+              category: true,
+              subject: true,
+              status: true,
+              createdAt: true,
+              messages: {
+                where: { internal: false },
+                select: { authorType: true, body: true, createdAt: true },
+              },
+            },
+          }),
+          devices: await db.pushToken.findMany({
+            where: { userId: u.id },
+            select: { platform: true, createdAt: true },
+          }),
+          activeDays: (
+            await db.userActivityDay.findMany({ where: { userId: u.id }, select: { date: true } })
+          ).map((row) => row.date),
           cardioActivities: await db.cardioActivity.findMany({ where: { userId: u.id } }),
           dailySteps: await db.dailySteps.findMany({ where: { userId: u.id } }),
           coachPackages:
@@ -995,6 +1054,24 @@ async function handleRequest(req: NextRequest, path: string) {
             await saveBodyweight(tx, u.id, { value: weightKg, date });
           }
         });
+        break;
+      }
+      case 'account/consent': {
+        const input = z
+          .object({ acceptTerms: z.literal(true), healthConsent: z.boolean().default(false) })
+          .parse(body);
+        const needsHealth = u.role !== 'COACH' && u.role !== 'ADMIN';
+        if (needsHealth && !input.healthConsent && !u.healthConsentAt)
+          throw new ApiError('healthConsentRequired', 400);
+        await db.user.update({
+          where: { id: u.id },
+          data: {
+            consentVersion,
+            ...(needsHealth && !u.healthConsentAt && { healthConsentAt: new Date() }),
+          },
+        });
+        await audit(u.id, `TERMS_ACCEPTED:${consentVersion}`);
+        if (needsHealth && !u.healthConsentAt) await audit(u.id, `HEALTH_CONSENT:${consentVersion}`);
         break;
       }
       case 'preferences': {
@@ -1795,7 +1872,9 @@ async function handleRequest(req: NextRequest, path: string) {
           if (count + images.length > 100) throw new ApiError('photoLimit');
           const record = await saveBodyweight(tx, u.id, input);
           for (const image of images) {
-            await tx.progressPhoto.create({ data: { userId: u.id, recordId: record.id, image } });
+            await tx.progressPhoto.create({
+              data: { userId: u.id, recordId: record.id, image: sealBytes(image) },
+            });
           }
           return { id: record.id };
         });
@@ -1810,7 +1889,7 @@ async function handleRequest(req: NextRequest, path: string) {
           if ((await tx.progressPhoto.count({ where: { userId: u.id } })) >= 100) {
             throw new ApiError('photoLimit');
           }
-          await tx.progressPhoto.create({ data: { userId: u.id, image } });
+          await tx.progressPhoto.create({ data: { userId: u.id, image: sealBytes(image) } });
         });
         break;
       }
@@ -2191,8 +2270,16 @@ async function handleRequest(req: NextRequest, path: string) {
           throw new ApiError('forbidden', 403);
         await rateLimit(`ai:${u.id}`, 5);
         // Plans are shaped by whoever will follow them; a coach's own profile has no fitness data.
-        const profile = input.clientId
+        // A client's profile (goals, limitations, diet) goes to the AI provider only when that
+        // client is an adult who has turned on AI features themselves; otherwise the coach
+        // gets a generic draft built from the prompt alone.
+        const clientProfile = input.clientId
           ? await db.profile.findUnique({ where: { userId: input.clientId } })
+          : null;
+        const profile = input.clientId
+          ? clientProfile?.adult && clientProfile.aiConsent
+            ? clientProfile
+            : null
           : u.role === 'COACH'
             ? null
             : u.profile;

@@ -13,6 +13,7 @@ for (const language of ['en', 'he'] as const) {
             name: 'HD Test',
             email: `hd-${language}-${Date.now()}@example.test`,
             acceptTerms: true,
+            healthConsent: true,
             password,
             role: 'INDEPENDENT',
             language,

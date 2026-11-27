@@ -47,6 +47,8 @@ export const dashboardEndpoints: Endpoint[] = [
   {
     method: 'GET',
     pattern: 'search',
+    // Lists names and email addresses: record who looked (personal data access log).
+    auditRead: true,
     async handler({ query, admin }) {
       const q = (query.get('q') || '').trim().slice(0, 80);
       if (q.length < 2) return { results: [] };
@@ -165,6 +167,8 @@ export const supportEndpoints: Endpoint[] = [
   {
     method: 'GET',
     pattern: 'tickets',
+    // Lists names and email addresses: record who looked (personal data access log).
+    auditRead: true,
     permission: 'support.view',
     async handler({ query, admin }) {
       const { skip, take, page, pageSize } = pagination(query);

@@ -9,6 +9,7 @@ test('library cards align on mobile and desktop and reuse loaded pages', async (
           name: 'Catalog Layout',
           email: `catalog-layout-${Date.now()}@example.test`,
           acceptTerms: true,
+          healthConsent: true,
           password,
           role: 'INDEPENDENT',
           language: 'he',

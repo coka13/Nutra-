@@ -1,4 +1,5 @@
 'use client';
+import { coachBrandStyle } from '@/lib/brand-theme';
 import { menuApplies, parseWeekdays } from '@/lib/meal-schedule';
 import { useRef, useState } from 'react';
 import {
@@ -789,7 +790,7 @@ export function MealPlansView() {
       </PageHeading>
       <div className="program-grid">
         {state.mealPlans.map((p) => (
-          <article key={p.id} className="panel">
+          <article key={p.id} className="panel" style={coachBrandStyle(state, p.userId)}>
             <span className="tile-icon">
               <Utensils size={20} />
             </span>
@@ -818,8 +819,7 @@ export function MealPlansView() {
               <span className="badge neutral">
                 {/* Only an active trainee receives the plan. One assigned to a former trainee
                     (revoked or ended) reaches no one, so it reads as a template. */}
-                {(p.assignedClientId && activeClientName(p.assignedClientId)) ||
-                  t('mealTemplate')}
+                {(p.assignedClientId && activeClientName(p.assignedClientId)) || t('mealTemplate')}
               </span>
             )}
             {p.userId === state.user.id && (
@@ -861,19 +861,26 @@ export function MealPlansView() {
       </div>
       {!state.mealPlans.length && <Empty text={t('noMealPlansYet')} />}{' '}
       {confirm && (
-        <Modal title={t('remove')} onClose={() => setConfirm(null)}>
-          <p>{confirm.name}</p>
-          <button
-            className="button danger"
-            onClick={async () => {
-              try {
-                await run('meal-plans/delete', { id: confirm.id });
-                setConfirm(null);
-              } catch {}
-            }}
-          >
-            {t('remove')}
-          </button>
+        <Modal title={t('remove')} role="alertdialog" onClose={() => setConfirm(null)}>
+          <p className="confirm-subject">{confirm.name}</p>
+          <div className="form-actions">
+            <button type="button" className="button secondary" onClick={() => setConfirm(null)}>
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              className="button danger"
+              onClick={async () => {
+                try {
+                  await run('meal-plans/delete', { id: confirm.id });
+                  setConfirm(null);
+                } catch {}
+              }}
+            >
+              <Trash2 size={16} aria-hidden="true" />
+              {t('remove')}
+            </button>
+          </div>
         </Modal>
       )}
       {editor && (
@@ -1283,7 +1290,11 @@ function TodayMenu() {
       {plans
         .filter((plan) => plan.content)
         .map((plan) => (
-          <div key={plan.id} className="today-menu-notes">
+          <div
+            key={plan.id}
+            className="today-menu-notes"
+            style={coachBrandStyle(state, plan.userId)}
+          >
             <p className="pre-wrap">{plan.content}</p>
             {!plan.items.length && (
               <label className="checkbox-label">

@@ -108,14 +108,23 @@ export function WeightProgress() {
                 width={48}
               />
               <Tooltip
-                labelFormatter={(date) =>
-                  dateLabel(String(date), { day: 'numeric', month: 'long' })
-                }
-                formatter={(value) => [`${number(Number(value))} ${t('kg')}`, t('weight')]}
-                contentStyle={{
-                  background: 'var(--panel)',
-                  border: '1px solid var(--line)',
-                  borderRadius: 10,
+                // Pin vertically and skip the slide animation so the box doesn't
+                // chase the pointer up and down while snapping between points.
+                isAnimationActive={false}
+                position={{ y: 0 }}
+                offset={14}
+                cursor={{ stroke: 'var(--green)', strokeDasharray: '3 3', strokeOpacity: 0.5 }}
+                content={({ active, payload, label }) => {
+                  const value = payload?.[0]?.value;
+                  if (!active || value === undefined) return null;
+                  return (
+                    <div className="weight-tooltip" dir={lang === 'he' ? 'rtl' : 'ltr'}>
+                      <span>{dateLabel(String(label), { day: 'numeric', month: 'long' })}</span>
+                      <strong>
+                        {number(Number(value))} <small>{t('kg')}</small>
+                      </strong>
+                    </div>
+                  );
                 }}
               />
               <Line
@@ -126,6 +135,7 @@ export function WeightProgress() {
                 stroke="var(--green)"
                 strokeWidth={3}
                 dot={{ r: 4 }}
+                activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--panel)', fill: 'var(--green)' }}
               />
             </LineChart>
           </ResponsiveContainer>

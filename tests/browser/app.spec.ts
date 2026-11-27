@@ -51,6 +51,7 @@ test('register, onboard, build, log and recover an active workout after refresh'
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page).toHaveURL(/\/register$/);
   await page.locator('[name=acceptTerms]').check();
+  await page.locator('[name=healthConsent]').check();
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Welcome to your next chapter.' })).toBeVisible();
   await page.getByLabel('I am 18 or older.').check();
