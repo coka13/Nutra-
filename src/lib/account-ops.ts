@@ -31,11 +31,33 @@ export async function deleteAccountData(tx: Prisma.TransactionClient, user: { id
 }
 
 export function passwordEmailConfigured() {
-  return !!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && process.env.APP_URL);
+  const hostingerConfigured =
+    process.env.HOSTINGER_MAIL_API_TOKEN && process.env.HOSTINGER_MAILBOX_ID;
+  const resendConfigured = process.env.RESEND_API_KEY;
+  return !!(
+    (hostingerConfigured || resendConfigured) &&
+    process.env.EMAIL_FROM &&
+    process.env.APP_URL
+  );
 }
 
 async function sendEmail(to: string, subject: string, text: string) {
   if (!passwordEmailConfigured()) throw new ApiError('emailUnavailable', 503);
+  if (process.env.HOSTINGER_MAIL_API_TOKEN && process.env.HOSTINGER_MAILBOX_ID) {
+    const response = await fetch(
+      `https://api.mail.hostinger.com/api/v1/mailboxes/${encodeURIComponent(process.env.HOSTINGER_MAILBOX_ID)}/send`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.HOSTINGER_MAIL_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ to: [to], display_name: 'Fitura+', subject, text }),
+      },
+    );
+    if (!response.ok) throw new ApiError('emailUnavailable', 503);
+    return;
+  }
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {

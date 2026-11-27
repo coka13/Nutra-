@@ -330,8 +330,7 @@ async function handleRequest(req: NextRequest, path: string) {
       }
       if (path === 'auth/recover') {
         const { email } = z.object({ email: z.email() }).parse(body);
-        if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM)
-          throw new ApiError('emailUnavailable', 503);
+        if (!passwordEmailConfigured()) throw new ApiError('emailUnavailable', 503);
         const u = await db.user.findUnique({ where: { email: email.toLowerCase() } });
         if (u && u.status !== 'SUSPENDED') await sendPasswordReset(u);
         return NextResponse.json({ ok: true });
@@ -670,7 +669,7 @@ async function handleRequest(req: NextRequest, path: string) {
               const [ai, { ai: aiConfig }] = await Promise.all([aiConfigured(), getConfig()]);
               return {
                 ai: ai && aiConfig.enabled,
-                email: !!process.env.RESEND_API_KEY,
+                email: passwordEmailConfigured(),
                 billing: billingConfigured(),
                 whatsapp: false,
                 health: false,
