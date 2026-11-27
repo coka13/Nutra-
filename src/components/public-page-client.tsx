@@ -91,21 +91,24 @@ export function PublicPageClient({
       key: 'free',
       price: 0,
       points: ['planFree1', 'planFree2', 'planFree3', 'planAiCoached', 'planFree4'],
-      soon: false,
+      cta: 'getStarted',
+      href: '/auth',
       featured: false,
     },
     {
       key: 'premium',
       price: PLAN_PRICE_USD.PREMIUM,
       points: ['planPremium1', 'planPremium2'],
-      soon: true,
+      cta: 'upgradePlus',
+      href: '/auth/user/login',
       featured: false,
     },
     {
       key: 'coachTier',
       price: PLAN_PRICE_USD.COACH,
       points: ['planCoach2', 'planCoach5', 'planCoach3', 'planCoach4', 'planCoach6'],
-      soon: true,
+      cta: 'upgradeCoach',
+      href: '/auth/coach/login',
       featured: true,
     },
   ];
@@ -167,11 +170,13 @@ export function PublicPageClient({
                 </li>
               ))}
             </ul>
-            {plan.soon && (
-              <span className="button secondary full" aria-disabled="true">
-                {t('comingSoon')}
-              </span>
-            )}
+            {/* Plus opens the trainee login, Trainer the trainer login. */}
+            <a
+              className={`button ${plan.featured ? 'primary' : 'secondary'} full`}
+              href={plan.href}
+            >
+              {t(plan.cta)}
+            </a>
           </article>
         ))}
       </div>

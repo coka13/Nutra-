@@ -7774,9 +7774,12 @@ input[type='number'], .rest-timer strong, .weight-hero-value { font-variant-nume
 
 
 /* Landing page: mobile app store links. */
+/* Equal columns keep both badges the same width as the wider one. */
 .store-links {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  justify-content: start;
   gap: 10px;
   margin-top: 16px;
 }
