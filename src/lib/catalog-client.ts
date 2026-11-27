@@ -40,10 +40,13 @@ export function loadCatalogPage(filters: CatalogFilters = {}, retry = false): Pr
   return request;
 }
 
+/**
+ * Preloads the small still thumbnails (~15KB each) only. Animations are ~450KB each, so they
+ * load when their card scrolls into view instead of on every app start.
+ */
 export function warmCatalogImages(page: CatalogPage) {
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   for (const exercise of page.results) {
-    const src = reducedMotion ? exercise.thumbnail : exercise.animation || exercise.thumbnail;
+    const src = exercise.thumbnail;
     if (!src || warmed.has(src)) continue;
     const image = new Image();
     image.fetchPriority = 'low';

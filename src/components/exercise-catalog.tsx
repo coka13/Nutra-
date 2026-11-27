@@ -168,7 +168,7 @@ export function ExerciseCatalog({ cardio = false }: { cardio?: boolean }) {
                                 : exercise.thumbnail
                             }
                             alt=""
-                            loading="eager"
+                            loading="lazy"
                             decoding="async"
                             width={178}
                             height={100}
