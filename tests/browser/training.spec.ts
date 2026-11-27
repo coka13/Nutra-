@@ -97,10 +97,21 @@ for (const language of ['en', 'he'] as const) {
         he ? 'שכיבות סמיכה בשיפוע' : 'Incline push-up',
       );
       await expect(page.locator('.rest-timer')).toBeVisible();
-      await page.locator('.rest-timer button').first().click();
+      // −15 / +15 adjust the countdown; the third control pauses and resumes it.
+      const countdown = page.locator('.rest-timer strong');
+      const seconds = async () => {
+        const [m, s] = (await countdown.innerText()).split(':').map(Number);
+        return m * 60 + s;
+      };
+      const start = await seconds();
+      await page.locator('.rest-timer-actions button').nth(1).click();
+      await expect.poll(seconds).toBeGreaterThan(start + 5);
+      await page.locator('.rest-timer-actions button').nth(0).click();
+      await expect.poll(seconds).toBeLessThanOrEqual(start);
+      await page.locator('.rest-timer-actions button').nth(2).click();
       await page.reload();
       await expect(page.locator('.rest-timer')).toBeVisible();
-      await page.locator('.rest-timer button').nth(1).click();
+      await page.locator('.rest-timer-actions button').nth(2).click();
       await page.getByRole('button', { name: he ? 'דילוג על המנוחה' : 'Skip rest' }).click();
       await expect(page.locator('.rest-timer')).toHaveCount(0);
       const finishPrompt = page.getByRole('dialog', {

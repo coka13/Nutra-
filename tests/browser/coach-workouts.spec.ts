@@ -106,10 +106,22 @@ for (const language of ['en', 'he'] as const) {
       // Coaches can also build and assign a workout directly in the editor.
       await page.goto('/app/builder');
       await page.locator('input[maxlength="200"]').fill('Manual client workout');
-      await page.locator('.builder-details select').selectOption(user.id);
-      await page.locator('.builder-muscle-group summary').first().click();
-      await page.locator('.library-add-row').first().click();
-      await page.locator('.builder-savebar button[type="submit"]').click();
+      await page.locator('.wb-field select').first().selectOption(user.id);
+      const bar = page.locator('.wb-actionbar');
+      await bar.getByRole('button', { name: he ? 'המשך' : 'Continue', exact: true }).click();
+      await page
+        .locator('.wb-empty')
+        .getByRole('button', { name: he ? 'הוספת תרגילים' : 'Add exercises' })
+        .click();
+      await page.locator('.wb-result-pick').first().click();
+      await page
+        .getByRole('dialog')
+        .getByRole('button', { name: `${he ? 'הוספה לאימון' : 'Add to workout'} (1)` })
+        .click();
+      await bar.getByRole('button', { name: he ? 'המשך' : 'Continue', exact: true }).click();
+      await bar
+        .getByRole('button', { name: he ? 'שמירת האימון' : 'Save workout', exact: true })
+        .click();
       await expect(page).toHaveURL(/\/app\/workouts/);
       const manualState = await (await client.request.get('/api/state')).json();
       expect(
@@ -118,6 +130,56 @@ for (const language of ['en', 'he'] as const) {
             p.name === 'Manual client workout' && p.assignedClientId === user.id,
         ),
       ).toBeTruthy();
+      // The coach can filter to a trainee's workouts, and templates are customised per trainee.
+      await page.locator('.wb-scope select').selectOption(user.id);
+      await expect(page.locator('.program-card').filter({ hasText: 'Manual client workout' })).toBeVisible();
+      const template = await coach.request.post('/api/programs/save', {
+        data: {
+          name: 'Strength template',
+          days: '',
+          template: true,
+          exercises: [
+            {
+              exerciseId: 'row',
+              sets: 4,
+              reps: 6,
+              repsMax: 8,
+              rest: 120,
+              weight: 0,
+              notes: 'Brace',
+            },
+          ],
+        },
+      });
+      expect(template.ok()).toBeTruthy();
+      const templateId = (await template.json()).id;
+      await page.reload();
+      await page.getByRole('button', { name: he ? 'תבניות' : 'Templates', exact: true }).click();
+      await page
+        .locator('.program-card')
+        .filter({ hasText: 'Strength template' })
+        .getByRole('button', { name: he ? 'התאמה למתאמן' : 'Customize for a trainee' })
+        .click();
+      await expect(page.locator('input[maxlength="200"]')).toHaveValue('Strength template');
+      await page.locator('input[maxlength="200"]').fill('Strength for client');
+      await page.locator('.wb-field select').first().selectOption(user.id);
+      await page.locator('.wb-days .wb-day').first().click();
+      await page.locator('.wb-step').nth(2).click();
+      const customised = page.waitForResponse((r) => r.url().endsWith('/api/programs/save'));
+      await bar
+        .getByRole('button', { name: he ? 'שמירת האימון' : 'Save workout', exact: true })
+        .click();
+      expect((await customised).ok()).toBeTruthy();
+      const afterTemplate = await (await client.request.get('/api/state')).json();
+      const custom = afterTemplate.programs.find(
+        (p: { name: string }) => p.name === 'Strength for client',
+      );
+      expect(custom.template).toBe(false);
+      expect(custom.exercises[0]).toMatchObject({ sets: 4, reps: 6, repsMax: 8, notes: 'Brace' });
+      const coachAfter = await (await coach.request.get('/api/state')).json();
+      expect(coachAfter.programs.find((p: { id: string }) => p.id === templateId).template).toBe(
+        true,
+      );
       await page.goto('/app/progress');
       await expect(page.locator('main')).toContainText(he ? 'מתאמנים' : 'Clients');
       await expect(page.locator('[name="weightKg"]')).toHaveCount(0);

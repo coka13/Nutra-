@@ -819,6 +819,70 @@ export function Workspace({
             </div>
           </main>
         </div>
+        {/* Phones and small tablets: the main pages one tap away at the bottom of the screen. */}
+        <nav className="bottom-nav" aria-label={t('bottomNav')}>
+          {(
+            (isCoach
+              ? [
+                  ['dashboard', 'tabHome', LayoutDashboard],
+                  ['workouts', 'tabPlans', Dumbbell],
+                  ['clients', 'tabClients', Users],
+                  ['messages', 'tabMessages', MessageSquare],
+                ]
+              : [
+                  ['dashboard', 'tabHome', LayoutDashboard],
+                  ['workouts', 'tabWorkouts', Dumbbell],
+                  ['nutrition', 'tabNutrition', Leaf],
+                  ['progress', 'tabProgress', TrendingUp],
+                ]) as [string, string, typeof Dumbbell][]
+          ).map(([key, label, Icon]) => {
+            // Every training page (builder, live session, library) belongs to the workouts tab.
+            const selected =
+              page === key ||
+              (key === 'workouts' &&
+                ['templates', 'builder', 'active', 'library'].includes(page)) ||
+              (key === 'progress' && page === 'reports');
+            const live =
+              key === 'workouts' &&
+              !isCoach &&
+              state.workouts.some((w) => w.status === 'ACTIVE' || w.status === 'PAUSED');
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`bottom-nav-item ${selected ? 'selected' : ''}`}
+                aria-current={selected ? 'page' : undefined}
+                onClick={() => {
+                  setMobile(false);
+                  // A running workout is where the workouts tab should lead back to.
+                  navigate(
+                    live && key === 'workouts' && page !== 'workouts' && page !== 'active'
+                      ? 'active'
+                      : key,
+                  );
+                }}
+              >
+                <span className="bottom-nav-icon">
+                  <Icon size={21} aria-hidden="true" />
+                  {live && <i className="bottom-nav-live" aria-hidden="true" />}
+                  {key === 'messages' && unread > 0 && <b className="count">{unread}</b>}
+                </span>
+                <span>{t(label)}</span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            className={`bottom-nav-item ${mobile ? 'selected' : ''}`}
+            aria-expanded={mobile}
+            onClick={() => setMobile(!mobile)}
+          >
+            <span className="bottom-nav-icon">
+              <Menu size={21} aria-hidden="true" />
+            </span>
+            <span>{t('tabMore')}</span>
+          </button>
+        </nav>
         {record && (
           <Modal
             title={t('newRecord')}

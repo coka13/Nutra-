@@ -121,8 +121,12 @@ export type ProgramDraft = {
     exerciseId: string;
     sets: number;
     reps: number;
+    /** Top of a repetition range; 0 = a single target of `reps`. */
+    repsMax: number;
     rest: number;
     weight: number;
+    notes: string;
+    /** Exercises next to each other with the same group form a superset. */
     group: string;
   }[];
 };

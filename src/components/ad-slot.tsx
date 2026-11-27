@@ -46,7 +46,11 @@ function AdsenseUnit({ client, slot }: { client: string; slot: string }) {
   const ref = useRef<HTMLModElement>(null);
   useEffect(() => {
     loadAdsense(client);
-    if (!ref.current || ref.current.dataset.adsbygoogleStatus) return;
+    const el = ref.current;
+    // Google marks the slot only once its script runs; mark it now so a repeated effect
+    // (React dev mode runs effects twice) never pushes the same slot again.
+    if (!el || el.dataset.adsbygoogleStatus || el.dataset.adPushed) return;
+    el.dataset.adPushed = '1';
     try {
       const w = window as unknown as { adsbygoogle?: unknown[] };
       (w.adsbygoogle = w.adsbygoogle || []).push({});

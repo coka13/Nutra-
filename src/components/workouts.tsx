@@ -1,31 +1,41 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, type FocusEvent, type MouseEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { currentWorkout, workoutMillis } from '@/lib/workout-clock';
-import { exerciseGroups } from '@/lib/exercise-groups';
 import {
-  ArrowDown,
-  ArrowUp,
+  estimateMinutes,
+  parseDays,
+  repsLabel,
+  supersetLabels,
+  targetMuscles,
+  totalSets,
+} from '@/lib/workout-plan';
+import { useWeekdays } from './workout-builder';
+import {
   ArrowUpRight,
   CalendarDays,
   Check,
   ChevronRight,
+  Clock,
   Copy,
   Dumbbell,
-  GripVertical,
+  LayoutTemplate,
+  Link2,
   Pause,
+  Pencil,
   Play,
   Plus,
   Search,
-  Square,
+  StickyNote,
+  Target,
   Timer,
   Trash2,
-  X,
 } from 'lucide-react';
 import { ExerciseTechnique } from './exercise-details';
 import { ExerciseCatalog } from './exercise-catalog';
+export { BuilderView } from './workout-builder';
 import type { Exercise } from '@prisma/client';
-import type { Program, ProgramDraft, Workout } from '@/lib/types';
+import type { Program, Workout } from '@/lib/types';
 import { Empty, Form, Modal, PageHeading, Submit, useNutri } from './workspace';
 function name(e: Exercise, lang: string) {
   return lang === 'he' ? e.nameHe : e.nameEn;
@@ -59,52 +69,49 @@ function ContinueWorkoutPrompt({ workout }: { workout: Workout }) {
   );
 }
 export function WorkoutsView() {
-  const { state, t, lang, navigate, run, formatDate } = useNutri();
+  const { state, library, t, navigate, run, formatDate } = useNutri();
   const [confirm, setConfirm] = useState<Program | null>(null),
     [query, setQuery] = useState(''),
-    [weekday, setWeekday] = useState<number | null>(null);
+    [scope, setScope] = useState('all'),
+    [assigning, setAssigning] = useState<Program | null>(null);
   const isCoach = state.user.role === 'COACH';
-  const [assigning, setAssigning] = useState<Program | null>(null);
+  const week = useWeekdays();
   const clients = state.relationships.filter(
     (r) => r.coachId === state.user.id && r.status === 'ACTIVE',
   );
-  const locale = lang === 'he' ? 'he-IL' : 'en-GB';
-  const weekOrder = lang === 'he' ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 0];
-  const weekdayDate = (day: number) => new Date(Date.UTC(2024, 0, 7 + day));
-  const shortDay = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
-  const longDay = new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' });
-  const dayList = new Intl.ListFormat(locale);
+  const muscleOf = new Map(library.exercises.map((exercise) => [exercise.id, exercise.muscle]));
+  const owned = (p: Program) => p.ownerId === state.user.id;
+  const scopedClient = isCoach && scope !== 'all' && scope !== 'templates' ? scope : null;
   const programs = state.programs.filter(
     (p) =>
-      (!isCoach || p.ownerId === state.user.id) &&
-      (weekday === null || p.days.split(',').includes(String(weekday))) &&
+      (!isCoach || owned(p)) &&
+      (scope === 'all' || (scope === 'templates' ? p.template : p.assignedClientId === scope)) &&
       p.name.toLowerCase().includes(query.toLowerCase()),
   );
   const active = currentWorkout(state.workouts);
   async function duplicate(p: Program) {
-    await run('programs/save', {
-      name: `${p.name} · ${t('duplicate')}`,
-      description: p.description,
-      weeks: 0,
-      days: p.days,
-      template: p.template,
-      assignedClientId: null,
-      exercises: p.exercises.map((e) => ({
-        exerciseId: e.exerciseId,
-        sets: e.sets,
-        reps: e.reps,
-        rest: e.rest,
-        weight: e.weight,
-        group: e.group,
-      })),
+    await run('programs/duplicate', {
+      id: p.id,
+      name: `${p.name} · ${t('wbCopySuffix')}`.slice(0, 200),
     });
+  }
+  async function start(p: Program) {
+    try {
+      const workout = (await run('workouts/start', { programId: p.id }, true)) as { id: string };
+      navigate(`active?session=${workout.id}`);
+    } catch {}
+  }
+  function createLink() {
+    const params = new URLSearchParams();
+    if (scopedClient) params.set('client', scopedClient);
+    if (scope === 'templates') params.set('template', '1');
+    const search = params.toString();
+    return search ? `builder?${search}` : 'builder';
   }
   return (
     <>
       <PageHeading
-        title={t(
-          state.user.role === 'COACH' ? 'workoutPlans' : 'workouts',
-        )}
+        title={t(isCoach ? 'workoutPlans' : 'workouts')}
         subtitle={t(isCoach ? 'coachProgramsSub' : 'programsSub')}
       >
         {!isCoach && (
@@ -116,15 +123,44 @@ export function WorkoutsView() {
             {t('smartSchedule')}
           </button>
         )}
-        <button className="button primary" onClick={() => navigate('builder')}>
+        <button className="button primary wb-create" onClick={() => navigate(createLink())}>
           <Plus size={17} />
           {t('newProgram')}
         </button>
       </PageHeading>
-      {!isCoach && active && (
-        <ContinueWorkoutPrompt key={active.id} workout={active} />
-      )}
+      {!isCoach && active && <ContinueWorkoutPrompt key={active.id} workout={active} />}
       {!isCoach && active && <ActiveWorkoutBanner workout={active} />}
+      {isCoach && (
+        <div className="wb-scope" role="group" aria-label={t('wbShowing')}>
+          {['all', 'templates'].map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={`wb-chip ${scope === key ? 'active' : ''}`}
+              aria-pressed={scope === key}
+              onClick={() => setScope(key)}
+            >
+              {key === 'templates' && <LayoutTemplate size={14} />}
+              {t(key === 'all' ? 'wbAllWorkouts' : 'templates')}
+            </button>
+          ))}
+          {clients.length > 0 && (
+            <select
+              className={scopedClient ? 'active' : ''}
+              aria-label={t('wbTraineeSchedule')}
+              value={scopedClient || ''}
+              onChange={(e) => setScope(e.target.value || 'all')}
+            >
+              <option value="">{t('wbTraineeSchedule')}</option>
+              {clients.map((r) => (
+                <option key={r.id} value={r.clientId}>
+                  {r.client.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
       <div className="toolbar">
         <div className="search-field">
           <Search size={17} />
@@ -140,142 +176,122 @@ export function WorkoutsView() {
           <ArrowUpRight size={16} />
         </button>
       </div>
-      {!isCoach && (
-        <section className="panel">
-          <div className="section-heading">
-            <h2>{t('scheduledWorkouts')}</h2>
-          </div>
-          <div className="day-picker" aria-label={t('scheduledWorkouts')}>
-            <button
-              className={weekday === null ? 'picked' : ''}
-              type="button"
-              aria-pressed={weekday === null}
-              onClick={() => setWeekday(null)}
-            >
-              {t('all')}
-            </button>
-            {weekOrder.map((day) => (
-              <button
-                key={day}
-                type="button"
-                className={weekday === day ? 'picked' : ''}
-                aria-pressed={weekday === day}
-                onClick={() => setWeekday(day)}
-              >
-                {shortDay.format(weekdayDate(day))}
-              </button>
-            ))}
-          </div>
-          {weekday !== null && !query && !programs.length && (
-            <p className="muted">{t('restDay')}</p>
-          )}
-        </section>
-      )}
       <div className={`program-grid${isCoach ? ' coach-program-grid' : ''}`}>
-        {programs.map((p, i) => (
-          <article className="panel program-card" key={p.id}>
-            <div className={`program-art art-${i % 3}`}>
-              <Dumbbell size={65} strokeWidth={1} />
-              <span>N+ / {String(i + 1).padStart(2, '0')}</span>
-              <span className="badge program-day-label">
-                <CalendarDays size={15} aria-hidden="true" />
-                {dayList.format(
-                  weekOrder
-                    .filter((day) => p.days.split(',').includes(String(day)))
-                    .map((day) => longDay.format(weekdayDate(day))),
-                ) || t('unscheduled')}
-              </span>
-            </div>
-            <div className="program-info">
-              <div className="row between">
-                <span className="eyebrow">
-                  {t(
-                    p.ownerId !== state.user.id
-                      ? 'coachAssigned'
-                      : p.template
-                        ? 'templates'
-                        : isCoach
-                          ? 'savedWorkout'
-                          : 'training',
+        {programs.map((p, i) => {
+          const muscles = targetMuscles(
+            p.exercises,
+            (id) =>
+              muscleOf.get(id) ?? p.exercises.find((row) => row.exerciseId === id)?.exercise.muscle,
+          );
+          return (
+            <article className="panel program-card" key={p.id}>
+              <div className={`program-art art-${i % 3}`}>
+                <Dumbbell size={65} strokeWidth={1} />
+                <span>N+ / {String(i + 1).padStart(2, '0')}</span>
+                <span className="badge program-day-label">
+                  <CalendarDays size={15} aria-hidden="true" />
+                  {week.list(parseDays(p.days)) || t('unscheduled')}
+                </span>
+              </div>
+              <div className="program-info">
+                <div className="row between">
+                  <span className="eyebrow">
+                    {t(
+                      !owned(p)
+                        ? 'coachAssigned'
+                        : p.template
+                          ? 'templates'
+                          : isCoach
+                            ? 'savedWorkout'
+                            : 'training',
+                    )}
+                  </span>
+                  {owned(p) && (
+                    <div className="row">
+                      <button
+                        className="icon-btn"
+                        aria-label={t('duplicate')}
+                        onClick={() => duplicate(p).catch(() => {})}
+                      >
+                        <Copy size={15} />
+                      </button>
+                      <button
+                        className="icon-btn"
+                        aria-label={t('remove')}
+                        onClick={() => setConfirm(p)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   )}
-                </span>
-                {p.ownerId === state.user.id && (
-                  <div className="row">
-                    <button
-                      className="icon-btn"
-                      aria-label={t('duplicate')}
-                      onClick={() => duplicate(p).catch(() => {})}
-                    >
-                      <Copy size={15} />
+                </div>
+                <h2>{p.name}</h2>
+                <p>{p.description}</p>
+                {isCoach && (
+                  <p className="program-assignee">
+                    {p.assignedClientId
+                      ? clients.find((r) => r.clientId === p.assignedClientId)?.client.name ||
+                        t('assignTo')
+                      : t('workoutNotAssigned')}
+                  </p>
+                )}
+                <div className="program-meta">
+                  <span>
+                    <Dumbbell size={14} />
+                    {p.exercises.length} {t('exercises')}
+                  </span>
+                  <span>
+                    {totalSets(p.exercises)} {t('wbSetsLower')}
+                  </span>
+                  <span>
+                    <Clock size={14} />~{estimateMinutes(p.exercises)} {t('wbMin')}
+                  </span>
+                </div>
+                {muscles.length > 0 && (
+                  <p className="program-muscles">
+                    {muscles
+                      .slice(0, 3)
+                      .map((muscle) => t(muscle))
+                      .join(' · ')}
+                  </p>
+                )}
+                <div className="row program-actions">
+                  {isCoach ? (
+                    <button className="button primary grow" onClick={() => setAssigning(p)}>
+                      {t('assignTo')}
                     </button>
-                    <button
-                      className="icon-btn"
-                      aria-label={t('remove')}
-                      onClick={() => setConfirm(p)}
-                    >
-                      <Trash2 size={15} />
+                  ) : (
+                    <button className="button primary grow" onClick={() => start(p)}>
+                      <Play size={15} />
+                      {t('startWorkout')}
                     </button>
-                  </div>
-                )}
+                  )}
+                  {owned(p) && p.template && (
+                    <button
+                      className="button secondary"
+                      onClick={() => navigate(`builder?from=${encodeURIComponent(p.id)}`)}
+                    >
+                      {t(isCoach ? 'wbCustomizeForTrainee' : 'wbUseTemplate')}
+                    </button>
+                  )}
+                  {owned(p) && (
+                    <button
+                      className="button secondary"
+                      onClick={() => navigate(`builder?id=${p.id}`)}
+                    >
+                      {t('edit')}
+                    </button>
+                  )}
+                </div>
               </div>
-              <h2>{p.name}</h2>
-              <p>{p.description}</p>
-              {isCoach && (
-                <p className="program-assignee">
-                  {p.assignedClientId
-                    ? clients.find((r) => r.clientId === p.assignedClientId)?.client.name ||
-                      t('assignTo')
-                    : t('workoutNotAssigned')}
-                </p>
-              )}
-              <div className="program-meta">
-                <span>
-                  <Dumbbell size={14} />
-                  {p.exercises.length} {t('exercises')}
-                </span>
-              </div>
-              <div className="row program-actions">
-                {isCoach ? (
-                  <button className="button primary grow" onClick={() => setAssigning(p)}>
-                    {t('assignTo')}
-                  </button>
-                ) : (
-                  <button
-                    className="button primary grow"
-                    onClick={async () => {
-                      try {
-                        const workout = (await run(
-                          'workouts/start',
-                          { programId: p.id },
-                          true,
-                        )) as {
-                          id: string;
-                        };
-                        navigate(`active?session=${workout.id}`);
-                      } catch {}
-                    }}
-                  >
-                    <Play size={15} />
-                    {t('startWorkout')}
-                  </button>
-                )}
-                {p.ownerId === state.user.id && (
-                  <button
-                    className="button secondary"
-                    onClick={() => navigate(`builder?id=${p.id}`)}
-                  >
-                    {t('edit')}
-                  </button>
-                )}
-              </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
       {!programs.length && (
-        <Empty text={t('emptyPrograms')}>
-          <button className="button primary" onClick={() => navigate('builder')}>
-            {t('newProgram')}
+        <Empty text={t(query ? 'noResults' : 'emptyPrograms')}>
+          <button className="button primary" onClick={() => navigate(createLink())}>
+            <Plus size={16} /> {t('newProgram')}
           </button>
         </Empty>
       )}
@@ -362,564 +378,6 @@ export function WorkoutsView() {
     </>
   );
 }
-const fresh: ProgramDraft = {
-  name: '',
-  description: '',
-  weeks: 0,
-  days: '1,3,5',
-  template: false,
-  assignedClientId: null,
-  exercises: [],
-};
-export function BuilderView() {
-  const { state, library, lang, t, run, navigate } = useNutri(),
-    [draft, setDraft] = useState<ProgramDraft>(fresh),
-    [search, setSearch] = useState(''),
-    [muscle, setMuscle] = useState('all'),
-    [drag, setDrag] = useState<number | null>(null),
-    [error, setError] = useState('');
-  const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
-  const [selectionOpen, setSelectionOpen] = useState(false);
-  const searchInput = useRef<HTMLInputElement>(null);
-  const initialized = useRef(false);
-  useEffect(() => {
-    if (initialized.current || !library.exercises.length) return;
-    initialized.current = true;
-    const params = new URLSearchParams(location.search);
-    const id = params.get('id');
-    const clientId = params.get('client');
-    const exercise = library.exercises.find((row) => row.id === params.get('exercise'));
-    if (!id && exercise)
-      setDraft((current) => ({
-        ...current,
-        exercises: [{ exerciseId: exercise.id, sets: 3, reps: 10, rest: 60, weight: 0, group: '' }],
-      }));
-    if (!id && clientId) setDraft((current) => ({ ...current, assignedClientId: clientId }));
-    const p = state.programs.find((p) => p.id === id && p.ownerId === state.user.id);
-    if (p)
-      setDraft({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        weeks: 0,
-        days: p.days,
-        template: p.template,
-        assignedClientId: p.assignedClientId,
-        exercises: p.exercises.map((e) => ({
-          exerciseId: e.exerciseId,
-          sets: e.sets,
-          reps: e.reps,
-          rest: e.rest,
-          weight: e.weight,
-          group: e.group,
-        })),
-      });
-  }, [library.exercises, state.programs, state.user.id]);
-  function move(from: number, to: number) {
-    if (to < 0 || to >= draft.exercises.length) return;
-    const next = [...draft.exercises];
-    const [row] = next.splice(from, 1);
-    next.splice(to, 0, row);
-    setDraft({ ...draft, exercises: next });
-  }
-  function patch(index: number, key: string, value: number | string) {
-    setDraft({
-      ...draft,
-      exercises: draft.exercises.map((e, i) => (i === index ? { ...e, [key]: value } : e)),
-    });
-  }
-  const filtered = library.exercises.filter(
-    (e) =>
-      e.hasDemonstration !== false &&
-      (muscle === 'all' || e.muscle === muscle) &&
-      `${e.nameEn} ${e.nameHe}`
-        .toLowerCase()
-        .includes(search.toLowerCase().replace(/preacher (chair|bench)/g, 'preacher')),
-  );
-  return (
-    <>
-      <PageHeading title={t('builder')} subtitle={t('builderSub')}>
-        <button className="button secondary" onClick={() => navigate('workouts')}>
-          {t('cancel')}
-        </button>
-      </PageHeading>
-      <Form
-        className={`builder-form ${draft.exercises.length ? 'has-selection-tray' : ''}`}
-        onSubmit={async () => {
-          if (!draft.exercises.length) {
-            setError('addExercise');
-            throw new Error('addExercise');
-          }
-          await run('programs/save', draft);
-          navigate('workouts');
-        }}
-      >
-        <div className="builder-grid">
-          <div className="builder-plan-column">
-            <section className="panel builder-details">
-              <div className="builder-section-title">
-                <span className="builder-heading-icon">
-                  <CalendarDays size={19} />
-                </span>
-                <div>
-                  <h2>{t('workoutDetails')}</h2>
-                  <p>{t('workoutDetailsHint')}</p>
-                </div>
-              </div>
-              <label>
-                {t('name')}
-                <input
-                  required
-                  value={draft.name}
-                  maxLength={200}
-                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                />
-              </label>
-              <label>
-                {t('description')}
-                <textarea
-                  rows={2}
-                  value={draft.description}
-                  maxLength={1000}
-                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                />
-              </label>
-              <div className="form-grid">
-                {state.user.role === 'COACH' && (
-                  <label>
-                    {t('assignTo')}
-                    <select
-                      value={draft.assignedClientId || ''}
-                      onChange={(e) =>
-                        setDraft({ ...draft, assignedClientId: e.target.value || null })
-                      }
-                    >
-                      <option value="">{t('unassignedWorkout')}</option>
-                      {state.relationships
-                        .filter((r) => r.coachId === state.user.id && r.status === 'ACTIVE')
-                        .map((r) => (
-                          <option key={r.id} value={r.clientId}>
-                            {r.client.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                )}
-              </div>
-              <label>{t('days')}</label>
-              <div className="day-picker">
-                {Array.from({ length: 7 }, (_, i) => {
-                  const d = new Date(2026, 10, 22 + i);
-                  return (
-                    <button
-                      type="button"
-                      key={i}
-                      aria-pressed={draft.days.split(',').includes(String(i))}
-                      className={draft.days.split(',').includes(String(i)) ? 'picked' : ''}
-                      onClick={() => {
-                        const next = draft.days.split(',').filter(Boolean);
-                        const val = String(i);
-                        setDraft({
-                          ...draft,
-                          days: next.includes(val)
-                            ? next.filter((n) => n !== val).join(',')
-                            : [...next, val].join(','),
-                        });
-                      }}
-                    >
-                      {new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en', {
-                        weekday: 'short',
-                      }).format(d)}
-                    </button>
-                  );
-                })}
-              </div>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={draft.template}
-                  onChange={(e) => setDraft({ ...draft, template: e.target.checked })}
-                />
-                {t('saveTemplate')}
-              </label>
-            </section>
-            <section className="panel builder-plan">
-              <div className="section-heading">
-                <h2>
-                  {t('yourExercises')}{' '}
-                  <span className="builder-count">{draft.exercises.length}</span>
-                </h2>
-                {!!draft.exercises.length && (
-                  <span className="muted builder-set-count">
-                    {draft.exercises.reduce((sum, row) => sum + row.sets, 0)} {t('sets')}
-                  </span>
-                )}
-              </div>
-              {!draft.exercises.length && (
-                <div className="builder-empty">
-                  <span className="builder-empty-icon">
-                    <Dumbbell size={28} />
-                  </span>
-                  <h3>{t('startYourWorkout')}</h3>
-                  <p>{t('chooseExercisesHint')}</p>
-                  <button
-                    type="button"
-                    className="button secondary"
-                    onClick={() => {
-                      searchInput.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      searchInput.current?.focus({ preventScroll: true });
-                    }}
-                  >
-                    <Plus size={16} />
-                    {t('addExercise')}
-                  </button>
-                </div>
-              )}
-              <div className="builder-exercises">
-                {draft.exercises.map((row, index) => {
-                  const exercise = library.exercises.find((e) => e.id === row.exerciseId);
-                  return (
-                    <div
-                      key={`${row.exerciseId}-${index}`}
-                      className="builder-exercise"
-                      draggable
-                      onDragStart={() => setDrag(index)}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        if (drag !== null) move(drag, index);
-                        setDrag(null);
-                      }}
-                    >
-                      <div className="section-heading">
-                        <div className="row">
-                          <GripVertical size={16} className="muted" />
-                          <span className="exercise-number">
-                            {String(index + 1).padStart(2, '0')}
-                          </span>
-                          {exercise?.demonstration?.poster && (
-                            <span className="builder-exercise-thumb">
-                              <img src={exercise.demonstration.poster} alt="" loading="lazy" />
-                            </span>
-                          )}
-                          <div>
-                            <strong>{exercise ? name(exercise, lang) : ''}</strong>
-                            {exercise && (
-                              <small className="builder-equipment">{t(exercise.equipment)}</small>
-                            )}
-                          </div>
-                        </div>
-                        <div className="row">
-                          <button
-                            type="button"
-                            className="icon-btn"
-                            aria-label={t('up')}
-                            disabled={index === 0}
-                            onClick={() => move(index, index - 1)}
-                          >
-                            <ArrowUp size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="icon-btn"
-                            aria-label={t('down')}
-                            disabled={index === draft.exercises.length - 1}
-                            onClick={() => move(index, index + 1)}
-                          >
-                            <ArrowDown size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="icon-btn"
-                            aria-label={t('remove')}
-                            onClick={() =>
-                              setDraft({
-                                ...draft,
-                                exercises: draft.exercises.filter((_, i) => i !== index),
-                              })
-                            }
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="exercise-inputs">
-                        {[
-                          ['sets', 1, 10],
-                          ['reps', 1, 100],
-                          ['rest', 0, 600],
-                          ['weight', 0, 1000],
-                        ].map(([key, min, max]) => (
-                          <label key={key}>
-                            {t(String(key))}
-                            {key === 'weight' ? ` (${t('kg')})` : ''}
-                            <input
-                              type="number"
-                              onFocus={(event) => event.currentTarget.select()}
-                              onClick={(event) => event.currentTarget.select()}
-                              onMouseUp={(event) => event.preventDefault()}
-                              min={min}
-                              max={max}
-                              step={key === 'weight' ? 0.5 : 1}
-                              required
-                              value={row[key as 'sets' | 'reps' | 'rest' | 'weight']}
-                              onChange={(e) => patch(index, String(key), Number(e.target.value))}
-                            />
-                          </label>
-                        ))}
-                      </div>
-                      <details className="builder-advanced">
-                        <summary>{t('group')}</summary>
-                        <label>
-                          {t('group')}
-                          <input
-                            maxLength={40}
-                            value={row.group}
-                            onChange={(e) => patch(index, 'group', e.target.value)}
-                          />
-                        </label>
-                      </details>
-                    </div>
-                  );
-                })}
-              </div>
-              {error && <p className="form-error">{t(error)}</p>}
-              <div className="form-actions builder-savebar">
-                <span className="muted">
-                  {draft.exercises.length} {t('exercises')}
-                </span>
-                <Submit />
-              </div>
-            </section>
-          </div>
-          <aside className="panel builder-library">
-            <div className="builder-section-title">
-              <span className="builder-heading-icon">
-                <Search size={19} />
-              </span>
-              <div>
-                <h2>{t('findExercises')}</h2>
-                <p>{t('exercisePickerHint')}</p>
-              </div>
-            </div>
-            <div className="search-field">
-              <Search size={16} />
-              <input
-                ref={searchInput}
-                type="search"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setVisibleCounts({});
-                }}
-                placeholder={t('searchExercises')}
-                aria-label={t('searchExercises')}
-              />
-              {search && (
-                <button
-                  type="button"
-                  className="builder-clear-search"
-                  aria-label={t('clearSearch')}
-                  onClick={() => {
-                    setSearch('');
-                    setVisibleCounts({});
-                    searchInput.current?.focus();
-                  }}
-                >
-                  <X size={15} />
-                </button>
-              )}
-            </div>
-            <select
-              value={muscle}
-              aria-label={t('primaryMuscles')}
-              onChange={(e) => {
-                setMuscle(e.target.value);
-                setVisibleCounts({});
-              }}
-            >
-              {['all', ...exerciseGroups].map((k) => (
-                <option key={k} value={k}>
-                  {t(k)}
-                </option>
-              ))}
-            </select>
-            <p className="builder-result-count" role="status">
-              {filtered.length.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}{' '}
-              {t('catalogResults')}
-            </p>
-            {exerciseGroups
-              .filter((group) => filtered.some((row) => row.muscle === group))
-              .map((group) => (
-                <details
-                  className="builder-muscle-group"
-                  key={group}
-                  open={!!search || muscle !== 'all'}
-                >
-                  <summary>
-                    {t(group)}{' '}
-                    <span className="muted">
-                      ({filtered.filter((row) => row.muscle === group).length})
-                    </span>
-                  </summary>
-                  {filtered
-                    .filter((row) => row.muscle === group)
-                    .slice(0, visibleCounts[group] || 8)
-                    .map((e) => (
-                      <button
-                        type="button"
-                        key={e.id}
-                        className="library-add-row"
-                        onClick={() => {
-                          if (draft.exercises.some((row) => row.exerciseId === e.id)) return;
-                          setDraft({
-                            ...draft,
-                            exercises: [
-                              ...draft.exercises,
-                              {
-                                exerciseId: e.id,
-                                sets: 3,
-                                reps: 10,
-                                rest: 60,
-                                weight: 0,
-                                group: '',
-                              },
-                            ],
-                          });
-                        }}
-                        disabled={draft.exercises.some((row) => row.exerciseId === e.id)}
-                      >
-                        <span className="builder-exercise-thumb">
-                          {e.demonstration?.poster ? (
-                            <img src={e.demonstration.poster} alt="" loading="lazy" />
-                          ) : (
-                            <Dumbbell size={17} />
-                          )}
-                        </span>
-                        <span className="grow">
-                          <strong>{name(e, lang)}</strong>
-                          <small>
-                            {t(e.muscle)} · {t(e.equipment)}
-                          </small>
-                        </span>
-                        <span
-                          className={`builder-add-icon ${draft.exercises.some((row) => row.exerciseId === e.id) ? 'is-added' : ''}`}
-                        >
-                          {draft.exercises.some((row) => row.exerciseId === e.id) ? (
-                            <Check size={16} />
-                          ) : (
-                            <Plus size={16} />
-                          )}
-                        </span>
-                      </button>
-                    ))}
-                  {filtered.filter((row) => row.muscle === group).length >
-                    (visibleCounts[group] || 8) && (
-                    <button
-                      type="button"
-                      className="text-button builder-show-more"
-                      onClick={() =>
-                        setVisibleCounts((counts) => ({
-                          ...counts,
-                          [group]: (counts[group] || 8) + 12,
-                        }))
-                      }
-                    >
-                      {t('showMoreExercises')} <ChevronRight size={14} />
-                    </button>
-                  )}
-                </details>
-              ))}
-            {!filtered.length && <p>{t('noResults')}</p>}
-          </aside>
-        </div>
-      </Form>
-      {draft.exercises.length > 0 && (
-        <div className="builder-selection-tray" role="region" aria-label={t('yourExercises')}>
-          <button type="button" className="button primary" onClick={() => setSelectionOpen(true)}>
-            {t('viewSelectedExercises')}{' '}
-            <span className="builder-tray-count">{draft.exercises.length}</span>
-          </button>
-        </div>
-      )}
-      {selectionOpen && (
-        <Modal
-          title={`${t('yourExercises')} (${draft.exercises.length})`}
-          onClose={() => setSelectionOpen(false)}
-        >
-          <div className="builder-selection-review">
-            {!draft.exercises.length && <p>{t('addExercise')}</p>}
-            {draft.exercises.map((row, index) => {
-              const exercise = library.exercises.find((item) => item.id === row.exerciseId);
-              return (
-                <section className="builder-review-exercise" key={row.exerciseId}>
-                  <div className="section-heading">
-                    <div className="row">
-                      {exercise?.demonstration?.poster && (
-                        <span className="builder-exercise-thumb">
-                          <img src={exercise.demonstration.poster} alt="" />
-                        </span>
-                      )}
-                      <strong>{exercise ? name(exercise, lang) : ''}</strong>
-                    </div>
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      aria-label={`${t('remove')} ${exercise ? name(exercise, lang) : ''}`}
-                      onClick={() =>
-                        setDraft((current) => ({
-                          ...current,
-                          exercises: current.exercises.filter(
-                            (item) => item.exerciseId !== row.exerciseId,
-                          ),
-                        }))
-                      }
-                    >
-                      <X size={17} />
-                    </button>
-                  </div>
-                  <div className="exercise-inputs">
-                    {[
-                      ['sets', 1, 10],
-                      ['reps', 1, 100],
-                      ['rest', 0, 600],
-                      ['weight', 0, 1000],
-                    ].map(([key, min, max]) => (
-                      <label key={key}>
-                        {t(String(key))}
-                        {key === 'weight' ? ` (${t('kg')})` : ''}
-                        <input
-                          type="number"
-                          onFocus={(event) => event.currentTarget.select()}
-                          onClick={(event) => event.currentTarget.select()}
-                          onMouseUp={(event) => event.preventDefault()}
-                          min={min}
-                          max={max}
-                          step={key === 'weight' ? 0.5 : 1}
-                          value={row[key as 'sets' | 'reps' | 'rest' | 'weight']}
-                          onChange={(event) =>
-                            patch(index, String(key), Number(event.target.value))
-                          }
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-            <button
-              type="button"
-              className="button primary builder-review-done"
-              onClick={() => setSelectionOpen(false)}
-            >
-              {t('continueChoosingExercises')}
-            </button>
-          </div>
-        </Modal>
-      )}
-    </>
-  );
-}
 export function LibraryView() {
   const { t } = useNutri();
   return (
@@ -987,13 +445,32 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
   }, [w.status]);
   const now = state.clockAt + Math.max(0, tick - clockObservedAt);
   const completed = w.sets.filter((s) => s.completed).length;
-  const ids = Array.from(new Set(w.sets.map((s) => s.exerciseId)));
+  // One block per plan entry, in plan order: the same exercise may appear more than once.
+  const blocks = setBlocks(w.sets);
   const deadline = w.restUntil ? +new Date(w.restUntil) : null;
   const time = deadline ? Math.max(0, Math.ceil((deadline - now) / 1000)) : w.restRemaining;
   const elapsed = Math.floor(workoutMillis(w, now) / 1000);
-  const current = w.sets.find((set) => !set.completed);
+  // Exercises stay in place and may be done in any order; the current one is the block the
+  // trainee last worked on while it still has sets left, otherwise the first unfinished block.
+  const [touched, setTouched] = useState<string | null>(null);
+  const currentBlock =
+    blocks.find((block) => block.key === touched && block.sets.some((set) => !set.completed)) ??
+    blocks.find((block) => block.sets.some((set) => !set.completed));
+  const current = currentBlock?.sets.find((set) => !set.completed);
+  // Each call carries a timestamp so repeated taps (+15, +15) are not merged as duplicates.
   const rest = (action: string, restSetId?: string) =>
-    run('workouts/update', { id: w.id, rest: action, restSetId }, true).catch(() => {});
+    run('workouts/update', { id: w.id, rest: action, restSetId, at: Date.now() }, true).catch(
+      () => {},
+    );
+  // The plan behind this session: rep ranges, the author's notes and supersets.
+  const planRows = w.program?.exercises ?? [];
+  const planSupersets = supersetLabels(planRows);
+  const planFor = (position: number, exerciseId: string) => {
+    const index = planRows.findIndex(
+      (row) => row.position === position && row.exerciseId === exerciseId,
+    );
+    return index < 0 ? null : { row: planRows[index], superset: planSupersets[index] };
+  };
   return (
     <>
       <PageHeading
@@ -1028,10 +505,9 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
         <div>
           <small>{t('currentExercise')}</small>
           <strong>{current ? name(current.exercise, lang) : t('allSetsComplete')}</strong>
-          {current && (
+          {current && currentBlock && (
             <small>
-              {t('sets')} {current.setIndex + 1} /{' '}
-              {w.sets.filter((set) => set.exerciseId === current.exerciseId).length}
+              {t('sets')} {current.setIndex + 1} / {currentBlock.sets.length}
             </small>
           )}
         </div>
@@ -1051,31 +527,46 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
         <div style={{ width: `${w.sets.length ? (completed / w.sets.length) * 100 : 0}%` }} />
       </div>
       {time > 0 && (
-        <div className="rest-timer">
-          <Timer size={22} />
-          <span>{t('timer')}</span>
-          <strong>
-            {Math.floor(time / 60)}:{String(time % 60).padStart(2, '0')}
-          </strong>
-          <button
-            className="button secondary"
-            disabled={w.status === 'PAUSED'}
-            onClick={() => rest(deadline ? 'pause' : 'resume')}
-          >
-            {t(deadline ? 'pause' : 'resume')}
-          </button>
-          <button className="button secondary" onClick={() => rest('extend')}>
-            +30 {t('secondsShort')}
-          </button>
-          <button className="button secondary" onClick={() => rest('skip')}>
-            {t('skip')}
-          </button>
+        <div className="rest-timer" role="timer" aria-live="off" data-testid="rest-timer">
+          <div className="rest-timer-clock">
+            <Timer size={20} aria-hidden="true" />
+            <span>{t('timer')}</span>
+            <strong dir="ltr">
+              {Math.floor(time / 60)}:{String(time % 60).padStart(2, '0')}
+            </strong>
+          </div>
+          <div className="rest-timer-actions">
+            <button
+              className="button secondary"
+              aria-label={`-15 ${t('secondsShort')}`}
+              onClick={() => rest('reduce')}
+            >
+              <span dir="ltr">−15</span>
+            </button>
+            <button
+              className="button secondary"
+              aria-label={`+15 ${t('secondsShort')}`}
+              onClick={() => rest('extend')}
+            >
+              <span dir="ltr">+15</span>
+            </button>
+            <button
+              className="button secondary"
+              disabled={w.status === 'PAUSED'}
+              aria-label={t(deadline ? 'pause' : 'resume')}
+              onClick={() => rest(deadline ? 'pause' : 'resume')}
+            >
+              {deadline ? <Pause size={16} /> : <Play size={16} />}
+            </button>
+            <button className="button secondary" onClick={() => rest('skip')}>
+              {t('skip')}
+            </button>
+          </div>
         </div>
       )}
-      <div className="active-workout-list">
-        {ids.map((exerciseId, i) => {
-          const sets = w.sets.filter((s) => s.exerciseId === exerciseId),
-            exercise = sets[0].exercise;
+      <div className={`active-workout-list ${time > 0 ? 'with-rest-timer' : ''}`}>
+        {blocks.map(({ key, position, exerciseId, sets }) => {
+          const exercise = sets[0].exercise;
           const previous = state.workouts.find(
             (p) =>
               p.status === 'FINISHED' &&
@@ -1086,11 +577,11 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
             .sort((a, b) => b.setIndex - a.setIndex)[0];
           const poster = library.exercises.find((row) => row.id === exerciseId)?.demonstration
             ?.poster;
+          const plan = planFor(position, exerciseId);
           return (
             <section
-              className={`panel active-exercise ${current?.exerciseId === exerciseId ? 'current-exercise' : ''}`}
-              key={exerciseId}
-              style={{ order: current?.exerciseId === exerciseId ? -1 : 0 }}
+              className={`panel active-exercise ${currentBlock?.key === key ? 'current-exercise' : ''}`}
+              key={key}
             >
               <div className="section-heading">
                 <div className="row">
@@ -1107,6 +598,21 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
                     <small className="muted">
                       {t(exercise.muscle)} · {t(exercise.equipment)}
                     </small>
+                    {plan && (plan.superset || plan.row.repsMax > 0) && (
+                      <div className="live-plan-tags">
+                        {plan.superset && (
+                          <span className="badge">
+                            <Link2 size={12} /> {t('wbSuperset')} {plan.superset}
+                          </span>
+                        )}
+                        {plan.row.repsMax > 0 && (
+                          <span className="badge neutral">
+                            <Target size={12} /> {plan.row.sets} × {repsLabel(plan.row)}{' '}
+                            {t('reps').toLowerCase()}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button className="text-button" onClick={() => setInstruction(exercise)}>
@@ -1114,6 +620,11 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
                   <ArrowUpRight size={16} />
                 </button>
               </div>
+              {plan?.row.notes && (
+                <p className="live-plan-note">
+                  <StickyNote size={14} aria-hidden="true" /> {plan.row.notes}
+                </p>
+              )}
               <p className="previous-set">
                 {t(lastSet ? 'previousSet' : 'previous')}:{' '}
                 {lastSet
@@ -1134,17 +645,16 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
                   <span>{t('reps')}</span>
                   <span>{t('completed')}</span>
                 </div>
-                {sets
-                  .sort((a, b) => a.setIndex - b.setIndex)
-                  .map((s) => (
-                    <SetRow key={s.id} session={w} set={s} />
-                  ))}
+                <ExerciseSets session={w} sets={sets} onTouch={() => setTouched(key)} />
               </div>
               {sets[0].restSeconds > 0 && (
                 <button
                   className="text-button"
                   disabled={w.status === 'PAUSED'}
-                  onClick={() => rest('start', sets[0].id)}
+                  onClick={() => {
+                    setTouched(key);
+                    rest('start', sets[0].id);
+                  }}
                 >
                   <Timer size={16} /> {t('startRest')}
                 </button>
@@ -1316,98 +826,181 @@ function WorkoutSummary({ workout }: { workout: Workout }) {
   );
 }
 
-function SetRow({ session, set }: { session: Workout; set: Workout['sets'][number] }) {
-  const { t, run, state } = useNutri();
-  const draftKey = `nutri-set:${state.user.id}:${session.id}:${set.id}`;
-  const [draft, setDraft] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(draftKey);
-        if (saved) {
-          const { weight, reps } = JSON.parse(saved) as { weight: number; reps: number };
-          return { weight, reps };
-        }
-      } catch {}
-    }
-    return { weight: set.weight, reps: set.reps };
-  });
-  const { weight, reps } = draft;
-  const hasUnsavedChanges = weight !== set.weight || reps !== set.reps;
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(draftKey)) return;
-    } catch {}
-    setDraft({ weight: set.weight, reps: set.reps });
-  }, [draftKey, set.weight, set.reps]);
-  function change(values: Partial<typeof draft>) {
-    const next = { ...draft, ...values };
-    setDraft(next);
-    try {
-      localStorage.setItem(draftKey, JSON.stringify(next));
-    } catch {}
+type LiveSet = Workout['sets'][number];
+/** Groups a session's sets by plan entry (position + exercise), in plan order. */
+function setBlocks(sets: LiveSet[]) {
+  const blocks = new Map<
+    string,
+    { key: string; position: number; exerciseId: string; sets: LiveSet[] }
+  >();
+  for (const set of [...sets].sort((a, b) => a.position - b.position || a.setIndex - b.setIndex)) {
+    const key = `${set.position}:${set.exerciseId}`;
+    const block = blocks.get(key);
+    if (block) block.sets.push(set);
+    else blocks.set(key, { key, position: set.position, exerciseId: set.exerciseId, sets: [set] });
   }
-  async function commit(completed: boolean) {
-    setBusy(true);
+  return [...blocks.values()];
+}
+type SetDraft = { weight: string; reps: string };
+/** Accepts both "62.5" and "62,5" (keyboards that use a decimal comma). */
+function parseDecimal(value: string) {
+  const text = value.trim().replace(',', '.');
+  return text === '' || !/^\d*\.?\d*$/.test(text) || text === '.' ? NaN : Number(text);
+}
+function draftValues(draft: SetDraft) {
+  const weight = parseDecimal(draft.weight);
+  const reps = parseDecimal(draft.reps);
+  return {
+    weight,
+    reps,
+    valid: weight >= 0 && weight <= 1000 && Number.isInteger(reps) && reps >= 0 && reps <= 100,
+  };
+}
+/**
+ * The set table of one exercise. Editing the weight or reps of a set carries the new value to the
+ * remaining (not yet completed) sets below it. Unsaved edits survive a reload via localStorage.
+ */
+function ExerciseSets({
+  session,
+  sets,
+  onTouch,
+}: {
+  session: Workout;
+  sets: LiveSet[];
+  onTouch: () => void;
+}) {
+  const { t, run, state } = useNutri();
+  const keyOf = (setId: string) => `nutri-set:${state.user.id}:${session.id}:${setId}`;
+  const [drafts, setDrafts] = useState<Record<string, SetDraft>>(() => {
+    const restored: Record<string, SetDraft> = {};
+    if (typeof window === 'undefined') return restored;
+    for (const set of sets)
+      try {
+        const saved = localStorage.getItem(keyOf(set.id));
+        if (!saved) continue;
+        const { weight, reps } = JSON.parse(saved) as { weight: unknown; reps: unknown };
+        restored[set.id] = { weight: String(weight ?? set.weight), reps: String(reps ?? set.reps) };
+      } catch {}
+    return restored;
+  });
+  const [busy, setBusy] = useState<string | null>(null);
+  // Once the server holds the same values (e.g. after carrying them forward), the draft is spent.
+  const serverValues = sets.map((set) => `${set.id}:${set.weight}:${set.reps}`).join('|');
+  useEffect(() => {
+    setDrafts((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const set of sets) {
+        const draft = next[set.id];
+        if (!draft) continue;
+        const values = draftValues(draft);
+        if (values.weight === set.weight && values.reps === set.reps) {
+          delete next[set.id];
+          changed = true;
+          try {
+            localStorage.removeItem(keyOf(set.id));
+          } catch {}
+        }
+      }
+      return changed ? next : current;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverValues]);
+  const valueOf = (set: LiveSet): SetDraft =>
+    drafts[set.id] ?? { weight: String(set.weight), reps: String(set.reps) };
+  function change(set: LiveSet, field: keyof SetDraft, value: string) {
+    onTouch();
+    const next = { ...drafts };
+    for (const row of sets)
+      if (row.id === set.id || (!row.completed && row.setIndex > set.setIndex)) {
+        next[row.id] = { ...valueOf(row), [field]: value };
+        try {
+          localStorage.setItem(keyOf(row.id), JSON.stringify(next[row.id]));
+        } catch {}
+      }
+    setDrafts(next);
+  }
+  async function commit(set: LiveSet, completed: boolean) {
+    const { weight, reps, valid } = draftValues(valueOf(set));
+    if (!valid) return;
+    onTouch();
+    setBusy(set.id);
     try {
       await run(
         'workouts/update',
-        {
-          id: session.id,
-          set: { id: set.id, weight, reps, completed },
-        },
+        { id: session.id, set: { id: set.id, weight, reps, completed } },
         true,
       );
       try {
-        localStorage.removeItem(draftKey);
+        localStorage.removeItem(keyOf(set.id));
       } catch {}
+      setDrafts(({ [set.id]: _done, ...rest }) => rest);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
+  const locked = session.status === 'PAUSED';
+  const select = {
+    onFocus: (event: FocusEvent<HTMLInputElement>) => event.currentTarget.select(),
+    onClick: (event: MouseEvent<HTMLInputElement>) => event.currentTarget.select(),
+    onMouseUp: (event: MouseEvent<HTMLInputElement>) => event.preventDefault(),
+  };
   return (
-    <form
-      className={`set-row ${set.completed ? 'set-done' : ''}`}
-      onSubmit={(e) => {
-        e.preventDefault();
-        commit(!set.completed || hasUnsavedChanges).catch(() => {});
-      }}
-    >
-      <span>{set.setIndex + 1}</span>
-      <input
-        aria-label={t('weight')}
-        type="number"
-        min={0}
-        max={1000}
-        step={0.5}
-        value={weight}
-        inputMode="decimal"
-        onFocus={(event) => event.currentTarget.select()}
-        onClick={(event) => event.currentTarget.select()}
-        onMouseUp={(event) => event.preventDefault()}
-        onChange={(e) => change({ weight: Number(e.target.value) })}
-        disabled={session.status === 'PAUSED' || busy}
-      />
-      <input
-        aria-label={t('reps')}
-        type="number"
-        onFocus={(event) => event.currentTarget.select()}
-        onClick={(event) => event.currentTarget.select()}
-        onMouseUp={(event) => event.preventDefault()}
-        min={0}
-        max={100}
-        value={reps}
-        onChange={(e) => change({ reps: Number(e.target.value) })}
-        disabled={session.status === 'PAUSED' || busy}
-      />
-      <button
-        className={`set-check ${set.completed ? 'checked' : ''}`}
-        aria-label={t(set.completed && hasUnsavedChanges ? 'save' : 'completed')}
-        aria-pressed={set.completed}
-        disabled={session.status === 'PAUSED' || busy}
-      >
-        <Check size={17} />
-      </button>
-    </form>
+    <>
+      {sets.map((set) => {
+        const draft = valueOf(set);
+        const values = draftValues(draft);
+        const hasUnsavedChanges =
+          values.weight !== set.weight || values.reps !== set.reps || !values.valid;
+        const disabled = locked || busy === set.id;
+        return (
+          <form
+            key={set.id}
+            noValidate
+            className={`set-row ${set.completed ? 'set-done' : ''}`}
+            onSubmit={(e) => {
+              e.preventDefault();
+              commit(set, !set.completed || hasUnsavedChanges).catch(() => {});
+            }}
+          >
+            <span>{set.setIndex + 1}</span>
+            <input
+              aria-label={t('weight')}
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              dir="ltr"
+              value={draft.weight}
+              aria-invalid={!(values.weight >= 0 && values.weight <= 1000)}
+              {...select}
+              onChange={(e) => change(set, 'weight', e.target.value)}
+              disabled={disabled}
+            />
+            <input
+              aria-label={t('reps')}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              dir="ltr"
+              value={draft.reps}
+              aria-invalid={
+                !(Number.isInteger(values.reps) && values.reps >= 0 && values.reps <= 100)
+              }
+              {...select}
+              onChange={(e) => change(set, 'reps', e.target.value)}
+              disabled={disabled}
+            />
+            <button
+              className={`set-check ${set.completed ? 'checked' : ''}`}
+              aria-label={t(set.completed && hasUnsavedChanges ? 'save' : 'completed')}
+              aria-pressed={set.completed}
+              disabled={disabled || !values.valid}
+            >
+              <Check size={17} />
+            </button>
+          </form>
+        );
+      })}
+    </>
   );
 }

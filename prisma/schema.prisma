@@ -218,6 +218,10 @@ model ProgramExercise {
   reps Int @default(10)
   rest Int @default(60)
   weight Float @default(0)
+  /// Upper end of a repetition range (e.g. 8-12). 0 = a single target of `reps`.
+  repsMax Int @default(0)
+  /// Optional per-exercise cue from the plan author, shown during the live workout.
+  notes String @default("")
   group String @default("")
   @@index([programId,position])
 }
@@ -254,7 +258,8 @@ model WorkoutSet {
   reps Int
   weight Float
   completed Boolean @default(false)
-  @@unique([sessionId,exerciseId,setIndex])
+  // One row per set of each plan entry; the same exercise may appear at several positions.
+  @@unique([sessionId,position,exerciseId,setIndex])
 }
 model Food {
   id String @id @default(cuid())

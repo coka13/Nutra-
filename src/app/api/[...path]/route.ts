@@ -51,6 +51,7 @@ import { foodAccess } from '@/lib/food-access';
 import { clientAdherence } from '@/lib/adherence';
 import { workoutClockTransition } from '@/lib/workout-clock';
 import { recordPerformance, recordLivePerformance } from '@/lib/performance';
+import { planLiveSync, type PlanRow } from '@/lib/live-sync';
 import { acceptsOrigin } from '@/lib/request-origin';
 import { isInternationalPhone, normalizePhone } from '@/lib/phone';
 import {
@@ -62,6 +63,11 @@ import {
 export const runtime = 'nodejs';
 const text = z.string().trim().min(1).max(200);
 const id = z.string().min(1).max(100);
+/** Comma-separated weekdays (0 = Sunday); empty when a workout is not scheduled. */
+const programDays = z
+  .string()
+  .regex(/^([0-6](,[0-6])*)?$/)
+  .transform((value) => [...new Set(value.split(',').filter(Boolean))].sort().join(','));
 const day = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -144,6 +150,47 @@ async function pauseOtherWorkouts(tx: Prisma.TransactionClient, userId: string, 
         restUntil: null,
       },
     });
+  }
+}
+
+/** Applies an edited plan to every unfinished session started from it. */
+async function syncLiveWorkouts(
+  tx: Prisma.TransactionClient,
+  programId: string,
+  name: string,
+  previous: PlanRow[],
+  rows: PlanRow[],
+) {
+  const sessions = await tx.workoutSession.findMany({
+    where: { programId, status: { in: ['ACTIVE', 'PAUSED'] } },
+    include: { sets: true },
+  });
+  for (const session of sessions) {
+    const plan = planLiveSync(session.sets, previous, rows);
+    if (plan.remove.length)
+      await tx.workoutSet.deleteMany({ where: { id: { in: plan.remove }, sessionId: session.id } });
+    const changes = new Map(plan.update.map((change) => [change.id, change.data]));
+    const reordered = plan.update.some((change) => change.data.position !== undefined);
+    // Move every set out of the way first so swapped positions never collide on the unique key;
+    // each remaining set is then written back at its final position.
+    if (reordered)
+      await tx.workoutSet.updateMany({
+        where: { sessionId: session.id },
+        data: { position: { decrement: 100000 } },
+      });
+    for (const set of session.sets) {
+      if (plan.remove.includes(set.id) || (!reordered && !changes.has(set.id))) continue;
+      await tx.workoutSet.update({
+        where: { id: set.id },
+        data: { position: set.position, ...changes.get(set.id) },
+      });
+    }
+    if (plan.create.length)
+      await tx.workoutSet.createMany({
+        data: plan.create.map((set) => ({ ...set, sessionId: session.id })),
+      });
+    if (session.name !== name)
+      await tx.workoutSession.update({ where: { id: session.id }, data: { name } });
   }
 }
 
@@ -294,7 +341,10 @@ async function handleRequest(req: NextRequest, path: string) {
           });
           if (!verification || verification.expiresAt < new Date())
             throw new ApiError('invalidVerification', 400);
-          await tx.user.update({ where: { id: verification.userId }, data: { emailVerified: true } });
+          await tx.user.update({
+            where: { id: verification.userId },
+            data: { emailVerified: true },
+          });
           await tx.emailVerification.deleteMany({ where: { userId: verification.userId } });
         });
         return NextResponse.json({ ok: true });
@@ -965,19 +1015,25 @@ async function handleRequest(req: NextRequest, path: string) {
             description: z.string().max(1000).default(''),
             // Zero represents an ongoing weekly schedule; retain legacy durations.
             weeks: z.number().int().min(0).max(52).default(0),
-            days: z.string().regex(/^[0-6](,[0-6])*$/),
+            // Empty = not scheduled yet (e.g. a reusable template).
+            days: programDays,
             template: z.boolean().default(false),
             assignedClientId: id.nullable().optional(),
             exercises: z
               .array(
-                z.object({
-                  exerciseId: id,
-                  sets: z.number().int().min(1).max(10),
-                  reps: z.number().int().min(1).max(100),
-                  rest: z.number().int().min(0).max(600),
-                  weight: z.number().min(0).max(1000),
-                  group: z.string().max(40).default(''),
-                }),
+                z
+                  .object({
+                    exerciseId: id,
+                    sets: z.number().int().min(1).max(10),
+                    reps: z.number().int().min(1).max(100),
+                    // 0 = a single target; otherwise the top of a range such as 8-12.
+                    repsMax: z.number().int().min(0).max(100).default(0),
+                    rest: z.number().int().min(0).max(600),
+                    weight: z.number().min(0).max(1000),
+                    notes: z.string().max(300).default(''),
+                    group: z.string().max(40).default(''),
+                  })
+                  .refine((row) => row.repsMax === 0 || row.repsMax >= row.reps),
               )
               .min(1)
               .max(30),
@@ -990,9 +1046,8 @@ async function handleRequest(req: NextRequest, path: string) {
           throw new ApiError('forbidden', 403);
         if (data.id && !(await db.program.findFirst({ where: { id: data.id, ownerId: u.id } })))
           throw new ApiError('forbidden', 403);
+        // The same exercise may appear more than once (e.g. a warm-up and a finisher).
         const { id: programId, exercises, ...rest } = data;
-        if (new Set(exercises.map((exercise) => exercise.exerciseId)).size !== exercises.length)
-          throw new ApiError('invalid');
         result = await db.$transaction(async (tx) => {
           // Every catalog exercise is immediately usable, without a separate import step.
           for (const row of exercises) {
@@ -1008,6 +1063,9 @@ async function handleRequest(req: NextRequest, path: string) {
                 update: {},
               });
           }
+          const previous = programId
+            ? await tx.programExercise.findMany({ where: { programId } })
+            : [];
           const program = programId
             ? await tx.program.update({ where: { id: programId }, data: rest })
             : await tx.program.create({ data: { ...rest, ownerId: u.id } });
@@ -1015,6 +1073,8 @@ async function handleRequest(req: NextRequest, path: string) {
           await tx.programExercise.createMany({
             data: exercises.map((e, position) => ({ ...e, programId: program.id, position })),
           });
+          // A workout already in progress follows the edited plan.
+          if (programId) await syncLiveWorkouts(tx, program.id, program.name, previous, exercises);
           return program;
         });
         if (data.assignedClientId) await notify(data.assignedClientId, 'planUpdated');
@@ -1030,6 +1090,64 @@ async function handleRequest(req: NextRequest, path: string) {
         });
         if (!updated.count) throw new ApiError('forbidden', 403);
         await notify(data.assignedClientId, 'planUpdated');
+        break;
+      }
+      case 'programs/schedule': {
+        // Moves a workout between weekdays without rewriting its exercises.
+        const data = z.object({ id, days: programDays }).parse(body);
+        const program = await db.program.findFirst({ where: { id: data.id, ownerId: u.id } });
+        if (!program) throw new ApiError('forbidden', 403);
+        result = await db.program.update({ where: { id: program.id }, data: { days: data.days } });
+        if (program.assignedClientId) await notify(program.assignedClientId, 'planUpdated');
+        break;
+      }
+      case 'programs/duplicate': {
+        // Copies a workout (or template) with every exercise setting, optionally re-scheduled
+        // or assigned to a trainee so a template can be customised per client.
+        const data = z
+          .object({
+            id,
+            name: text.optional(),
+            days: programDays.optional(),
+            template: z.boolean().optional(),
+            assignedClientId: id.nullable().optional(),
+          })
+          .parse(body);
+        const source = await db.program.findFirst({
+          where: { id: data.id, ownerId: u.id },
+          include: { exercises: { orderBy: { position: 'asc' } } },
+        });
+        if (!source) throw new ApiError('forbidden', 403);
+        if (
+          data.assignedClientId &&
+          (u.role !== 'COACH' || !(await related(u.id, data.assignedClientId)))
+        )
+          throw new ApiError('forbidden', 403);
+        result = await db.program.create({
+          data: {
+            ownerId: u.id,
+            name: data.name ?? source.name,
+            description: source.description,
+            weeks: source.weeks,
+            days: data.days ?? source.days,
+            template: data.template ?? source.template,
+            assignedClientId: data.assignedClientId === undefined ? null : data.assignedClientId,
+            exercises: {
+              create: source.exercises.map((row, position) => ({
+                exerciseId: row.exerciseId,
+                position,
+                sets: row.sets,
+                reps: row.reps,
+                repsMax: row.repsMax,
+                rest: row.rest,
+                weight: row.weight,
+                notes: row.notes,
+                group: row.group,
+              })),
+            },
+          },
+        });
+        if (data.assignedClientId) await notify(data.assignedClientId, 'planUpdated');
         break;
       }
       case 'programs/delete': {
@@ -1091,7 +1209,7 @@ async function handleRequest(req: NextRequest, path: string) {
             id,
             status: z.enum(['ACTIVE', 'PAUSED', 'FINISHED']).optional(),
             notes: z.string().max(2000).optional(),
-            rest: z.enum(['pause', 'resume', 'extend', 'skip', 'start']).optional(),
+            rest: z.enum(['pause', 'resume', 'extend', 'reduce', 'skip', 'start']).optional(),
             restSetId: id.optional(),
             set: z
               .object({
@@ -1130,21 +1248,23 @@ async function handleRequest(req: NextRequest, path: string) {
             await tx.workoutSet.update({ where: { id: setId }, data: values });
             if (values.completed)
               personalRecord = await recordLivePerformance(tx, w.id, u.id, set.exerciseId, before);
-            if (values.completed && !set.completed) {
-              const next = await tx.workoutSet.findFirst({
+            // A changed weight or rep count carries over to the remaining sets of that exercise.
+            const carried = {
+              ...(values.weight !== set.weight ? { weight: values.weight } : {}),
+              ...(values.reps !== set.reps && values.reps > 0 ? { reps: values.reps } : {}),
+            };
+            if (Object.keys(carried).length)
+              await tx.workoutSet.updateMany({
                 where: {
                   sessionId: w.id,
                   exerciseId: set.exerciseId,
+                  position: set.position,
                   completed: false,
                   setIndex: { gt: set.setIndex },
                 },
-                orderBy: { setIndex: 'asc' },
+                data: carried,
               });
-              if (next)
-                await tx.workoutSet.update({
-                  where: { id: next.id },
-                  data: { weight: values.weight },
-                });
+            if (values.completed && !set.completed) {
               restRemaining = 0;
               restUntil = set.restSeconds ? new Date(+now + set.restSeconds * 1000) : null;
             }
@@ -1168,9 +1288,10 @@ async function handleRequest(req: NextRequest, path: string) {
             restUntil = new Date(+now + restRemaining * 1000);
             restRemaining = 0;
           }
-          if (data.rest === 'extend' && seconds) {
-            if (restUntil) restUntil = new Date(+now + Math.min(900, seconds + 30) * 1000);
-            else restRemaining = Math.min(900, seconds + 30);
+          if ((data.rest === 'extend' || data.rest === 'reduce') && seconds) {
+            const next = Math.max(0, Math.min(900, seconds + (data.rest === 'extend' ? 15 : -15)));
+            if (restUntil) restUntil = next ? new Date(+now + next * 1000) : null;
+            else restRemaining = next;
           }
           if (data.rest === 'skip' || data.status === 'FINISHED') {
             restUntil = null;

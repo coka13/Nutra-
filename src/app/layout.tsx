@@ -4,6 +4,7 @@ import { adsenseClient } from '@/lib/adsense';
 import { languagePreferenceKey, parseLanguage } from '@/lib/language-preference';
 import './globals.css';
 import './viewport-layout.css';
+import './workout-builder.css';
 export const metadata: Metadata = {
   title: 'Fitura+ · A healthier rhythm',
   description: 'Your workouts, nutrition and progress. Beautifully connected.',

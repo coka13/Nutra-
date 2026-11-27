@@ -125,9 +125,21 @@ const smartExercises: Exercise[] = smartWorkoutAnimations
   });
 // Keep legacy IDs resolvable for old programs, but new choices all have animation media.
 export const catalogExercises: Exercise[] = [...legacyExercises, ...smartExercises];
-export const demonstratedExercises = catalogExercises.filter(
-  (row) => !!smartWorkoutAnimation(row.id, row.nameEn),
-);
+// The sources overlap under different spellings ("Donkey Calf Raise" / "Donkey Calf Raises"),
+// which resolve to the same video. Offer one entry per video; the others stay resolvable by ID
+// for saved workouts.
+const shownPaths = new Set<string>();
+const hiddenDuplicateIds = new Set<string>();
+export const demonstratedExercises = catalogExercises.filter((row) => {
+  const animation = smartWorkoutAnimation(row.id, row.nameEn);
+  if (!animation) return false;
+  if (shownPaths.has(animation.path)) {
+    hiddenDuplicateIds.add(row.id);
+    return false;
+  }
+  shownPaths.add(animation.path);
+  return true;
+});
 const catalogById = new Map(catalogExercises.map((row) => [row.id, row]));
 export function getFreeExercise(id: string) {
   return catalogById.get(id);
@@ -146,8 +158,11 @@ export function localizeCatalogExercise(exercise: Exercise): Exercise {
   };
 }
 export function completeExerciseLibrary(saved: Exercise[]) {
-  const merged = new Map(catalogExercises.map((row) => [row.id, row]));
+  const merged = new Map(
+    catalogExercises.filter((row) => !hiddenDuplicateIds.has(row.id)).map((row) => [row.id, row]),
+  );
   for (const row of saved) {
+    if (hiddenDuplicateIds.has(row.id)) continue;
     // Existing plans retain IDs and translations; catalog entries use current muscle groups.
     merged.set(row.id, localizeCatalogExercise(row));
   }

@@ -39,7 +39,7 @@ export async function clientAdherence(
   let completed = 0;
   for (const program of programs) {
     const first = +new Date(localDate(program.createdAt, timeZone));
-    const schedule = new Set(program.days.split(',').map(Number));
+    const schedule = new Set(program.days.split(',').filter(Boolean).map(Number));
     for (let offset = 1; offset <= 28; offset++) {
       const date = new Date(+today - offset * dayMs);
       if (

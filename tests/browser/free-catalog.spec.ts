@@ -95,27 +95,34 @@ for (const language of ['en', 'he'] as const) {
         await page
           .getByRole('button', { name: he ? 'הוספה לאימון' : 'Add to workout', exact: true })
           .click();
-        await expect(page.locator('.builder-exercise')).toContainText(
+        await expect(page.locator('.wb-card')).toContainText(
           he ? 'כפיפת מרפקים בכיסא כומר עם מוט' : 'Barbell Preacher Curl',
         );
-        await page.getByLabel(he ? 'שם' : 'Name', { exact: true }).fill('Preacher GIF plan');
-        await page.locator('.builder-library input').fill('preacher chair');
-        await expect(
-          page
-            .locator('.builder-muscle-group summary')
-            .filter({ hasText: he ? 'השריר הדו־ראשי' : 'Biceps' }),
-        ).toContainText(he ? 'השריר הדו־ראשי' : 'Biceps');
-        const machine = page
-          .locator('.library-add-row')
+        await page.locator('.wb-add-more').click();
+        const picker = page.getByRole('dialog');
+        await picker.locator('.wb-search input').fill('preacher chair');
+        await picker
+          .getByRole('button', { name: he ? 'השריר הדו־ראשי' : 'Biceps', exact: true })
+          .click();
+        const machine = picker
+          .locator('.wb-result-pick')
           .filter({ hasText: he ? 'כפיפת מרפקים בכיסא כומר במכונה' : 'Machine Preacher Curls' });
         await machine.click();
-        await expect(page.locator('.builder-exercise')).toHaveCount(2);
+        await picker
+          .getByRole('button', { name: `${he ? 'הוספה לאימון' : 'Add to workout'} (1)` })
+          .click();
+        await expect(page.locator('.wb-card')).toHaveCount(2);
+        await page.locator('.wb-step').first().click();
+        await page
+          .getByLabel(he ? 'שם האימון' : 'Workout name', { exact: true })
+          .fill('Preacher GIF plan');
+        await page.locator('.wb-step').nth(2).click();
         const savedResponse = page.waitForResponse(
           (response) =>
             response.url().endsWith('/api/programs/save') && response.request().method() === 'POST',
         );
         await page
-          .getByRole('button', { name: he ? 'שמירת שינויים' : 'Save changes', exact: true })
+          .getByRole('button', { name: he ? 'שמירת האימון' : 'Save workout', exact: true })
           .click();
         const saved = await savedResponse;
         expect(saved.ok()).toBeTruthy();
@@ -176,13 +183,15 @@ test('new SmartWorkout exercise plays and can be saved into a workout in Hebrew'
     await expect(page.locator('.instruction-copy')).toContainText(/[א-ת]/);
     await expect(page.locator('.exercise-demo a')).toHaveCount(0);
     await page.getByRole('button', { name: 'הוספה לאימון', exact: true }).click();
-    await expect(page.locator('.builder-exercise')).toContainText(exercise.nameHe);
-    await page.getByLabel('שם', { exact: true }).fill('SmartWorkout native plan');
+    await expect(page.locator('.wb-card')).toContainText(exercise.nameHe);
+    await page.locator('.wb-step').first().click();
+    await page.getByLabel('שם האימון', { exact: true }).fill('SmartWorkout native plan');
+    await page.locator('.wb-step').nth(2).click();
     const saving = page.waitForResponse(
       (response) =>
         response.url().endsWith('/api/programs/save') && response.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: 'שמירת שינויים', exact: true }).click();
+    await page.getByRole('button', { name: 'שמירת האימון', exact: true }).click();
     const saved = await saving;
     expect(saved.ok()).toBeTruthy();
     const { id } = await saved.json();

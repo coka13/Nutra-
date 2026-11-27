@@ -89,17 +89,22 @@ test('coach reviews a consented client and assigns a program through the visual 
   await page.getByRole('button', { name: 'Workout plans', exact: true }).click();
   await page.getByRole('button', { name: 'Create workout', exact: true }).first().click();
   const title = `Coach browser routine ${Date.now()}`;
-  await page.getByRole('textbox', { name: 'Name', exact: true }).fill(title);
-  await page.getByRole('combobox', { name: 'Primary muscles', exact: true }).selectOption('legs');
-  await page.locator('.library-add-row').first().click();
-  await page.getByRole('spinbutton', { name: 'Sets', exact: true }).fill('2');
+  await page.getByRole('textbox', { name: 'Workout name', exact: true }).fill(title);
   await page
     .getByRole('combobox', { name: 'Assign to client' })
     .selectOption({ label: 'Alex Morgan' });
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.locator('.wb-empty').getByRole('button', { name: 'Add exercises' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Legs', exact: true }).click();
+  await page.locator('.wb-result-pick').first().click();
+  await page.getByRole('button', { name: 'Add to workout (1)' }).click();
+  await page.getByRole('button', { name: 'Decrease Sets' }).click();
+  await expect(page.getByRole('spinbutton', { name: 'Sets', exact: true })).toHaveValue('2');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
   const saved = page.waitForResponse(
     (r) => r.url().endsWith('/api/programs/save') && r.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page.getByRole('button', { name: 'Save workout', exact: true }).click();
   const record = await (await saved).json();
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
   await page.request.post('/api/programs/delete', { data: { id: record.id } });

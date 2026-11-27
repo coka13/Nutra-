@@ -41,7 +41,9 @@ test('all exercises are available to the builder and use specific muscle groups'
     catalogQuery.parse({ name: 'preacher chair', muscle: 'biceps' }),
   );
   assert(preacher.results.some((row) => row.id === 'fe_Machine_Preacher_Curls'));
-  assert(preacher.results.some((row) => row.id === 'fl_0070'));
+  // Barbell Preacher Curl (fl_0070) shares its video with fe_Preacher_Curl and is offered once.
+  assert(preacher.results.some((row) => row.id === 'fe_Preacher_Curl'));
+  assert(!preacher.results.some((row) => row.id === 'fl_0070'));
 });
 
 test('demonstrations and thumbnails use only SmartWorkout, including built-in workouts', async () => {
@@ -151,6 +153,14 @@ test('every indexed SmartWorkout animation is reachable from the library and bui
   const reordered = smartWorkoutAnimation('', 'Bench Press Dumbbell');
   assert.equal(reordered?.name, 'Dumbbell Bench Press');
   assert.equal(smartWorkoutAnimation('', 'Smith Bench Press Dumbbell'), undefined);
+});
+
+test('spelling variants of one exercise are offered once but stay resolvable', () => {
+  const donkey = demonstratedExercises.filter((row) => /^donkey calf raises?$/i.test(row.nameEn));
+  assert.equal(donkey.length, 1);
+  const library = completeExerciseLibrary([getFreeExercise('fl_0284')!, getFreeExercise('fe_Donkey_Calf_Raises')!]);
+  assert.equal(library.filter((row) => /^donkey calf raises?$/i.test(row.nameEn)).length, 1);
+  assert(getFreeExercise('fl_0284') && getFreeExercise('fe_Donkey_Calf_Raises'));
 });
 
 test('saved unsupported exercises are excluded and saved name matches resolve media', () => {
