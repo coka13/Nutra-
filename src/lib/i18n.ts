@@ -697,6 +697,9 @@ export const messages = {
   nextWorkout: ['YOUR NEXT SESSION', 'האימון הבא שלך'],
   startWorkout: ['Start workout', 'התחלת אימון'],
   resume: ['Resume session', 'המשך אימון'],
+  workoutInProgress: ['Workout in progress', 'אימון בתהליך'],
+  workoutPaused: ['Workout paused', 'האימון מושהה'],
+  backToWorkout: ['Back to workout', 'חזרה לאימון'],
   continueWorkoutTitle: ['Continue your workout?', 'להמשיך את האימון?'],
   continueWorkoutHint: [
     'You have an unfinished workout. Pick up where you left off.',

@@ -124,20 +124,7 @@ export function WorkoutsView() {
       {!isCoach && active && (
         <ContinueWorkoutPrompt key={active.id} workout={active} />
       )}
-      {!isCoach && active && (
-        <div className="onboarding-banner">
-          <span>
-            <Dumbbell size={18} />
-            {active.name}
-          </span>
-          <button
-            className="text-button"
-            onClick={() => navigate(`active?session=${encodeURIComponent(active.id)}`)}
-          >
-            {t('resume')} →
-          </button>
-        </div>
-      )}
+      {!isCoach && active && <ActiveWorkoutBanner workout={active} />}
       <div className="toolbar">
         <div className="search-field">
           <Search size={17} />
@@ -1213,6 +1200,57 @@ function LiveWorkout({ workout: w }: { workout: Workout }) {
     </>
   );
 }
+/** Live card for a workout in progress, shown above the workout list. */
+function ActiveWorkoutBanner({ workout }: { workout: Workout }) {
+  const { t, navigate } = useNutri();
+  const [now, setNow] = useState(() => Date.now());
+  const running = workout.status === 'ACTIVE';
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [running]);
+  const done = workout.sets.filter((set) => set.completed).length;
+  const total = workout.sets.length;
+  const open = () => navigate(`active?session=${encodeURIComponent(workout.id)}`);
+  return (
+    <section
+      className={`active-workout-banner ${running ? 'running' : 'paused'}`}
+      role="status"
+      onClick={open}
+    >
+      <span className="live-dot" aria-hidden="true" />
+      <div className="grow">
+        <small>{t(running ? 'workoutInProgress' : 'workoutPaused')}</small>
+        <strong>{workout.name}</strong>
+        {total > 0 && (
+          <div className="active-workout-progress" aria-label={`${done}/${total}`}>
+            <span style={{ width: `${Math.round((done / total) * 100)}%` }} />
+          </div>
+        )}
+      </div>
+      <div className="active-workout-meta">
+        <strong dir="ltr">{clock(Math.floor(workoutMillis(workout, now) / 1000))}</strong>
+        {total > 0 && (
+          <small dir="ltr">
+            {done}/{total} {t('sets')}
+          </small>
+        )}
+      </div>
+      <button
+        className="button primary"
+        onClick={(event) => {
+          event.stopPropagation();
+          open();
+        }}
+      >
+        <Play size={16} />
+        {t(running ? 'backToWorkout' : 'resume')}
+      </button>
+    </section>
+  );
+}
+
 function clock(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
