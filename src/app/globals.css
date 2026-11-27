@@ -4504,9 +4504,21 @@ html[dir='rtl'] .public-nav .brand {
   .dashboard-side > .water-card .water-wave {
     top: 65px;
   }
+  /* Full width, laid out in one row: icon and text, then the link at the far end. */
   .dashboard-side > .coach-note {
-    min-height: 180px;
-    padding: 18px;
+    grid-column: 1/-1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 16px;
+    padding: 16px 18px;
+  }
+  .dashboard-side > .coach-note > .eyebrow {
+    grid-column: 1/-1;
+    margin-bottom: 10px;
+  }
+  .dashboard-side > .coach-note .text-button {
+    margin-top: 0;
   }
   .dashboard-side .coach-note > .eyebrow {
     font-size: 6px;

@@ -725,6 +725,12 @@ export function RecipesView() {
 }
 export function MealPlansView() {
   const { state, lang, t, run, formatDate } = useNutri();
+  // Relationships include revoked and pending ones; only active trainees can receive a plan.
+  const activeClients = state.relationships.filter(
+    (r) => r.coachId === state.user.id && r.status === 'ACTIVE',
+  );
+  const activeClientName = (clientId: string) =>
+    activeClients.find((r) => r.clientId === clientId)?.client.name;
   const weekdayName = (day: number, weekday: 'long' | 'short' = 'long') =>
     new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en', {
       weekday,
@@ -810,15 +816,15 @@ export function MealPlansView() {
             {p.content && <p className="pre-wrap">{p.content}</p>}
             {p.assignedClientId !== state.user.id && (
               <span className="badge neutral">
-                {p.assignedClientId
-                  ? state.relationships.find((r) => r.clientId === p.assignedClientId)?.client
-                      .name || t('assignedPlan')
-                  : t('mealTemplate')}
+                {/* Only an active trainee receives the plan. One assigned to a former trainee
+                    (revoked or ended) reaches no one, so it reads as a template. */}
+                {(p.assignedClientId && activeClientName(p.assignedClientId)) ||
+                  t('mealTemplate')}
               </span>
             )}
             {p.userId === state.user.id && (
               <div className="row wrap">
-                {state.user.role === 'COACH' && (
+                {state.user.role === 'COACH' && activeClients.length > 0 && (
                   <button className="button primary" onClick={() => openEditor(p)}>
                     {t('assignTo')}
                   </button>
@@ -985,13 +991,11 @@ export function MealPlansView() {
                 {t('assignTo')}
                 <select name="assignedClientId" defaultValue={editor.assignedClientId ?? ''}>
                   <option value="">{t('mealTemplate')}</option>
-                  {state.relationships
-                    .filter((r) => r.coachId === state.user.id && r.status === 'ACTIVE')
-                    .map((r) => (
-                      <option key={r.id} value={r.clientId}>
-                        {r.client.name}
-                      </option>
-                    ))}
+                  {activeClients.map((r) => (
+                    <option key={r.id} value={r.clientId}>
+                      {r.client.name}
+                    </option>
+                  ))}
                 </select>
               </label>
             )}

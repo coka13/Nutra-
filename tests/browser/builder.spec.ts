@@ -129,13 +129,12 @@ for (const language of ['en', 'he'] as const) {
       await expect(page.locator('.wb-card')).toHaveCount(2);
       expect(await cardNames(page)).toEqual([firstName, secondName]);
 
-      // Configure the first card: sets, rep range, superset; and a note on the second.
+      // Configure the first card: sets, superset; and a note on the second. Reps are one target.
       const first = page.locator('.wb-card').first();
       await first.getByRole('button', { name: c.increaseSets }).click();
       await expect(first.getByRole('spinbutton', { name: c.sets, exact: true })).toHaveValue('4');
-      await first.getByRole('button', { name: c.useRange }).click();
-      await expect(first.getByRole('spinbutton', { name: c.repsFrom })).toHaveValue('8');
-      await expect(first.getByRole('spinbutton', { name: c.repsTo })).toHaveValue('12');
+      await expect(first.getByRole('button', { name: c.useRange })).toHaveCount(0);
+      await expect(first.getByRole('spinbutton', { name: c.repsTo })).toHaveCount(0);
       await page.locator('.wb-link').first().click();
       await expect(page.locator('.wb-superset-badge')).toHaveText([c.superset, c.superset]);
       const second = page.locator('.wb-card').nth(1);
@@ -221,7 +220,7 @@ for (const language of ['en', 'he'] as const) {
       expect(saved.ok()).toBeTruthy();
       const body = saved.request().postDataJSON();
       expect(body.exercises).toHaveLength(3);
-      expect(body.exercises[0]).toMatchObject({ sets: 4, reps: 8, repsMax: 12 });
+      expect(body.exercises[0]).toMatchObject({ sets: 4, reps: 10, repsMax: 0 });
       expect(body.exercises[0].group).toBeTruthy();
       expect(body.exercises[1].group).toBe(body.exercises[0].group);
       expect(body.exercises[2].notes).toBe('Pause at the bottom');
@@ -237,7 +236,7 @@ for (const language of ['en', 'he'] as const) {
         ),
       ).toBeNull();
 
-      // Duplicating from the workout card copies every setting, including rep ranges.
+      // Duplicating from the workout card copies every setting.
       const copying = page.waitForResponse((r) => r.url().endsWith('/api/programs/duplicate'));
       await page
         .locator('.program-card')
@@ -250,7 +249,7 @@ for (const language of ['en', 'he'] as const) {
       const state = await (await page.request.get('/api/state')).json();
       const { id: cloneId } = await duplicated.json();
       const clone = state.programs.find((p: { id: string }) => p.id === cloneId);
-      expect(clone.exercises.map((row: { repsMax: number }) => row.repsMax)).toEqual([12, 12, 0]);
+      expect(clone.exercises.map((row: { repsMax: number }) => row.repsMax)).toEqual([0, 0, 0]);
 
       // Editing loads every saved value and keeps the same workout.
       await page.goto(`/app/builder?id=${program.id}`);

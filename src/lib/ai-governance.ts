@@ -10,7 +10,15 @@ export const PROVIDER_PRESETS = {
   anthropic: { name: 'Anthropic', baseUrl: 'https://api.anthropic.com/v1', textModel: 'claude-haiku-5-5', inputCostPerM: 1, outputCostPerM: 5 },
   gemini: { name: 'Google Gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', textModel: 'gemini-2.5-flash', inputCostPerM: 0.3, outputCostPerM: 2.5 },
   groq: { name: 'Groq', baseUrl: 'https://api.groq.com/openai/v1', textModel: 'llama-3.3-70b-versatile', inputCostPerM: 0.59, outputCostPerM: 0.79 },
-  openrouter: { name: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', textModel: 'openai/gpt-4.1-mini', inputCostPerM: 0.4, outputCostPerM: 1.6 },
+  // Free models, tried in order (busy ones are skipped). The first also reads meal photos.
+  openrouter: {
+    name: 'OpenRouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    textModel:
+      'nvidia/nemotron-3.5-super-vl:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3.5-lightning:free, google/gemma-4-31b-it:free',
+    inputCostPerM: 0,
+    outputCostPerM: 0,
+  },
 } as const;
 export type ProviderId = keyof typeof PROVIDER_PRESETS;
 export const PROVIDER_IDS = Object.keys(PROVIDER_PRESETS) as ProviderId[];
@@ -54,9 +62,14 @@ function envProvider() {
 export async function resolveRoutes(kind: 'text' | 'vision'): Promise<AiRoute[]> {
   const [config, rows] = await Promise.all([getConfig(), providers()]);
   const byId = new Map(rows.map((row) => [row.id, row]));
-  const order = [config.ai.defaultProvider, ...config.ai.fallbackProviders].filter(
+  const chosen = [config.ai.defaultProvider, ...config.ai.fallbackProviders].filter(
     (id, i, all): id is ProviderId => !!id && all.indexOf(id) === i,
   );
+  // No provider picked as default yet: an enabled provider with a key is still used, so
+  // connecting one in the admin panel works without a second trip to the routing settings.
+  const order = chosen.length
+    ? chosen
+    : rows.filter((row) => row.enabled && row.encryptedKey).map((row) => row.id as ProviderId);
   const routes: AiRoute[] = [];
   for (const id of order) {
     const row = byId.get(id);

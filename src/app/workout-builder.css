@@ -551,19 +551,27 @@ html[dir='rtl'] .wb-toggle > input:checked + .wb-switch::after {
 .wb-remove:hover {
   color: var(--wb-danger);
 }
+/* Two even columns: sets | reps, then weight | rest. Fields align to the top so a hint under
+   one field never pushes its neighbour down. */
 .wb-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
 }
+/* A single rep target takes one cell beside sets; a saved range gets its own full row. */
 .wb-reps {
+  display: contents;
+}
+/* The global label margin would push the weight field below its neighbour. */
+.wb-fields > label.wb-input {
+  margin: 0;
+}
+.wb-reps.ranged {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   grid-column: 1 / -1;
-}
-.wb-reps > .wb-stepper:only-of-type {
-  grid-column: 1;
 }
 .wb-range-toggle {
   align-self: end;

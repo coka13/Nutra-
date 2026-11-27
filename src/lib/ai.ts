@@ -3,7 +3,15 @@ import { catalogExercises, hasExerciseAnimation } from './free-exercises';
 import { normalizeFoodText, searchLocalFoods } from './food-search';
 import { recordAiUsage, resolveRoutes } from './ai-governance';
 
-export class AiUnavailable extends Error {}
+export class AiUnavailable extends Error {
+  /** Every provider refused the key (HTTP 401/403): a setup problem, not a busy model. */
+  constructor(
+    message?: string,
+    readonly keyRejected = false,
+  ) {
+    super(message);
+  }
+}
 
 type ContentPart =
   | { type: 'text'; text: string }
@@ -82,7 +90,8 @@ export async function chat(
     }
   }
   console.warn('[ai] all models failed:', failures.join('; '));
-  throw new AiUnavailable(failures.join('; '));
+  const keyRejected = failures.length > 0 && failures.every((f) => /: HTTP 40[13]$/.test(f));
+  throw new AiUnavailable(failures.join('; '), keyRejected);
 }
 
 /** Extracts the first JSON object from a model reply (tolerates ``` fences and chatter). */

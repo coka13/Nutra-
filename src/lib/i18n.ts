@@ -1135,6 +1135,10 @@ export const messages = {
   aiSave: ['Save', 'שמירה'],
   aiSaveAndAssign: ['Save and assign', 'שמירה ושיוך למתאמן'],
   aiRegenerate: ['Try again', 'ניסיון נוסף'],
+  aiKeyRejected: [
+    'The AI provider rejected the API key. An administrator needs to check the key in the admin panel (AI settings).',
+    'ספק ה-AI דחה את מפתח ה-API. מנהל צריך לבדוק את המפתח בפאנל הניהול (הגדרות AI).',
+  ],
   aiPlanFailed: [
     'The AI could not build a draft right now. Free models are sometimes busy — try again in a minute.',
     'ה-AI לא הצליח ליצור טיוטה כרגע. מודלים חינמיים עמוסים לפעמים — נסו שוב בעוד דקה.',

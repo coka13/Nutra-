@@ -983,7 +983,7 @@ function ExerciseCard({
           limits={PLAN_LIMITS.sets}
           onChange={(sets) => onPatch({ sets })}
         />
-        <div className="wb-reps">
+        <div className={`wb-reps${range ? ' ranged' : ''}`}>
           <Stepper
             label={range ? t('wbRepsMin') : t('reps')}
             value={row.reps}
@@ -992,27 +992,24 @@ function ExerciseCard({
               onPatch({ reps, ...(range && row.repsMax < reps ? { repsMax: reps } : {}) })
             }
           />
+          {/* New ranges can no longer be created; plans saved with one can still edit or drop it. */}
           {range && (
-            <Stepper
-              label={t('wbRepsMax')}
-              value={row.repsMax}
-              limits={[Math.max(1, row.reps), PLAN_LIMITS.reps[1]]}
-              onChange={(repsMax) => onPatch({ repsMax })}
-            />
+            <>
+              <Stepper
+                label={t('wbRepsMax')}
+                value={row.repsMax}
+                limits={[Math.max(1, row.reps), PLAN_LIMITS.reps[1]]}
+                onChange={(repsMax) => onPatch({ repsMax })}
+              />
+              <button
+                type="button"
+                className="wb-range-toggle"
+                onClick={() => onPatch({ repsMax: 0 })}
+              >
+                {t('wbSingleTarget')}
+              </button>
+            </>
           )}
-          <button
-            type="button"
-            className="wb-range-toggle"
-            aria-pressed={range}
-            onClick={() => {
-              if (range) return onPatch({ repsMax: 0 });
-              // 10 becomes 8–12: a range centred on the current target.
-              const reps = Math.max(1, row.reps - 2);
-              onPatch({ reps, repsMax: Math.min(PLAN_LIMITS.reps[1], reps + 4) });
-            }}
-          >
-            {t(range ? 'wbSingleTarget' : 'wbUseRange')}
-          </button>
         </div>
         <label className="wb-input">
           <span>

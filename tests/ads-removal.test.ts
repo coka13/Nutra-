@@ -17,12 +17,13 @@ test('ads return when a paid plan is no longer active', () => {
     assert.equal(member({ tier: 'PREMIUM', status }).ads, true);
 });
 
-test('AdSense stays off until valid IDs are set, and ads.txt follows the publisher', () => {
+test('AdSense uses the built-in IDs, env overrides them, and ads.txt follows the publisher', () => {
   const saved = { ...process.env };
   delete process.env.ADSENSE_CLIENT;
   delete process.env.ADSENSE_SLOT;
-  assert.equal(adsenseUnit(), null);
-  assert.equal(adsTxt(), '');
+  // The live publisher and display unit are built in, so no server configuration is needed.
+  assert.deepEqual(adsenseUnit(), { client: 'ca-pub-3933096627211440', slot: '1235891040' });
+  assert.equal(adsTxt(), 'google.com, pub-3933096627211440, DIRECT, f08c47fec0942fa0\n');
   Object.assign(process.env, { ADSENSE_CLIENT: 'ca-pub-1234567890123456', ADSENSE_SLOT: '1234567890' });
   assert.deepEqual(adsenseUnit(), { client: 'ca-pub-1234567890123456', slot: '1234567890' });
   assert.equal(adsTxt(), 'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');

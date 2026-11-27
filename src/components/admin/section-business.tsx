@@ -400,7 +400,7 @@ export function AiSection() {
               </div>
             </Card>
             <Card title={t('providers')}>
-              {!settings.defaultProvider && (
+              {!settings.defaultProvider && !data.providers.some((p) => p.enabled && p.configured) && (
                 <Notice>
                   {t('envProvider')}: {data.environment.configured ? `${data.environment.baseUrl} · ${data.environment.model}${data.environment.fallbacks ? ' → ' + data.environment.fallbacks : ''}` : t('off')}
                 </Notice>
@@ -460,7 +460,8 @@ export function AiSection() {
 
 function ProviderDialog({ provider, onClose, onSaved }: { provider: Provider; onClose: () => void; onSaved: () => void }) {
   const { t, api, toast, fail } = useAdmin();
-  const [form, setForm] = useState({ enabled: provider.enabled, textModel: provider.textModel || provider.suggestedModel, visionModel: provider.visionModel, inputCostPerM: provider.inputCostPerM, outputCostPerM: provider.outputCostPerM, apiKey: '', clearKey: false }),
+  // A provider being connected for the first time starts switched on.
+  const [form, setForm] = useState({ enabled: provider.enabled || !provider.configured, textModel: provider.textModel || provider.suggestedModel, visionModel: provider.visionModel, inputCostPerM: provider.inputCostPerM, outputCostPerM: provider.outputCostPerM, apiKey: '', clearKey: false }),
     [busy, setBusy] = useState(false),
     [probe, setProbe] = useState<string | null>(null);
   return (

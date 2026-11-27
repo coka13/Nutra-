@@ -2159,7 +2159,8 @@ async function handleRequest(req: NextRequest, path: string) {
             recognizeMeal(db, u.id, jpeg, lang, input.note),
           )
           .catch((error) => {
-            if (error instanceof AiUnavailable) throw new ApiError('aiPhotoFailed', 503);
+            if (error instanceof AiUnavailable)
+              throw new ApiError(error.keyRejected ? 'aiKeyRejected' : 'aiPhotoFailed', 503);
             throw error;
           });
         await db.aIInteraction.create({
@@ -2203,7 +2204,8 @@ async function handleRequest(req: NextRequest, path: string) {
               : draftMenu(db, u.id, input.prompt, profile, lang),
           )
           .catch((error) => {
-            if (error instanceof AiUnavailable) throw new ApiError('aiPlanFailed', 503);
+            if (error instanceof AiUnavailable)
+              throw new ApiError(error.keyRejected ? 'aiKeyRejected' : 'aiPlanFailed', 503);
             throw error;
           });
         await db.aIInteraction.create({

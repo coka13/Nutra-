@@ -1,4 +1,5 @@
 'use client';
+import { brandTokens } from '@/lib/brand-theme';
 import { useRestAlert } from './workout-rest';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -254,6 +255,23 @@ export function Workspace({
   useEffect(() => {
     document.documentElement.dataset.theme = state?.user.theme || 'light';
   }, [state?.user.theme]);
+  // White label: a coach sees their own brand color as the app accent, and so do their trainees.
+  const brandColor =
+    state?.user.role === 'COACH'
+      ? state.branding?.color
+      : state?.relationships.find((r) => r.clientId === state.user.id && r.status === 'ACTIVE')
+          ?.coach.branding?.color;
+  useEffect(() => {
+    const root = document.documentElement;
+    const tokens = brandColor
+      ? brandTokens(brandColor, state?.user.theme === 'dark' ? 'dark' : 'light')
+      : null;
+    if (!tokens) return;
+    for (const [name, value] of Object.entries(tokens)) root.style.setProperty(name, value);
+    return () => {
+      for (const name of Object.keys(tokens)) root.style.removeProperty(name);
+    };
+  }, [brandColor, state?.user.theme]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(''), 3500);
@@ -896,8 +914,10 @@ export function Workspace({
                 <Trophy size={28} strokeWidth={1.7} />
               </div>
               <p className="pr-exercise">{lang === 'he' ? record.nameHe : record.nameEn}</p>
-              <p className="pr-result" dir="ltr">
-                {number(record.weight)} {t('kg')} × {number(record.reps)}
+              {/* Same order as the rest of the app (reps × weight), in the page's own direction:
+                  forcing LTR made the bidi algorithm swap the numbers around the Hebrew unit. */}
+              <p className="pr-result">
+                {number(record.reps)} × {number(record.weight)} {t('kg')}
               </p>
               <button type="button" className="button primary" onClick={() => setRecord(null)}>
                 {t('keepGoing')}
