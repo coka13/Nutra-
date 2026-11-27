@@ -1540,7 +1540,10 @@ export const messages = {
   a11yFont: ['Readable font', 'גופן קריא'],
   a11yMotion: ['Stop animations', 'עצירת אנימציות'],
   a11yGrayscale: ['Grayscale', 'גווני אפור'],
-  a11yReset: ['Reset', 'איפוס'],
+  a11yReset: ['Reset all', 'איפוס הגדרות'],
+  a11yOn: ['On', 'פועל'],
+  a11yOff: ['Off', 'כבוי'],
+  a11yActive: ['active', 'פעילות'],
   termsRequired: [
     'Please confirm you are 18+ and accept the Terms of Use and Privacy Policy.',
     'יש לאשר שמלאו לכם 18 ולקבל את תנאי השימוש ומדיניות הפרטיות.',
