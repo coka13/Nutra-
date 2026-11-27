@@ -65,11 +65,15 @@ export async function resolveRoutes(kind: 'text' | 'vision'): Promise<AiRoute[]>
   const chosen = [config.ai.defaultProvider, ...config.ai.fallbackProviders].filter(
     (id, i, all): id is ProviderId => !!id && all.indexOf(id) === i,
   );
-  // No provider picked as default yet: an enabled provider with a key is still used, so
-  // connecting one in the admin panel works without a second trip to the routing settings.
-  const order = chosen.length
-    ? chosen
-    : rows.filter((row) => row.enabled && row.encryptedKey).map((row) => row.id as ProviderId);
+  // The chosen default and fallbacks go first. Any other enabled provider with a key comes after
+  // them, so a default left on a provider without a key (or no default at all) never hides a
+  // provider that is connected and switched on.
+  const order = [
+    ...chosen,
+    ...rows
+      .filter((row) => row.enabled && row.encryptedKey && !chosen.includes(row.id as ProviderId))
+      .map((row) => row.id as ProviderId),
+  ];
   const routes: AiRoute[] = [];
   for (const id of order) {
     const row = byId.get(id);

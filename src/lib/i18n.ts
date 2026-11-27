@@ -1076,8 +1076,8 @@ export const messages = {
     'מידע כללי בלבד. בדקו הצעות עם איש מקצוע לפי הצורך. תוכניות לעולם לא משתנות אוטומטית.',
   ],
   aiUnavailable: [
-    'AI is not configured. Add OPENAI_API_KEY on the server to enable it.',
-    'ה־AI אינו מחובר. יש להגדיר OPENAI_API_KEY בשרת כדי להפעילו.',
+    'AI is not available right now. An administrator can connect a provider and turn AI on in the admin panel.',
+    'ה־AI אינו זמין כרגע. מנהל יכול לחבר ספק ולהפעיל את ה־AI בפאנל הניהול.',
   ],
   consent: [
     'Adult status and explicit AI consent are required in Settings.',
