@@ -6,7 +6,7 @@ import { cancelPaypalSubscription, getPaypalSubscription, paypalConfigured, payp
 import { configSchema, getConfigVersion, publishConfig } from '@/lib/remote-config';
 import { activeGrantWhere } from '@/lib/access';
 import { encryptSecret, decryptSecret, secretHint } from '../crypto';
-import { invalidateProviders, probeProvider, PROVIDER_IDS, PROVIDER_PRESETS, type ProviderId } from '@/lib/ai-governance';
+import { aiReadiness, invalidateProviders, probeProvider, PROVIDER_IDS, PROVIDER_PRESETS, type ProviderId } from '@/lib/ai-governance';
 import { dateRange, isoDayOf, pagination, text, type Endpoint } from './types';
 import { realUserWhere } from '@/lib/demo';
 
@@ -212,6 +212,7 @@ export const aiEndpoints: Endpoint[] = [
       }
       return {
         settings: config.ai,
+        readiness: await aiReadiness(),
         providers: PROVIDER_IDS.map((id) => publicProvider(id, byId.get(id) ?? null)),
         environment: {
           configured: !!process.env.OPENAI_API_KEY,

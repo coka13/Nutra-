@@ -39,9 +39,15 @@ export type AiRoute = {
 let providerCache: { at: number; rows: Awaited<ReturnType<typeof db.aIProvider.findMany>> } | null = null;
 async function providers() {
   if (providerCache && Date.now() - providerCache.at < 15000) return providerCache.rows;
-  const rows = await db.aIProvider.findMany().catch(() => []);
-  providerCache = { at: Date.now(), rows };
-  return rows;
+  try {
+    const rows = await db.aIProvider.findMany();
+    providerCache = { at: Date.now(), rows };
+    return rows;
+  } catch (error) {
+    // Not cached: a failed read must not hide every provider for the next 15 seconds.
+    console.error('[ai] could not load providers:', error instanceof Error ? error.message : error);
+    return [];
+  }
 }
 export const invalidateProviders = () => {
   providerCache = null;
@@ -81,7 +87,9 @@ export async function resolveRoutes(kind: 'text' | 'vision'): Promise<AiRoute[]>
     let key: string;
     try {
       key = decryptSecret(row.encryptedKey);
-    } catch {
+    } catch (error) {
+      // Skipped, but never silently: this is the usual cause of "AI unavailable" with a key saved.
+      console.error(`[ai] saved key for ${id} cannot be decrypted:`, error instanceof Error ? error.message : error);
       continue;
     }
     const models = list(kind === 'vision' ? row.visionModel || row.textModel : row.textModel);
@@ -101,6 +109,28 @@ export async function resolveRoutes(kind: 'text' | 'vision'): Promise<AiRoute[]>
     inputCostPerM: pricing?.inputCostPerM ?? 0,
     outputCostPerM: pricing?.outputCostPerM ?? 0,
   }));
+}
+
+/**
+ * What real users get right now, for the admin panel: whether AI is switched on, whether each
+ * enabled provider's saved key can be decrypted on this server, and how many models are routable.
+ * A key that fails to decrypt is otherwise skipped silently, so this is where it shows up.
+ */
+export async function aiReadiness() {
+  invalidateProviders();
+  const [config, rows] = await Promise.all([getConfig(), providers()]);
+  const keys = rows
+    .filter((row) => row.enabled && row.encryptedKey)
+    .map((row) => {
+      try {
+        decryptSecret(row.encryptedKey!);
+        return { id: row.id, ok: true, error: '' };
+      } catch (error) {
+        return { id: row.id, ok: false, error: (error instanceof Error ? error.message : 'error').slice(0, 80) };
+      }
+    });
+  const routes = (await resolveRoutes('text')).length;
+  return { ready: config.ai.enabled && routes > 0, aiEnabled: config.ai.enabled, routes, keys };
 }
 
 export async function aiConfigured() {
@@ -175,7 +205,9 @@ export async function assertAiAllowed(userId: string, feature: AiFeature) {
 export async function probeProvider(baseUrl: string, key: string, provider: string) {
   const started = Date.now();
   try {
-    const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/models`, {
+    // OpenRouter's model list is public and answers 200 to any key; /key checks the key itself.
+    const path = provider === 'openrouter' ? '/key' : '/models';
+    const response = await fetch(`${baseUrl.replace(/\/+$/, '')}${path}`, {
       signal: AbortSignal.timeout(8000),
       headers: {
         Authorization: `Bearer ${key}`,

@@ -305,6 +305,7 @@ type Provider = { id: string; name: string; baseUrl: string; configured: boolean
 type AiData = {
   settings: AiSettings;
   providers: Provider[];
+  readiness: { ready: boolean; aiEnabled: boolean; routes: number; keys: { id: string; ok: boolean; error: string }[] };
   environment: { configured: boolean; model: string; fallbacks: string; baseUrl: string };
   month: { costUsd: number; requests: number };
   byModel: { provider: string; model: string; requests: number; promptTokens: number; completionTokens: number; costUsd: number; avgLatencyMs: number }[];
@@ -400,6 +401,22 @@ export function AiSection() {
               </div>
             </Card>
             <Card title={t('providers')}>
+              {/* What users get right now, as the server sees it (a saved key that can't be
+                  decrypted is otherwise skipped without any sign). */}
+              {data.readiness.ready ? (
+                <Notice>{t('aiReady').replace('{n}', String(data.readiness.routes))}</Notice>
+              ) : (
+                <Notice kind="danger">
+                  <strong>{t('aiNotReady')}</strong>
+                  {!data.readiness.aiEnabled && <div>{t('aiReadyOff')}</div>}
+                  {data.readiness.keys.filter((k) => !k.ok).map((k) => (
+                    <div key={k.id}>
+                      {data.providers.find((p) => p.id === k.id)?.name ?? k.id}: {t('aiKeyUnreadable')} ({k.error})
+                    </div>
+                  ))}
+                  {data.readiness.aiEnabled && !data.readiness.keys.length && <div>{t('aiNoProvider')}</div>}
+                </Notice>
+              )}
               {!settings.defaultProvider && !data.providers.some((p) => p.enabled && p.configured) && (
                 <Notice>
                   {t('envProvider')}: {data.environment.configured ? `${data.environment.baseUrl} · ${data.environment.model}${data.environment.fallbacks ? ' → ' + data.environment.fallbacks : ''}` : t('off')}
