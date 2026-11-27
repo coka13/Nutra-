@@ -3733,11 +3733,23 @@ html[data-theme='dark'] .weekday-chips button.active {
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
-  font-size: 11px;
-  color: #829578;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
 }
+.auth-bottom a,
 .auth-bottom .text-button {
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+.auth-bottom a:hover,
+.auth-bottom .text-button:hover {
+  text-decoration-color: currentColor;
 }
 .success-state {
   padding: 25px 0;
