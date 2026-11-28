@@ -258,19 +258,6 @@ export function Workspace({
   useEffect(() => {
     document.documentElement.dataset.theme = state?.user.theme || 'light';
   }, [state?.user.theme]);
-  // A coach sees their own brand color as the app accent. Trainees keep the default theme.
-  const brandColor = state?.user.role === 'COACH' ? state.branding?.color : undefined;
-  useEffect(() => {
-    const root = document.documentElement;
-    const tokens = brandColor
-      ? brandTokens(brandColor, state?.user.theme === 'dark' ? 'dark' : 'light')
-      : null;
-    if (!tokens) return;
-    for (const [name, value] of Object.entries(tokens)) root.style.setProperty(name, value);
-    return () => {
-      for (const name of Object.keys(tokens)) root.style.removeProperty(name);
-    };
-  }, [brandColor, state?.user.theme]);
   useEffect(() => {
     if (!toast) return;
     // Errors stay up longer: they need reading, and often acting on.
@@ -482,12 +469,19 @@ export function Workspace({
           {/* Independent users have no workspace to switch to or trainer to open. */}
           {(isCoach || sidebarBrand) && (
             <button
-              className={`workspace-switch${!isCoach && sidebarBrand?.branding?.color ? ' coach-branded' : ''}${!isCoach && sidebarBrand?.branding?.backgroundAt ? ' has-background' : ''}`}
+              className={`workspace-switch${!isCoach && sidebarBrand?.branding?.color ? ' coach-branded' : ''}${sidebarBrand?.branding?.color ? ' brand-framed' : ''}${sidebarBrand?.branding?.backgroundAt ? ' has-background' : ''}`}
               style={
-                isCoach || !sidebarBrand
+                !sidebarBrand
                   ? undefined
                   : ({
                       ...coachBrandStyle(state, sidebarBrand.id),
+                      // A thin brand-colored frame, for the coach's own card too.
+                      ...(sidebarBrand.branding?.color && {
+                        '--card-brand': brandTokens(
+                          sidebarBrand.branding.color,
+                          state.user.theme === 'dark' ? 'dark' : 'light',
+                        )?.['--green'],
+                      }),
                       ...(sidebarBrand.branding?.backgroundAt && {
                         '--brand-background': `url("${brandBackgroundUrl(sidebarBrand.id, sidebarBrand.branding.backgroundAt)}")`,
                       }),

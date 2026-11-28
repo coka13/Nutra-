@@ -1,5 +1,12 @@
 'use client';
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { usePathname } from 'next/navigation';
 import {
   Accessibility,
@@ -8,6 +15,7 @@ import {
   ChevronRight,
   CirclePause,
   Contrast,
+  EyeOff,
   Palette,
   RotateCcw,
   Type,
@@ -17,12 +25,19 @@ import {
 } from 'lucide-react';
 import { translate, type Language } from '@/lib/i18n';
 import {
+  A11Y_BUTTON_KEY,
   A11Y_STORAGE_KEY,
   applyA11y,
   defaultA11y,
+  defaultA11yButton,
   readA11y,
+  readA11yButton,
+  type A11yButton,
   type A11ySettings,
 } from '@/lib/accessibility';
+
+/** Pointer travel (px) before a press on the button counts as a drag instead of a click. */
+const DRAG_THRESHOLD = 6;
 
 type ToggleKey = 'contrast' | 'links' | 'font' | 'motion' | 'grayscale';
 const toggles: readonly [ToggleKey, string, LucideIcon][] = [
@@ -47,7 +62,22 @@ export function AccessibilityMenu() {
   const lang = usePageLanguage();
   const panel = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  useEffect(() => setSettings(readA11y()), []);
+  const [button, setButton] = useState<A11yButton>(defaultA11yButton);
+  const [panelTop, setPanelTop] = useState<number | null>(null);
+  const drag = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  useEffect(() => {
+    setSettings(readA11y());
+    setButton(readA11yButton());
+  }, []);
+  const saveButton = (next: A11yButton) => {
+    setButton(next);
+    try {
+      localStorage.setItem(A11Y_BUTTON_KEY, JSON.stringify(next));
+    } catch {
+      /* Position then lasts for this page view only. */
+    }
+  };
   useEffect(() => {
     applyA11y(settings);
     try {
@@ -106,6 +136,21 @@ export function AccessibilityMenu() {
       document.removeEventListener('pointerdown', onPointer);
     };
   }, [open]);
+  // Open the panel beside the button wherever it was dragged, kept inside the viewport.
+  // Phones dock the panel to the bottom in CSS instead.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const el = panel.current;
+      if (!el || window.matchMedia('(max-width: 520px)').matches) return setPanelTop(null);
+      const height = el.offsetHeight;
+      const centre = button.y * window.innerHeight;
+      setPanelTop(Math.max(12, Math.min(centre - height / 2, window.innerHeight - height - 12)));
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [open, button.y]);
   const t = (key: string) => translate(lang, key);
   if (path?.startsWith('/admin')) return null;
   const update = (patch: Partial<A11ySettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -127,21 +172,84 @@ export function AccessibilityMenu() {
     e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus();
   };
   const StatementArrow = lang === 'he' ? ChevronLeft : ChevronRight;
+  // Drag the button up and down either edge; letting go on the other half switches sides.
+  const onPointerDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    suppressClick.current = false;
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+    // Capture now: a quick flick leaves the button before the drag threshold is reached.
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    if (!d.moved) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < DRAG_THRESHOLD) return;
+      d.moved = true;
+      setOpen(false);
+    }
+    setButton((b) => ({
+      ...b,
+      side: e.clientX < window.innerWidth / 2 ? 'left' : 'right',
+      y: Math.max(0, Math.min(1, e.clientY / window.innerHeight)),
+    }));
+  };
+  const onPointerEnd = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    if (!d.moved) return;
+    suppressClick.current = true;
+    saveButton(button); // Already at the last pointer position from onPointerMove.
+  };
+  // Keyboard alternative to dragging: Alt + arrows moves the button.
+  const onTriggerKey = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!e.altKey) return;
+    const rtl = document.documentElement.dir === 'rtl';
+    const side = button.side ?? (rtl ? 'left' : 'right');
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const step = e.key === 'ArrowUp' ? -0.05 : 0.05;
+      saveButton({ ...button, side, y: Math.max(0, Math.min(1, button.y + step)) });
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      saveButton({ ...button, side: e.key === 'ArrowLeft' ? 'left' : 'right' });
+    } else return;
+    e.preventDefault();
+  };
+  const label = button.hidden
+    ? t('a11yShowButton')
+    : activeCount > 0
+      ? `${t('a11yMenu')} (${activeCount} ${t('a11yActive')})`
+      : t('a11yMenu');
   return (
-    <div className="a11y-menu">
+    <div
+      className="a11y-menu"
+      data-side={button.side ?? undefined}
+      style={{ ['--a11y-y' as string]: `${button.y * 100}%` }}
+    >
       <button
         ref={trigger}
         type="button"
-        className="a11y-trigger"
-        aria-expanded={open}
-        aria-controls="a11y-panel"
-        aria-label={
-          activeCount > 0 ? `${t('a11yMenu')} (${activeCount} ${t('a11yActive')})` : t('a11yMenu')
-        }
-        onClick={() => setOpen((value) => !value)}
+        className={button.hidden ? 'a11y-trigger is-tucked' : 'a11y-trigger'}
+        aria-expanded={button.hidden ? undefined : open}
+        aria-controls={button.hidden ? undefined : 'a11y-panel'}
+        aria-label={label}
+        title={button.hidden ? t('a11yShowButton') : undefined}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        onKeyDown={onTriggerKey}
+        onClick={() => {
+          if (suppressClick.current) {
+            suppressClick.current = false;
+            return;
+          }
+          if (button.hidden) saveButton({ ...button, hidden: false });
+          else setOpen((value) => !value);
+        }}
       >
-        <Accessibility size={22} aria-hidden="true" />
-        {activeCount > 0 && (
+        <Accessibility size={button.hidden ? 12 : 22} aria-hidden="true" />
+        {!button.hidden && activeCount > 0 && (
           <span className="a11y-trigger-badge" aria-hidden="true">
             {activeCount}
           </span>
@@ -152,6 +260,7 @@ export function AccessibilityMenu() {
           id="a11y-panel"
           ref={panel}
           className="a11y-panel"
+          style={panelTop === null ? undefined : { top: panelTop, transform: 'none' }}
           role="dialog"
           aria-labelledby="a11y-title"
         >
@@ -239,6 +348,19 @@ export function AccessibilityMenu() {
               <RotateCcw size={16} aria-hidden="true" />
               {t('a11yReset')}
             </button>
+            <button
+              type="button"
+              className="a11y-reset"
+              onClick={() => {
+                setOpen(false);
+                saveButton({ ...button, hidden: true });
+                trigger.current?.focus();
+              }}
+            >
+              <EyeOff size={16} aria-hidden="true" />
+              {t('a11yHideButton')}
+            </button>
+            <p className="a11y-hint">{t('a11yMoveHint')}</p>
             <a href="/accessibility" className="a11y-statement">
               {t('accessibilityStatement')}
               <StatementArrow size={16} aria-hidden="true" />

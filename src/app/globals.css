@@ -6083,7 +6083,7 @@ p.empty-meal {
   gap: 20px;
   margin-bottom: 20px;
   padding: 22px 24px;
-  border-inline-start: 5px solid var(--brand);
+  border: 1px solid var(--brand);
   background: color-mix(in srgb, var(--brand) 6%, var(--panel));
 }
 .coach-hero-logo {
@@ -8341,6 +8341,52 @@ html[data-theme='dark'] .a11y-menu {
 .a11y-trigger:hover {
   background: #0f4532;
 }
+/* Draggable (accessibility-menu.tsx): --a11y-y is the saved height, data-side a physical edge. */
+.a11y-trigger {
+  top: clamp(30px, var(--a11y-y, 50%), calc(100% - 30px));
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.a11y-menu[data-side='right'] .a11y-trigger {
+  inset-inline: auto;
+  right: 0;
+  border: 2px solid #fff;
+  border-right: 0;
+  border-radius: 12px 0 0 12px;
+}
+.a11y-menu[data-side='left'] .a11y-trigger {
+  inset-inline: auto;
+  left: 0;
+  border: 2px solid #fff;
+  border-left: 0;
+  border-radius: 0 12px 12px 0;
+}
+.a11y-menu[data-side='right'] .a11y-panel {
+  inset-inline: auto;
+  right: 52px;
+}
+.a11y-menu[data-side='left'] .a11y-panel {
+  inset-inline: auto;
+  left: 52px;
+}
+/* Hidden: tucked into a slim tab on the edge; pressing it brings the button back. */
+.a11y-trigger.is-tucked {
+  width: 14px;
+  height: 40px;
+  border-width: 1px;
+  opacity: 0.55;
+}
+.a11y-trigger.is-tucked:hover,
+.a11y-trigger.is-tucked:focus-visible {
+  opacity: 1;
+}
+.a11y-hint {
+  margin: 0;
+  color: var(--a11y-ink-2);
+  font-size: 12px;
+  text-align: center;
+}
 .a11y-trigger-badge {
   position: absolute;
   top: -6px;
@@ -8592,6 +8638,10 @@ html[data-theme='dark'] .a11y-switch[aria-checked='true'] .a11y-switch-thumb {
     inset-inline: 12px;
     width: auto;
   }
+  .a11y-menu[data-side] .a11y-panel {
+    left: 12px;
+    right: 12px;
+  }
 }
 /* Adjustments, applied as classes on <html> (lib/accessibility.ts). */
 html.a11y-zoom-1 {
@@ -8715,6 +8765,11 @@ html.a11y-motion *::after {
 .workspace-switch.coach-branded {
   background-color: var(--soft-green);
   border-color: color-mix(in srgb, var(--green) 30%, var(--line));
+}
+/* Any branded sidebar card (coach or trainee) is framed by the brand color, hover included. */
+.workspace-switch.brand-framed,
+.workspace-switch.brand-framed:hover {
+  border-color: var(--card-brand);
 }
 .workspace-switch.coach-branded strong {
   color: var(--green);

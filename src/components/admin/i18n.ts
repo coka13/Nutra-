@@ -4,7 +4,7 @@ export type AdminLang = 'en' | 'he';
 export const adminMessages = {
   console: ['Admin console', 'מסוף ניהול'],
   signIn: ['Sign in', 'כניסה'],
-  signInSub: ['Restricted to authorised Fitura+ administrators.', 'הגישה מותרת למנהלי Fitura+ מורשים בלבד.'],
+  signInSub: ['Restricted to authorised Fitura+ administrators.', 'הגישה מותרת למנהלי Fitura+\u200E מורשים בלבד.'],
   email: ['Email', 'אימייל'],
   password: ['Password', 'סיסמה'],
   continue: ['Continue', 'המשך'],

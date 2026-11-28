@@ -108,13 +108,10 @@ export function PublicPageClient({
     if (mode === 'pricing' || mode === 'features')
       document.getElementById('pricing')?.scrollIntoView({ block: 'start' });
   }, [mode]);
-  // Store badges stay hidden until the listings are published.
-  const storeLinks = (
-    [
-      [APP_STORE_URL, 'appStoreTop', 'App Store', 'apple'],
-      [GOOGLE_PLAY_URL, 'googlePlayTop', 'Google Play', 'play'],
-    ] as const
-  ).filter(([href]) => !isStorePlaceholder(href));
+  const storeLinks = [
+    [APP_STORE_URL, 'appStoreTop', 'App Store', 'apple'],
+    [GOOGLE_PLAY_URL, 'googlePlayTop', 'Google Play', 'play'],
+  ] as const;
   const plans = [
     {
       key: 'free',
@@ -412,6 +409,10 @@ export function PublicPageClient({
                         className="store-link"
                         href={href}
                         aria-label={`${t(top)} ${name}`}
+                        onClick={(e) => {
+                          // Listings aren't published yet.
+                          if (isStorePlaceholder(href)) e.preventDefault();
+                        }}
                       >
                         {icon === 'apple' ? (
                           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -473,7 +474,7 @@ export function PublicPageClient({
       ) : (
         <section className="auth-wrap">
           <div className="auth-story">
-            <span className="eyebrow">Fitura+ / YOUR NEXT CHAPTER</span>
+            <span className="eyebrow">Fitura+{'‎'} / YOUR NEXT CHAPTER</span>
             <h1>{t('welcome')}</h1>
             <p>{t('landingSub')}</p>
             <div className="decor-rings">
@@ -644,7 +645,7 @@ export function PublicPageClient({
         <button type="button" className="text-button" onClick={() => openCookieSettings()}>
           {t('cookieSettings')}
         </button>
-        <span>© {new Date().getFullYear()} Fitura+</span>
+        <span>© {new Date().getFullYear()} Fitura+{'‎'}</span>
       </footer>
     </div>
   );

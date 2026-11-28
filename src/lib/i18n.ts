@@ -158,7 +158,7 @@ export const messages = {
   ],
   maintenance: [
     'Fitura+ is briefly down for maintenance. Please try again soon.',
-    'Fitura+ בתחזוקה קצרה. נסו שוב בעוד מספר דקות.',
+    'Fitura+\u200E בתחזוקה קצרה. נסו שוב בעוד מספר דקות.',
   ],
   registrationClosed: [
     'New sign-ups are paused right now. Please try again later.',
@@ -171,8 +171,8 @@ export const messages = {
   aiDisabled: ['This AI feature is turned off right now.', 'תכונת ה־AI הזו כבויה כרגע.'],
   aiLimitReached: ['You have reached this month’s AI limit.', 'הגעתם למכסת ה־AI החודשית.'],
   aiBudgetReached: ['AI is paused until next month.', 'ה־AI מושהה עד החודש הבא.'],
-  updateAvailable: ['A new version of Fitura+ is available.', 'גרסה חדשה של Fitura+ זמינה.'],
-  updateRequired: ['Please update Fitura+ to keep using it.', 'יש לעדכן את Fitura+ כדי להמשיך.'],
+  updateAvailable: ['A new version of Fitura+ is available.', 'גרסה חדשה של Fitura+\u200E זמינה.'],
+  updateRequired: ['Please update Fitura+ to keep using it.', 'יש לעדכן את Fitura+\u200E כדי להמשיך.'],
   helpSupport: ['Help & support', 'עזרה ותמיכה'],
   supportSub: [
     'Questions, bug reports and ideas. Our team replies here.',
@@ -498,11 +498,11 @@ export const messages = {
   ],
   healthConsent: [
     'I agree to save my steps, calories burned, distance and workout data to my Fitura+ account.',
-    'אני מסכים/ה לשמור את נתוני הצעדים, הקלוריות, המרחק והאימונים בחשבון Fitura+\u200e שלי.',
+    'אני מסכים/ה לשמור את נתוני הצעדים, הקלוריות, המרחק והאימונים בחשבון Fitura+\u200E\u200e שלי.',
   ],
   healthPhoneOnly: [
     'Open this page in the Fitura+ iPhone or Android app to connect Apple Health or Health Connect.',
-    'פתחו עמוד זה באפליקציית Fitura+\u200E באייפון או באנדרואיד לחיבור Apple Health או Health Connect.',
+    'פתחו עמוד זה באפליקציית Fitura+\u200E\u200E באייפון או באנדרואיד לחיבור Apple Health או Health Connect.',
   ],
   stepDeduplication: [
     'Daily totals come from your health platform. Sync replaces them instead of adding them again.',
@@ -529,7 +529,7 @@ export const messages = {
   ],
   healthDevelopmentBuild: [
     'Health connections require an installed Fitura+ development or store build. They are unavailable in Expo Go.',
-    'חיבורי בריאות דורשים התקנה של גרסת פיתוח או גרסה מחנות של Fitura+\u200E. הם אינם זמינים ב־Expo Go.',
+    'חיבורי בריאות דורשים התקנה של גרסת פיתוח או גרסה מחנות של Fitura+\u200E\u200E. הם אינם זמינים ב־Expo Go.',
   ],
   healthNoData: [
     'No readable health data was returned. Check permissions and try again.',
@@ -976,8 +976,6 @@ export const messages = {
     'צלמו או בחרו תמונה של הצלחת. ה-AI מזהה את המזונות ומעריך כמויות, ושום דבר לא נרשם עד שתאשרו.',
   ],
   mealPhoto: ['Meal photo', 'תמונת הארוחה'],
-  photoNote: ['Anything the photo doesn’t show? (optional)', 'משהו שלא רואים בתמונה? (לא חובה)'],
-  photoNotePlaceholder: ['e.g. cooked with a spoon of olive oil', 'למשל: הוכן עם כף שמן זית'],
   analyzePhoto: ['Identify foods', 'זיהוי מזונות'],
   analyzingPhoto: ['Identifying… (up to a minute)', 'מזהה… (עד דקה)'],
   fromDatabase: ['Food database', 'מאגר המזון'],
@@ -1069,7 +1067,7 @@ export const messages = {
   ],
   fitness: ['Fitness', 'כושר'],
   copilot: ['Trainer copilot', 'עוזר למאמן'],
-  aiPlaceholder: ['Ask Fitura+…', 'שאלו את Fitura+\u200E…'],
+  aiPlaceholder: ['Ask Fitura+…', 'שאלו את Fitura+\u200E\u200E…'],
   send: ['Send', 'שליחה'],
   aiDisclaimer: [
     'General information only. Review suggestions with a qualified professional when needed. Plans are never changed automatically.',
@@ -1083,6 +1081,7 @@ export const messages = {
     'Adult status and explicit AI consent are required in Settings.',
     'נדרשים אישור בגירות והסכמה מפורשת ל־AI בהגדרות.',
   ],
+  reviewConsent: ['Approve AI use', 'לאישור שימוש ב־AI'],
   aiConsent: [
     'I agree to send my prompts to the AI provider.',
     'אני מסכים/ה לשליחת השאלות שלי לספק ה־AI.',
@@ -1092,7 +1091,7 @@ export const messages = {
   inviteClient: ['Invite client', 'הזמנת מתאמן'],
   inviteHint: [
     'Invite an existing Fitura+ account. Health records are shared only after acceptance.',
-    'הזמינו חשבון Fitura+\u200E קיים. נתוני בריאות ישותפו רק לאחר אישור.',
+    'הזמינו חשבון Fitura+\u200E\u200E קיים. נתוני בריאות ישותפו רק לאחר אישור.',
   ],
   email: ['Email', 'דוא״ל'],
   status: ['Status', 'סטטוס'],
@@ -1181,7 +1180,7 @@ export const messages = {
   coachInvite: ['You have a trainer invitation.', 'קיבלת הזמנה לאימון.'],
   appointmentBooked: ['A new session has been booked.', 'נקבעה פגישה חדשה.'],
   preferences: ['Your preferences', 'ההעדפות שלך'],
-  settingsSub: ['Make Fitura+ feel like you.', 'Fitura+\u200E בדרך שלך.'],
+  settingsSub: ['Make Fitura+ feel like you.', 'Fitura+\u200E\u200E בדרך שלך.'],
   goal: ['Your focus', 'המיקוד שלך'],
   strength: ['Build strength', 'בניית כוח'],
   mobility: ['Move comfortably', 'תנועה נוחה'],
@@ -1253,7 +1252,7 @@ export const messages = {
     'יש להצטרף למסלול המאמנים כדי להזמין מתאמנים.',
   ],
   adLabel: ['Ad', 'פרסומת'],
-  adPlusTitle: ['Enjoy Fitura+ without ads', 'Fitura+ בלי פרסומות'],
+  adPlusTitle: ['Enjoy Fitura+ without ads', 'Fitura+\u200E בלי פרסומות'],
   adPlusBody: ['Upgrade to Plus for $5/month.', 'שדרגו לפלוס ב־5$ לחודש.'],
   adPlusCta: ['See plans', 'למסלולים'],
   activatingPlan: [
@@ -1370,7 +1369,7 @@ export const messages = {
   ],
   independent: ['For myself', 'בשבילי'],
   coach: ['I’m a trainer', 'אני מאמן/ת'],
-  role: ['How will you use Fitura+?', 'איך תשתמשו ב־Fitura+\u200E?'],
+  role: ['How will you use Fitura+?', 'איך תשתמשו ב־Fitura+\u200E\u200E?'],
   backHome: ['Back to home', 'חזרה לבית'],
   landingBadge: ['YOUR WELLBEING, CONNECTED', 'הבריאות שלך, מחוברת'],
   featureWorkouts: ['Movement with intention', 'תנועה עם כוונה'],
@@ -1413,7 +1412,7 @@ export const messages = {
   privacyHealthTitle: ['2. Health and activity data', '2. מידע בריאותי ומידע על פעילות'],
   privacyHealthBody: [
     'We process health information you enter only with your explicit consent, which you give when you sign up and can withdraw by deleting your account. If you allow it on your phone, the app reads steps and workouts from Apple Health or Health Connect. This data is read only when you sync, is used only to show your activity in Fitura+, and is never used for advertising or sold. You can revoke access at any time in your phone settings.',
-    'אנו מעבדים מידע בריאותי שאתם מזינים רק בהסכמתכם המפורשת, שניתנת בהרשמה וניתן לבטלה באמצעות מחיקת החשבון. אם תאשרו זאת בטלפון, האפליקציה קוראת צעדים ואימונים מ-Apple Health או מ-Health Connect. המידע נקרא רק בעת סנכרון, משמש רק להצגת הפעילות שלכם ב-Fitura+, ולעולם אינו משמש לפרסום ואינו נמכר. ניתן לבטל את ההרשאה בכל עת בהגדרות הטלפון.',
+    'אנו מעבדים מידע בריאותי שאתם מזינים רק בהסכמתכם המפורשת, שניתנת בהרשמה וניתן לבטלה באמצעות מחיקת החשבון. אם תאשרו זאת בטלפון, האפליקציה קוראת צעדים ואימונים מ-Apple Health או מ-Health Connect. המידע נקרא רק בעת סנכרון, משמש רק להצגת הפעילות שלכם ב-Fitura+\u200E, ולעולם אינו משמש לפרסום ואינו נמכר. ניתן לבטל את ההרשאה בכל עת בהגדרות הטלפון.',
   ],
   privacyUseTitle: ['3. How we use it', '3. כיצד אנו משתמשים במידע'],
   privacyUseBody: [
@@ -1438,7 +1437,7 @@ export const messages = {
   privacyCookiesTitle: ['7. Cookies and local storage', '7. עוגיות ואחסון מקומי'],
   privacyCookiesBody: [
     'Fitura+ itself uses only cookies and browser storage that the service needs to work: a sign-in session cookie, your language choice, and small settings such as ad frequency limits. These do not track you across other sites and do not require consent. Google’s ad code, shown only on Free plans, may set its own cookies. Ads are personalized on our public pages only if you choose “Accept all” in the cookie banner; where the law requires it (for example in the EU and UK), Google also asks for your consent. You can change your choice at any time under “Cookie settings” at the bottom of the site.',
-    'Fitura+ עצמה משתמשת רק בעוגיות ובאחסון דפדפן הנחוצים לפעולת השירות: עוגיית חיבור לחשבון, בחירת השפה והגדרות קטנות כמו הגבלת תדירות פרסומות. הן אינן עוקבות אחריכם באתרים אחרים ואינן מצריכות הסכמה. קוד הפרסום של Google, שמוצג רק בתוכניות החינמיות, עשוי להגדיר עוגיות משלו. הפרסומות בעמודים הציבוריים מותאמות אישית רק אם תבחרו ״אישור הכול״ בהודעת העוגיות; במקומות שבהם החוק מחייב זאת (למשל באיחוד האירופי ובבריטניה), Google מבקשת גם היא את הסכמתכם. ניתן לשנות את הבחירה בכל עת ב״הגדרות עוגיות״ בתחתית האתר.',
+    'Fitura+\u200E עצמה משתמשת רק בעוגיות ובאחסון דפדפן הנחוצים לפעולת השירות: עוגיית חיבור לחשבון, בחירת השפה והגדרות קטנות כמו הגבלת תדירות פרסומות. הן אינן עוקבות אחריכם באתרים אחרים ואינן מצריכות הסכמה. קוד הפרסום של Google, שמוצג רק בתוכניות החינמיות, עשוי להגדיר עוגיות משלו. הפרסומות בעמודים הציבוריים מותאמות אישית רק אם תבחרו ״אישור הכול״ בהודעת העוגיות; במקומות שבהם החוק מחייב זאת (למשל באיחוד האירופי ובבריטניה), Google מבקשת גם היא את הסכמתכם. ניתן לשנות את הבחירה בכל עת ב״הגדרות עוגיות״ בתחתית האתר.',
   ],
   privacyRetentionTitle: ['8. How long we keep it', '8. כמה זמן אנו שומרים את המידע'],
   privacyRetentionBody: [
@@ -1458,7 +1457,7 @@ export const messages = {
   privacyAgeTitle: ['11. Age', '11. גיל'],
   privacyAgeBody: [
     'Fitura+ is only for people aged 18 and over. We do not knowingly collect data from anyone under 18, and we delete such accounts when we learn of them.',
-    'Fitura+ מיועדת רק לבני 18 ומעלה. איננו אוספים ביודעין מידע ממי שטרם מלאו לו 18, ונמחק חשבונות כאלה כשנדע עליהם.',
+    'Fitura+\u200E מיועדת רק לבני 18 ומעלה. איננו אוספים ביודעין מידע ממי שטרם מלאו לו 18, ונמחק חשבונות כאלה כשנדע עליהם.',
   ],
   privacyChangesTitle: ['12. Changes', '12. שינויים'],
   privacyChangesBody: [
@@ -1475,7 +1474,7 @@ export const messages = {
   accessibilityCommitmentTitle: ['Our commitment', 'המחויבות שלנו'],
   accessibilityCommitmentBody: [
     'Fitura+ wants everyone, including people with disabilities, to be able to use the website and app independently and with ease. We work to make the service accessible and keep improving it.',
-    'ב-Fitura+ אנו רוצים שכל אחד ואחת, כולל אנשים עם מוגבלות, יוכלו להשתמש באתר ובאפליקציה באופן עצמאי ונוח. אנו פועלים להנגשת השירות וממשיכים לשפר אותו.',
+    'ב-Fitura+\u200E אנו רוצים שכל אחד ואחת, כולל אנשים עם מוגבלות, יוכלו להשתמש באתר ובאפליקציה באופן עצמאי ונוח. אנו פועלים להנגשת השירות וממשיכים לשפר אותו.',
   ],
   accessibilityLevelTitle: ['Accessibility level', 'רמת הנגישות'],
   accessibilityLevelBody: [
@@ -1506,7 +1505,7 @@ export const messages = {
   ],
   healthConsentLabel: [
     'I explicitly consent to Fitura+ processing the health information I enter (such as body measurements, physical limitations, diet, workouts and progress photos) to provide the service, as described in the Privacy Policy.',
-    'אני נותן/ת הסכמה מפורשת לכך ש-Fitura+ תעבד את המידע הבריאותי שאזין (כמו מדדי גוף, מגבלות גופניות, תזונה, אימונים ותמונות התקדמות) לצורך מתן השירות, כמתואר במדיניות הפרטיות.',
+    'אני נותן/ת הסכמה מפורשת לכך ש-Fitura+\u200E תעבד את המידע הבריאותי שאזין (כמו מדדי גוף, מגבלות גופניות, תזונה, אימונים ותמונות התקדמות) לצורך מתן השירות, כמתואר במדיניות הפרטיות.',
   ],
   healthConsentRequired: [
     'Please consent to the processing of your health information to continue.',
@@ -1515,11 +1514,11 @@ export const messages = {
   consentTitle: ['Please review and confirm', 'נא לעיין ולאשר'],
   consentUpdatedIntro: [
     'We updated our Terms of Use and Privacy Policy. Please review them and confirm to continue using Fitura+.',
-    'עדכנו את תנאי השימוש ואת מדיניות הפרטיות. נא לעיין בהם ולאשר כדי להמשיך להשתמש ב-Fitura+.',
+    'עדכנו את תנאי השימוש ואת מדיניות הפרטיות. נא לעיין בהם ולאשר כדי להמשיך להשתמש ב-Fitura+\u200E.',
   ],
   consentHealthIntro: [
     'Fitura+ works with health information, so we need your explicit consent before you continue.',
-    'Fitura+ עובדת עם מידע בריאותי, ולכן נדרשת הסכמתכם המפורשת לפני שתמשיכו.',
+    'Fitura+\u200E עובדת עם מידע בריאותי, ולכן נדרשת הסכמתכם המפורשת לפני שתמשיכו.',
   ],
   consentWithdraw: [
     'You can withdraw your consent at any time by deleting your account in settings.',
@@ -1545,6 +1544,12 @@ export const messages = {
   a11yOn: ['On', 'פועל'],
   a11yOff: ['Off', 'כבוי'],
   a11yActive: ['active', 'פעילות'],
+  a11yHideButton: ['Hide button', 'הסתרת הכפתור'],
+  a11yShowButton: ['Show accessibility button', 'הצגת כפתור הנגישות'],
+  a11yMoveHint: [
+    'Drag the button to move it along either edge.',
+    'אפשר לגרור את הכפתור לאורך אחד מצידי המסך.',
+  ],
   termsRequired: [
     'Please confirm you are 18+ and accept the Terms of Use and Privacy Policy.',
     'יש לאשר שמלאו לכם 18 ולקבל את תנאי השימוש ומדיניות הפרטיות.',
@@ -1553,7 +1558,7 @@ export const messages = {
   termsAgeTitle: ['1. Age requirement', '1. גיל מינימלי'],
   termsAgeBody: [
     'You must be at least 18 years old to create an account or use Fitura+. By signing up you confirm that you are 18 or older. Accounts found to belong to anyone under 18 will be closed.',
-    'השימוש ב-Fitura+ ופתיחת חשבון מותרים רק למי שמלאו לו 18 שנים. בהרשמה אתם מאשרים שמלאו לכם 18. חשבון שיתברר כי שייך למי שטרם מלאו לו 18 ייסגר.',
+    'השימוש ב-Fitura+\u200E ופתיחת חשבון מותרים רק למי שמלאו לו 18 שנים. בהרשמה אתם מאשרים שמלאו לכם 18. חשבון שיתברר כי שייך למי שטרם מלאו לו 18 ייסגר.',
   ],
   termsAccountTitle: ['2. Your account', '2. החשבון שלכם'],
   termsAccountBody: [
@@ -1568,7 +1573,7 @@ export const messages = {
   termsCoachesTitle: ['4. Trainers', '4. מאמנים'],
   termsCoachesBody: [
     'Trainers are independent and are solely responsible for the plans, guidance and services they provide to their clients, including any required qualifications, insurance and client consent. Fitura+ provides the tools only.',
-    'המאמנים פועלים באופן עצמאי ונושאים באחריות הבלעדית לתוכניות, להכוונה ולשירותים שהם מספקים למתאמנים, כולל הכשרה, ביטוח והסכמת המתאמנים כנדרש. Fitura+ מספקת את הכלים בלבד.',
+    'המאמנים פועלים באופן עצמאי ונושאים באחריות הבלעדית לתוכניות, להכוונה ולשירותים שהם מספקים למתאמנים, כולל הכשרה, ביטוח והסכמת המתאמנים כנדרש. Fitura+\u200E מספקת את הכלים בלבד.',
   ],
   termsContentTitle: ['5. Acceptable use', '5. שימוש הולם'],
   termsContentBody: [
@@ -1588,12 +1593,12 @@ export const messages = {
   termsTerminationTitle: ['8. Termination', '8. סיום שימוש'],
   termsTerminationBody: [
     'You may stop using Fitura+ at any time. We may suspend or close accounts that breach these terms.',
-    'ניתן להפסיק להשתמש ב-Fitura+ בכל עת. אנו רשאים להשעות או לסגור חשבונות שמפרים את התנאים האלה.',
+    'ניתן להפסיק להשתמש ב-Fitura+\u200E בכל עת. אנו רשאים להשעות או לסגור חשבונות שמפרים את התנאים האלה.',
   ],
   termsLiabilityTitle: ['9. Limitation of liability', '9. הגבלת אחריות'],
   termsLiabilityBody: [
     'The service is provided “as is”. To the extent permitted by law, Fitura+ is not liable for injury, loss or damages arising from your use of the service or from guidance provided by trainers. This does not exclude liability that cannot be excluded by law.',
-    'השירות ניתן כמות שהוא (AS IS). ככל שהדין מתיר, Fitura+ אינה אחראית לפציעה, אובדן או נזק הנובעים מהשימוש בשירות או מהכוונה שניתנה על ידי מאמנים. אין בכך כדי לפטור מאחריות שלא ניתן לפטור ממנה לפי דין.',
+    'השירות ניתן כמות שהוא (AS IS). ככל שהדין מתיר, Fitura+\u200E אינה אחראית לפציעה, אובדן או נזק הנובעים מהשימוש בשירות או מהכוונה שניתנה על ידי מאמנים. אין בכך כדי לפטור מאחריות שלא ניתן לפטור ממנה לפי דין.',
   ],
   termsChangesTitle: ['10. Changes', '10. שינויים'],
   termsChangesBody: [

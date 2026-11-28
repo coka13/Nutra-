@@ -20,7 +20,6 @@ export function MealPhotoModal({
   const [meal, setMeal] = useState(initialMeal);
   const [image, setImage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [note, setNote] = useState('');
   const [items, setItems] = useState<PhotoFoodDraft[] | null>(null);
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState<'encode' | 'analyze' | 'save' | null>(null);
@@ -51,7 +50,7 @@ export function MealPhotoModal({
     setBusy('analyze');
     setError('');
     try {
-      const { draft } = await api<{ draft: PhotoDraft }>('ai/photo', { image, note });
+      const { draft } = await api<{ draft: PhotoDraft }>('ai/photo', { image });
       setItems(draft.items);
       setNotes(draft.notes);
       if (!draft.items.length) setError('noFoodInPhoto');
@@ -123,16 +122,6 @@ export function MealPhotoModal({
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
-              {t('photoNote')}
-              <input
-                value={note}
-                maxLength={300}
-                placeholder={t('photoNotePlaceholder')}
-                onChange={(e) => setNote(e.target.value)}
-                disabled={!!busy}
-              />
             </label>
           </div>
           {items === null || !items.length ? (

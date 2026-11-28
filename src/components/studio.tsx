@@ -7,7 +7,7 @@ import { ClientProfile } from './client-profile';
 import { LoadingCards } from './loading-cards';
 import { AiPlanner } from './ai-planner';
 import { isInternationalPhone } from '@/lib/phone';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -619,12 +619,11 @@ export function MessagesView() {
   );
 }
 export function AssistantView() {
-  const { state, t } = useNutri();
-  const enabled =
-    state.entitlements.ai &&
-    state.integrations.ai &&
-    state.profile?.adult &&
-    state.profile.aiConsent;
+  const { state, t, navigate } = useNutri();
+  // Coaches have no birth year to derive age from; a coaching account counts as adult.
+  const consented =
+    (state.user.role === 'COACH' || state.profile?.adult) && state.profile?.aiConsent;
+  const enabled = state.entitlements.ai && state.integrations.ai && consented;
   return (
     <>
       <PageHeading title={t('assistant')} subtitle={t('assistantSub')} />
@@ -642,10 +641,13 @@ export function AssistantView() {
             <p>{t('aiUnavailable')}</p>
           </div>
         )}
-        {(!state.profile?.adult || !state.profile.aiConsent) && (
+        {state.entitlements.ai && !consented && (
           <div className="integration-notice">
             <Shield size={18} />
             <p>{t('consent')}</p>
+            <button className="button" onClick={() => navigate('settings#ai-consent')}>
+              {t('reviewConsent')}
+            </button>
           </div>
         )}
         <AiPlanner enabled={!!enabled} />
@@ -662,6 +664,13 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
     [resetConfirmed, setResetConfirmed] = useState(false);
   const p = state.profile;
   const isCoach = state.user.role === 'COACH';
+  // Arriving from the assistant's consent notice: bring the AI consent checkbox into view.
+  const consentBox = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (location.hash !== '#ai-consent' || !consentBox.current) return;
+    consentBox.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    consentBox.current.focus({ preventScroll: true });
+  }, []);
   const thisYear = new Date().getFullYear();
   const birthYears = Array.from({ length: thisYear - 1920 + 1 }, (_, i) => 1920 + i);
   const latestWeight = weightMetrics(state.progress, '').latest?.value;
@@ -708,7 +717,9 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
             theme: f.get('theme'),
             timezone: f.get('timezone'),
             // Age is derived from the birth year; without one, keep the stored answer.
-            adult: f.get('birthYear')
+            adult: isCoach
+              ? true
+              : f.get('birthYear')
               ? thisYear - Number(f.get('birthYear')) >= 18
               : (p?.adult ?? false),
             aiConsent: f.get('aiConsent') === 'on',
@@ -854,10 +865,15 @@ export function SettingsView({ onboarding = false }: { onboarding?: boolean }) {
               </label>
             </section>
             {state.entitlements.ai ? (
-              <section className="panel">
+              <section className="panel" id="ai-consent">
                 <h2>{t('privacy')}</h2>
                 <label className="checkbox-label">
-                  <input type="checkbox" name="aiConsent" defaultChecked={p?.aiConsent || false} />
+                  <input
+                    type="checkbox"
+                    name="aiConsent"
+                    defaultChecked={p?.aiConsent || false}
+                    ref={consentBox}
+                  />
                   {t('aiConsent')}
                 </label>
                 <p className="muted small-copy">{t('aiDisclaimer')}</p>
@@ -1605,7 +1621,8 @@ export function BrandingView() {
           className={`brand-preview panel ${backgroundAt ? 'has-background' : ''}`}
           style={
             {
-              borderTop: `5px solid ${color}`,
+              // The card is framed by the brand color, as on the coach card trainees see.
+              borderColor: color,
               ...(backgroundAt && {
                 '--brand-background': `url("${brandBackgroundUrl(state.user.id, backgroundAt)}")`,
               }),
@@ -1627,7 +1644,7 @@ export function BrandingView() {
           )}
           <h2>{business}</h2>
           <p>{welcome}</p>
-          <span className="muted small-copy">Fitura+</span>
+          <span className="muted small-copy">Fitura+{'‎'}</span>
         </section>
       </div>
     </>

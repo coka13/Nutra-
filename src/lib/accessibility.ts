@@ -34,6 +34,31 @@ export function readA11y(): A11ySettings {
   }
 }
 
+/** Where the floating button sits and whether it is tucked away; separate from the adjustments. */
+export const A11Y_BUTTON_KEY = 'fitura-a11y-button';
+export type A11yButton = {
+  /** Physical side; null follows the reading direction (inline end). */
+  side: 'left' | 'right' | null;
+  /** Vertical centre as a fraction of the viewport height. */
+  y: number;
+  /** Tucked into a thin tab on the edge. */
+  hidden: boolean;
+};
+export const defaultA11yButton: A11yButton = { side: null, y: 0.5, hidden: false };
+
+export function readA11yButton(): A11yButton {
+  try {
+    const saved = JSON.parse(localStorage.getItem(A11Y_BUTTON_KEY) || '{}');
+    return {
+      side: saved.side === 'left' || saved.side === 'right' ? saved.side : null,
+      y: typeof saved.y === 'number' && saved.y >= 0 && saved.y <= 1 ? saved.y : 0.5,
+      hidden: saved.hidden === true,
+    };
+  } catch {
+    return defaultA11yButton;
+  }
+}
+
 export function applyA11y(settings: A11ySettings) {
   const root = document.documentElement.classList;
   root.toggle('a11y-zoom-1', settings.zoom === 1);

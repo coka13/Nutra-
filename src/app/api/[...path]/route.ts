@@ -1030,7 +1030,9 @@ async function handleRequest(req: NextRequest, path: string) {
         await db.$transaction(async (tx) => {
           const birthYear =
             profile.birthYear === undefined ? u.profile?.birthYear : profile.birthYear;
-          if (birthYear && new Date().getUTCFullYear() - birthYear < 18) {
+          // Coaches have no birth year field; running a coaching business implies an adult.
+          if (u.role === 'COACH') profile.adult = true;
+          else if (birthYear && new Date().getUTCFullYear() - birthYear < 18) {
             profile.adult = false;
             profile.aiConsent = false;
           }
@@ -2188,7 +2190,8 @@ async function handleRequest(req: NextRequest, path: string) {
             mode: z.enum(['fitness', 'nutrition', 'copilot']),
           })
           .parse(body);
-        if (!u.profile?.adult || !u.profile.aiConsent) throw new ApiError('consent', 403);
+        if (!(u.role === 'COACH' || u.profile?.adult) || !u.profile?.aiConsent)
+          throw new ApiError('consent', 403);
         if (mode === 'copilot' && u.role !== 'COACH') throw new ApiError('forbidden', 403);
         if (!(await planAccess(u)).ai) throw new ApiError('aiPlanRequired', 403);
         if (!(await aiConfigured())) throw new ApiError('aiUnavailable', 503);
@@ -2224,7 +2227,8 @@ async function handleRequest(req: NextRequest, path: string) {
             note: z.string().trim().max(300).default(''),
           })
           .parse(body);
-        if (!u.profile?.adult || !u.profile.aiConsent) throw new ApiError('consent', 403);
+        if (!(u.role === 'COACH' || u.profile?.adult) || !u.profile?.aiConsent)
+          throw new ApiError('consent', 403);
         if (!(await planAccess(u)).ai) throw new ApiError('aiPlanRequired', 403);
         if (!(await aiConfigured())) throw new ApiError('aiUnavailable', 503);
         await assertAiAllowed(u.id, 'photo');
@@ -2262,7 +2266,8 @@ async function handleRequest(req: NextRequest, path: string) {
             clientId: id.nullable().optional(),
           })
           .parse(body);
-        if (!u.profile?.adult || !u.profile.aiConsent) throw new ApiError('consent', 403);
+        if (!(u.role === 'COACH' || u.profile?.adult) || !u.profile?.aiConsent)
+          throw new ApiError('consent', 403);
         if (!(await planAccess(u)).ai) throw new ApiError('aiPlanRequired', 403);
         if (!(await aiConfigured())) throw new ApiError('aiUnavailable', 503);
         await assertAiAllowed(u.id, 'plan');
