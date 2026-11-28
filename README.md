@@ -1,83 +1,314 @@
+<div align="center">
+
 # Fitura+
 
-The exercise library opens **1,086 exercises with demonstrations**, covering all **1,029 SmartWorkout animations**, organized by individual muscle groups: biceps, triceps, chest, lats, upper/lower back, shoulders, quads, hamstrings, glutes, calves and more. It includes preacher-bench, machine, barbell, dumbbell and cable variations. Search for “preacher chair” or “preacher bench” to find preacher curls. The workout builder offers the same demonstrated catalog and saves selected exercises automatically; no manual import is required.
+**Workouts, nutrition and progress in one place, for people who train alone and for trainers who coach clients.**
 
-Demonstrations and thumbnails use one provider: [SmartWorkout](https://smartworkout.app/en/exercise-library). The full 1,029-entry animation index is exposed through matched legacy exercises and new source-native entries with instructions and bundled Hebrew translations. Matching handles name word order, plurals and equivalent spellings while preserving equipment, grip and variation qualifiers. Every new library/builder choice has a demonstration. Unsupported exercises are excluded from library responses, saved routine displays, generated workouts and newly started sessions. Saving or importing an unsupported exercise is rejected by the server. Finished workout history remains intact. Saved exercise names are resolved by the demonstration endpoint as well as their IDs. Animations loop, provide play/pause controls, pause in hidden tabs and honor reduced motion; playback errors offer retry. No source captions or links appear beneath demonstrations.
+English and Hebrew (full RTL) · Light and dark themes · Web, Android and iPhone
 
-Videos and posters load directly from SmartWorkout and require internet access and continued upstream availability. This is a public-media integration, not a claim that SmartWorkout offers an open-license redistributable database. Old bundled media and notices remain in the repository but are no longer displayed. All 2,066 existing names and instructions retain their bundled Hebrew translations and stable IDs.
+![Fitura+ home page](docs/images/home.png)
 
-**Steps & aerobics** supports daily step totals, manual aerobic logs (type, duration and optional distance), and explicit fitness sync from Apple Health/Android Health Connect in a newly built phone app. See [mobile setup and limitations](mobile/README.md#steps-and-aerobic-activity). Imported data is account-scoped, repeat syncs do not add the daily steps again, and account export/deletion includes these records.
+</div>
 
-Run `npm run catalog:smartworkout` to refresh the public animation URL index, then `npm run catalog:thumbnails` and `npm run catalog:gifs` to prepare the local previews and looping animations before deployment. The GIF build is resumable and uses the light video variants; no runtime conversion is needed for indexed exercises. The first catalog page is supplied with the app shell, its animations load in the background, and the library preloads the next page. `npm run catalog:translate` rebuilds changed public catalog translations and reapplies the terminology glossary; runtime translation does not require a network call. Legacy media restore scripts remain available for archival assets.
+---
 
-The Android and iPhone app lives in [mobile](mobile/README.md). Start the Fitura+ backend and Expo preview to use it on a phone. The mobile app shares accounts, workouts and coaching records with this service.
+## Contents
 
-A bilingual fitness and coaching application built from an empty repository. Next.js 16 App Router, React 19, TypeScript, Prisma, SQLite, Zod, Lucide and Recharts. All shipped tracking and coaching workflows use the database; the demo is explicitly labeled sample data.
+- [What it does](#what-it-does)
+- [Quick start](#quick-start)
+- [How to use it](#how-to-use-it)
+  - [Train: build and log a workout](#train-build-and-log-a-workout)
+  - [Find exercises](#find-exercises)
+  - [Eat: log food and follow a meal plan](#eat-log-food-and-follow-a-meal-plan)
+  - [Track progress](#track-progress)
+  - [Coach clients](#coach-clients)
+  - [Language, theme and accessibility](#language-theme-and-accessibility)
+- [Using the API](#using-the-api)
+- [Configuration](#configuration)
+- [npm scripts](#npm-scripts)
+- [Project layout](#project-layout)
+- [Testing](#testing)
+- [Mobile app](#mobile-app)
+- [Admin console](#admin-console)
+- [Deployment](#deployment)
+- [Data sources and licensing](#data-sources-and-licensing)
+- [Keeping this README current](#keeping-this-readme-current)
 
-## Run locally
+---
 
-Use Node.js 24 LTS and npm. From this directory:
+## What it does
+
+| Area | Highlights |
+| --- | --- |
+| **Workouts** | Step-by-step workout builder, rep ranges, supersets/groups, templates, weekly schedule, guided routine generator, live workout with set logging and automatic rest timer, personal records. |
+| **Exercise library** | 1,029 exercises with looping animations, grouped by muscle (biceps, lats, quads, glutes…), filtered by body part and equipment, in English and Hebrew. |
+| **Nutrition** | Food diary by meal, ~12,000-food local database (Hebrew + English), custom foods, recipes, water, copy yesterday, meal plans and dated menus, meal-photo recognition (AI). |
+| **Progress** | Bodyweight with monthly trend, strength-volume charts, consistency calendar, steps and aerobic activity, JSON export of all your data. |
+| **Coaching** | Client invitations with explicit consent, live view of client workouts, assigned workout and meal plans, messages, calendar and appointments, packages, client payments, monthly business report, your own brand logo, colour and background. |
+| **AI** | Workout and menu drafts, fitness/nutrition questions. Works with OpenAI or any OpenAI-compatible provider (OpenRouter free models included). Trainees must confirm they are 18+ and opt in; trainers only opt in (running a coaching business implies an adult). Never changes your records on its own. |
+| **Plans** | Free (with ads), Plus $5/month (no ads), Trainer from $30/month. Stripe and PayPal checkout. |
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/dashboard.png" alt="Personal dashboard"><br><sub><b>Dashboard</b>: this week's workouts, minutes, volume and energy at a glance.</sub></td>
+    <td width="50%"><img src="docs/images/coach-dashboard.png" alt="Trainer dashboard"><br><sub><b>Trainer dashboard</b>: clients, plans, who is training right now.</sub></td>
+  </tr>
+</table>
+
+---
+
+## Quick start
+
+You need **Node.js 24 LTS** and npm.
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item .env.example .env   # macOS/Linux: cp .env.example .env
 npm ci
-npm run setup
+npm run setup                 # Prisma client, migrations, seed data, food database
 npm run dev
 ```
 
-Open [Fitura+](http://localhost:3000). Choose **Explore the demo** on the sign-in page, or register an independent or coach account. New users complete onboarding. The guided routine generator creates an editable template using your experience, equipment, frequency and session length. This is deterministic programming logic, not AI inference or individualized medical advice.
+Open <http://localhost:3000> and either:
 
-Development-only sample accounts:
+- click **Explore the demo** on the sign-in page, or
+- sign in with a seeded development account:
 
-- Personal: `alex@nutri.local` / `NutriDemo2026!`
-- Coach: `coach@nutri.local` / `NutriCoach2026!`
+| Account | Email | Password |
+| --- | --- | --- |
+| Personal (trainee) | `alex@nutri.local` | `NutriDemo2026!` |
+| Trainer (coach) | `coach@nutri.local` | `NutriCoach2026!` |
 
-The one-click demo works everywhere. In development it signs in to the seeded shared `alex@nutri.local` account (seeded only with `DEMO_ENABLED=true` outside production). In production every visitor gets a private, temporary demo account with sample records, deleted after 24 hours (`src/lib/demo.ts`); set `DEMO_ENABLED=false` to turn the demo off. Never deploy a database copied from development.
+These accounts exist only in development with `DEMO_ENABLED=true`. In production, **Explore the demo** creates a private, temporary account for each visitor that is deleted after 24 hours (`src/lib/demo.ts`); set `DEMO_ENABLED=false` to turn it off.
 
-SQLite data lives at `prisma/dev.db` by default and survives application restarts. Do not delete it to restart the app. The schema and migrations are committed; the local database and credentials are ignored. `npm run db:migrate` creates the database file if necessary and applies migrations. Stop the running server before `prisma generate` on Windows because the Prisma DLL may be locked.
+> [!NOTE]
+> Data lives in SQLite at `prisma/dev.db` and survives restarts. Don't delete it to "reset" the app. On Windows, stop the dev server before running `prisma generate`, because the Prisma engine DLL is locked while it runs.
 
-## What works
+---
 
-- Registration, sign-in/out, password hashing, expiring database sessions, settings and onboarding.
-- English/Hebrew UI and RTL layouts, persisted language and light/dark theme, responsive navigation.
-- Bilingual exercise library with equipment and muscle filters, technique demonstrations, coaching cues and alternatives. Demonstrations use hosted SmartWorkout animations.
-- Workout creation/editing, drag ordering plus keyboard-accessible reorder buttons, sets/reps/rest/load, groups, templates, duplication, assignments and guided schedules.
-- Live workout and rest clocks, automatic rest and exercise advancement, weight/reps logging, workout summaries, and per-exercise personal records and charts. Rest alerts are scheduled locally by the mobile app.
-- Food diary with gram calculations, custom foods, day selection, copying yesterday, water logs, recipes and coach meal plans and dated menus with remote updates and template duplication.
-- Progress entries, strength-volume charts, check-in charts, consistency calendar and personal JSON export.
-- Coach invitations, explicit client consent/revocation, client search/status filters, private coaching notes/tags, live workout and adherence views, consent-controlled progress photos, program assignment and messaging with read indicators.
-- Appointment creation, UTC persistence, localized time-zone display, transaction-based conflict checks, cancellations and attendance.
-- Server-side text AI adapter with consent/adult gates, model configuration, rate limits, translated prompts and no automatic record changes. Requires a provider key; live provider behavior has not been tested here.
-- Coach branding configuration/preview, in-app notifications, free subscription records, server-enforced client capacity, admin user/flag read access, account deletion and audit events.
+## How to use it
 
-See [the precise feature report](docs/FEATURES.md) for partial and pending requirements. This is a runnable foundation with substantial end-to-end workflows, **not the fully complete commercial platform in the master brief**.
+### Train: build and log a workout
 
-## Validation
+![My workouts](docs/images/workouts.png)
+
+1. Open **My workouts**.
+2. Either click **Build my guided routine** (creates an editable plan from your onboarding answers: experience, equipment, days per week, session length) or **Create workout**.
+3. The builder has three steps: **Details → Exercises → Review**. Pick a quick name (Push day, Leg day…), the weekday, then add exercises with sets, reps or a rep range, rest and load. Tick **Save as template** to reuse it.
+
+   ![Workout builder](docs/images/workout-builder.png)
+
+4. Press **Start workout**. Log weight and reps for each set; the rest timer starts on its own and moves you to the next exercise. You can pause, and an unfinished workout shows up as **Resume session**, even after a page refresh.
+5. When you finish, you get a summary and any new personal records.
+
+> The guided routine is deterministic programming logic, not AI and not medical advice.
+
+### Find exercises
+
+![Exercise library](docs/images/exercise-library.png)
+
+Open **Exercise library**, search (for example `preacher bench` or `romanian deadlift`) or filter by body part and equipment. Every result has a looping demonstration with play/pause; it pauses in hidden tabs and honours reduced motion. Add an exercise straight to a workout from its card.
+
+### Eat: log food and follow a meal plan
+
+![Nutrition diary](docs/images/nutrition.png)
+
+1. Open **Nutrition** and pick a date.
+2. Click **Log food**, search the food database in Hebrew or English (`hummus`, `חומוס`, `shakshuka`), choose a unit or enter grams, and add it to breakfast, lunch, dinner or snacks.
+3. Other shortcuts: **Enter manually** for a one-off item, **Create food** for your own per-100 g values, **Recipes**, **Copy yesterday**, and **Add 250 ml** under Hydration for water.
+4. **Scan a meal** (camera button, needs AI access): take or choose a photo of your plate and pick the meal. The AI lists the foods with estimated grams; adjust or remove items, then press **Log meal**. Nothing is logged until you confirm, so check portions, because a photo can't show oil, sauces or what's under the top layer.
+5. Under **My meal plans**, turn on a plan with **Active in my diary** so its meals appear in your day. A trainer can assign plans to you.
+
+![Meal plans](docs/images/meal-plans.png)
+
+### Track progress
+
+![My progress](docs/images/progress.png)
+
+**My progress** shows your latest weight and monthly average, total training volume, workouts completed and best set, and a strength-over-time chart. Click **Update bodyweight** to log a weigh-in and **Export my data** to download everything as JSON. **Steps & activity** covers daily steps and aerobic sessions, entered by hand or synced from Apple Health / Health Connect in the phone app.
+
+### Coach clients
+
+Register a **Trainer** account (or sign in as `coach@nutri.local`):
+
+1. **Clients → Invite client** and enter the email of an existing Fitura+ account. The client must accept before you can see anything; either side can end sharing at any time.
+2. Create **Workout plans** and **Meal plans** and assign them to a client.
+3. Watch the **Clients training now** panel on the dashboard while a client works out.
+4. Use **Messages**, **Calendar** (appointments with conflict checks), **Packages**, **Training log**, **Client payments** and **Monthly business report** to run the business.
+5. Under **Your brand**, set your business name, upload a logo and background image, and pick an accent colour and welcome text. Your clients see the app with your brand.
+
+![Clients](docs/images/coach-clients.png)
+
+> Inviting clients requires an active Trainer plan once billing is configured. In development without billing, coach accounts are treated as paid.
+
+### Language, theme and accessibility
+
+Use the globe button for **English / עברית** (the whole layout flips to RTL) and the moon button for dark mode. Both are saved to your account. The accessibility button on the side of every page has switches for text zoom, high contrast, highlighted links, a readable font, reduced motion and grayscale. Drag the button up or down either edge of the screen (or press Alt + arrow keys while it has focus) to move it, and use **Hide button** in the menu to tuck it into a slim tab on the edge; press the tab to bring it back. Its position is remembered in your browser.
+
+<p align="center"><img src="docs/images/mobile-hebrew-dark.png" alt="Hebrew, dark mode, phone width" width="300"></p>
+
+---
+
+## Using the API
+
+Everything the UI does goes through a JSON API under `/api/`. Authentication is the `nutri_session` HttpOnly cookie; mutations are `POST` with JSON. Full reference: [docs/API.md](docs/API.md).
+
+```bash
+# Sign in and keep the session cookie
+curl -c jar.txt -H "Content-Type: application/json" \
+  -d '{"email":"alex@nutri.local","password":"NutriDemo2026!"}' \
+  http://localhost:3000/api/auth/login
+
+# Everything for one day: workouts, meals, water, progress, messages…
+curl -b jar.txt "http://localhost:3000/api/state?date=2026-11-28"
+
+# Search the local food database (no external calls)
+curl -b jar.txt "http://localhost:3000/api/foods/search?q=hummus"
+
+# Add 150 g of a food to lunch
+curl -b jar.txt -H "Content-Type: application/json" \
+  -d '{"foodId":"<id from search>","grams":150,"meal":"lunch","date":"2026-11-28"}' \
+  http://localhost:3000/api/meals/add
+
+# Log 250 ml of water
+curl -b jar.txt -H "Content-Type: application/json" \
+  -d '{"ml":250,"date":"2026-11-28"}' http://localhost:3000/api/water
+```
+
+Requests from a foreign browser origin are rejected on mutation. Errors come back as localized keys, for example `{"error":"notFound"}`.
+
+---
+
+## Configuration
+
+Copy [.env.example](.env.example) to `.env`. Only `DATABASE_URL` is needed to run locally; everything else switches on an optional integration.
+
+| Variable(s) | Purpose |
+| --- | --- |
+| `DATABASE_URL` | SQLite file, default `file:./dev.db`. The container uses `file:/data/nutri.db`. |
+| `APP_URL` | Trusted public origin. Needed for email links, checkout and webhooks. |
+| `DEMO_ENABLED` | Seeded demo accounts in development; temporary demo accounts in production. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_FALLBACK_MODEL`, `OPENAI_VISION_MODEL` | AI text and meal-photo recognition. Any OpenAI-compatible API works; for OpenRouter free models set `OPENAI_BASE_URL=https://openrouter.ai/api/v1`. Keys can also be managed in the admin console. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Verification and password-reset email. Production sign-up stays closed until these and `APP_URL` are set. |
+| `STRIPE_*` | Card subscriptions; see [docs/BILLING.md](docs/BILLING.md). |
+| `PAYPAL_*` | PayPal subscriptions; `PAYPAL_ENV=live` for real payments, otherwise sandbox. `npx tsx scripts/paypal-setup.ts` creates the plans and webhook. |
+| `ADSENSE_CLIENT`, `ADSENSE_SLOT` | Google AdSense for Free-plan users only. Home and sign-in pages stay ad-free. |
+| `ADMIN_HOST`, `ADMIN_ENCRYPTION_KEY`, `CRON_SECRET`, … | Admin console host, encryption of TOTP seeds and AI keys (32 bytes, required in production), scheduled jobs. See [docs/ADMIN.md](docs/ADMIN.md). |
+| `NEXT_PUBLIC_PRIVACY_EMAIL`, `NEXT_PUBLIC_ACCESSIBILITY_*` | Contacts shown on the privacy and accessibility statement pages. |
+
+Never prefix a secret with `NEXT_PUBLIC_`; those values are baked into the browser bundle.
+
+---
+
+## npm scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server on port 3000, reachable on your LAN (for the phone app). |
+| `npm run build` / `npm start` | Production build / start (the start script also prepares the database). |
+| `npm run setup` | Generate Prisma client, migrate, seed and load foods. Safe to rerun. |
+| `npm run db:migrate` | Create the database file if needed and apply migrations. |
+| `npm run db:seed` | Seed libraries (and demo accounts when enabled). |
+| `npm run db:foods` | Load `src/data/food-database.json` into the database (offline, idempotent). |
+| `npm run catalog:foods` | Rebuild the food database from its sources (downloads, resumable). |
+| `npm run catalog:smartworkout` → `catalog:thumbnails` → `catalog:gifs` | Refresh the exercise animation index, previews and looping GIFs. |
+| `npm run catalog:translate` | Rebuild exercise catalog translations and apply the Hebrew glossary. |
+| `npm run admin:provision -- --email you@example.com --name "You"` | Create the first Super Admin; prints a one-time setup link. |
+| `npm run photos:encrypt` | Encrypt existing progress photos at rest. |
+| `npm run docs:screenshots` | Regenerate the screenshots in this README (dev server must be running). |
+| `npm test`, `npm run typecheck`, `npm run test:api`, `npm run test:e2e`, `npm run test:admin` | See [Testing](#testing). |
+
+---
+
+## Project layout
+
+```text
+src/
+  app/                 Next.js 16 App Router
+    page.tsx           public home page with pricing
+    auth/              sign-in, registration, password reset
+    app/[[...slug]]/   the signed-in workspace (/app, /app/workouts, /app/nutrition…)
+    admin/             admin console (separate accounts and host)
+    api/[...path]/     JSON API
+  components/          React UI (workspace.tsx is the shell; workouts, nutrition, coach…)
+  lib/                 server and shared logic: auth, plans, billing, ai, i18n, food search…
+  data/                bundled exercise catalog and food database
+prisma/                schema, migrations, seed
+scripts/               catalog builders, admin provisioning, Hostinger start, screenshots
+mobile/                Expo app for Android and iPhone
+tests/                 unit (*.test.ts), API/admin integration, browser/ (Playwright)
+docs/                  API, architecture, billing, admin, deployment, features, compliance
+deploy/                production compose stack, Caddy, deploy script
+```
+
+Stack: Next.js 16, React 19, TypeScript, Prisma + SQLite, Zod, Recharts, Lucide icons.
+
+---
+
+## Testing
 
 ```powershell
-npm test
+npm test              # unit tests
 npm run typecheck
 npm run build
 # With npm run dev running on port 3000:
-npm run test:api
-npm run test:e2e
+npm run test:api      # API integration
+npm run test:e2e      # Playwright browser tests
 ```
 
-The browser suite uses installed Microsoft Edge on Windows and Playwright Chromium on Linux. On Linux run `npx playwright install --with-deps chromium` first. Test screenshots go to `test-results/`. Tests create and remove separate test accounts; the screenshot test also uses the labeled demo account. These tests are intended for development or a disposable CI database, never a live production database.
+Browser tests use the installed Microsoft Edge on Windows and Playwright Chromium on Linux (`npx playwright install --with-deps chromium` first). Screenshots go to `test-results/`. The tests create and delete their own accounts. Run them against a development or disposable CI database, never production.
 
-## External services
+---
 
+## Mobile app
 
-- `OPENAI_API_KEY`: optional server-only AI text provider. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. Users must be adults and explicitly opt in. No history is sent automatically; only the entered prompt and the safety instruction are sent. Both prompt and response are stored in the user's private AI interaction history.
-- `RESEND_API_KEY` and `EMAIL_FROM`: optional password reset email via Resend. Set `APP_URL` to the trusted canonical origin. Without these values, recovery returns a clear unavailable error and never claims delivery. With them, it uses a single-use hashed reset token expiring in 30 minutes. Email delivery has not been tested against a live provider.
-- Food database: a local database of ~12,000 foods with Hebrew and English names, one food per name (no duplicates; generic foods are preferred and listed before branded products). Sources: **Tzameret**, the Israel Ministry of Health national food composition database (data.gov.il, open licence — Israeli generic foods and cooked dishes such as shawarma, shakshuka and falafel, native Hebrew names), USDA FoodData Central Foundation + FNDDS foods (public domain, machine-translated names) and products sold in Israel from Open Food Facts (ODbL; attribution shown in the picker; derived data must stay under ODbL). It is built **once** with `npm run catalog:foods` (downloads, keeps plausible per-100 g values, machine-translates names, writes `src/data/food-database.json`; resumable) and loaded with `npm run db:foods` (offline, idempotent, part of `npm run setup`). Searching in the app queries only this local database — no external API calls at runtime. CalorieKing data requires a commercial license and is not included.
-- Meal plans contain foods with grams per meal (breakfast/lunch/dinner/snacks) plus optional notes, apply to the entire week, chosen weekdays or one date, and can be assigned by a coach to an active client. Clients can log a whole plan to their diary in one step.
-- `DATABASE_URL`: development SQLite connection. The included container uses `file:/data/nutri.db`.
-- Stripe: optional official SDK adapter for hosted checkout, billing portal, subscription lifecycle and invoice records through verified idempotent webhooks. Configure the five billing variables described in [billing setup](docs/BILLING.md). Live/test-mode provider round trips still require credentials and verification. Paid access is never granted by the return URL alone.
-- WhatsApp Business, external food databases/barcodes, image recognition, push, calendar synchronization, health/wearables and object storage do not yet have provider implementations. Their UI states do not claim successful delivery or recognition.
+The Android and iPhone app lives in [mobile/](mobile/README.md). It is an Expo app that opens the Fitura+ workspace in a native window and adds native extras: local rest-timer alerts, Apple Health / Health Connect step and workout sync, AdMob for Free accounts.
 
-The original food seed records are illustrative **estimates per 100 g**, not verified branded Israeli products. Always check labels. No proprietary NutriCal data, media or code is included.
+```powershell
+npm run dev                      # backend, from the repo root
+cd mobile; npm ci; npm start -- --go --lan
+```
+
+Scan the QR code with Expo Go on a phone on the same Wi-Fi. The App Store and Google Play badges on the home page are placeholders that do nothing when clicked until the store listings are published. Health sync and ads need a native build (`npx eas-cli build --profile preview --platform android`), not Expo Go. Details: [mobile/README.md](mobile/README.md).
+
+---
+
+## Admin console
+
+A separate console at `/admin` with its own accounts, mandatory two-step verification and audit log. It covers users, coaches, support tickets, subscriptions and promotions, ads, AI providers and budgets, content and translations, announcements, remote config and system health. In production it runs as a separate deployment on its own host, sharing the database. Start with `npm run admin:provision` and read [docs/ADMIN.md](docs/ADMIN.md).
+
+---
 
 ## Deployment
 
-Read [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [API documentation](docs/API.md), and [feature scope](docs/FEATURES.md). A Dockerfile, Compose volume and GitHub Actions verification workflow are included. Docker execution and hosted deployment have not been verified in this environment.
+- **Docker:** `docker compose up --build -d` (single instance, persistent SQLite volume, port 3000 behind a TLS proxy).
+- **Hostinger:** the standalone server (`scripts/hostinger-start.mjs`) initializes the SQLite file, runs migrations and seeds on startup; data defaults to `~/fitura-data` (`HOSTINGER_DATA_DIR`).
+- Run one writer per SQLite database. To scale horizontally, move to PostgreSQL first.
+- Start production with an empty database. Never copy the development database.
+
+Read [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before going live, and [docs/FEATURES.md](docs/FEATURES.md) for what is complete, partial or pending.
+
+---
+
+## Data sources and licensing
+
+- **Exercise demonstrations** load directly from [SmartWorkout](https://smartworkout.app/en/exercise-library) and need internet access and continued upstream availability. This is a public-media integration, not a redistributable open-licence dataset. Exercises without a demonstration are excluded from the library and from new workouts; finished workout history is kept.
+- **Food database** (~12,000 foods, one per name, generic foods first):
+  - **Tzameret**, Israel Ministry of Health national food composition database (data.gov.il, open licence, native Hebrew names).
+  - **USDA FoodData Central** Foundation + FNDDS (public domain, machine-translated names).
+  - **Open Food Facts** products sold in Israel (ODbL; attribution shown in the food picker; derived data must stay under ODbL).
+
+  Search runs only against this local database, with no external calls at runtime. CalorieKing data needs a commercial licence and is not included. Values are per 100 g; always check product labels.
+- Not yet integrated: WhatsApp Business, barcode scanning, calendar sync, object storage. The UI never claims these succeeded.
+
+---
+
+## Keeping this README current
+
+This README is updated together with the code. When a commit adds or changes something a user, trainer or developer would notice (a feature, a screen, a command, an environment variable, a setup step), update the matching section here in the same commit. If a screen changed visibly, regenerate the images:
+
+```powershell
+npm run dev                       # in one terminal
+npm run docs:screenshots          # all screens, or: home | personal | coach
+```
+
+Screenshots are written to [docs/images/](docs/images/).

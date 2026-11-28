@@ -27,7 +27,8 @@
     "catalog:videos": "node scripts/sync-hd-exercise-videos.mjs && node scripts/create-video-posters.mjs",
     "catalog:translate": "node scripts/translate-exercise-catalog.mjs && node scripts/polish-exercise-he.mjs",
     "catalog:foods": "tsx scripts/build-food-database.ts",
-    "db:foods": "tsx scripts/load-food-database.ts"
+    "db:foods": "tsx scripts/load-food-database.ts",
+    "docs:screenshots": "node scripts/readme-screenshots.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.19.0",
