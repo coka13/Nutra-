@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -40,12 +40,32 @@ function loadFoodDatabase(appRoot: string, dataDir: string, tsx: string) {
   child.on('error', () => done(false));
 }
 
+/**
+ * The app (fitura.fit) and the admin console (admin.fitura.fit) are separate deployments over the
+ * same database and data directory, and each may have its own ADMIN_ENCRYPTION_KEY. Each one adds
+ * its key to a shared keyring here, so either can decrypt what the other wrote (AI provider keys,
+ * 2-step seeds, progress photos). New data is still sealed with the deployment's own key.
+ */
+function registerEncryptionKey(dataDir: string) {
+  const own = process.env.ADMIN_ENCRYPTION_KEY?.trim();
+  if (!own) return; // lib/admin/crypto reports the missing key where it is used.
+  const keyring = path.join(dataDir, '.encryption-keyring');
+  try {
+    const known = existsSync(keyring) ? readFileSync(keyring, 'utf8').split(/\r?\n/).map((k) => k.trim()) : [];
+    if (!known.includes(own)) appendFileSync(keyring, own + '\n', { mode: 0o600 });
+  } catch (error) {
+    console.error(JSON.stringify({ event: 'encryption_keyring_failed', error: error instanceof Error ? error.message : String(error) }));
+  }
+  process.env.ENCRYPTION_KEYRING_FILE ||= keyring;
+}
+
 /** Initializes the persistent SQLite database before Next.js serves production requests. */
 export function setupDatabase() {
   if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PHASE === 'phase-production-build') return;
 
   const dataDir = process.env.HOSTINGER_DATA_DIR || path.join(os.homedir(), 'fitura-data');
   mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+  registerEncryptionKey(dataDir);
 
   const configuredUrl = process.env.DATABASE_URL;
   if (!configuredUrl || (configuredUrl.startsWith('file:') && !path.isAbsolute(configuredUrl.slice(5))))

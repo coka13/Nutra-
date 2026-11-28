@@ -33,7 +33,7 @@ function encryptionKey() {
 /**
  * Keys other deployments sharing this database encrypt with. Production runs the app and the
  * admin console as separate deployments, each with its own ADMIN_ENCRYPTION_KEY; each registers
- * its key in a shared keyring file at startup (scripts/hostinger-start.mjs), so either one can
+ * its key in a shared keyring file at startup (src/instrumentation-node.ts), so either one can
  * read what the other wrote. New data is always sealed with this deployment's own key.
  * ADMIN_ENCRYPTION_KEYS_PREVIOUS (comma-separated) adds keys by hand, e.g. after a rotation.
  */
