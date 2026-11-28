@@ -8,6 +8,9 @@ const config: NextConfig = {
       .map((entry) => entry.address),
   ),
   poweredByHeader: false,
+  // Hostinger's build box reports dozens of CPUs but caps threads per account, so the default
+  // worker pool (one per CPU) dies with "can't spawn worker thread". Keep the pool small.
+  experimental: { cpus: Number(process.env.NEXT_BUILD_CPUS) || 2 },
   serverExternalPackages: ['@prisma/client', 'ffmpeg-static'],
   outputFileTracingIncludes: {
     '/*': [
