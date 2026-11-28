@@ -8170,14 +8170,14 @@ html[data-theme='dark'] .button.wallet-pay {
   display: grid;
   gap: 6px;
   min-width: 180px;
+  margin: 0; /* the global label margin pushed the field above the button */
   font-size: 13px;
   font-weight: 600;
 }
-.discount-code input {
-  height: 40px;
-}
+.discount-code input,
 .discount-code .button {
-  height: 40px;
+  height: 44px;
+  min-height: 44px;
 }
 .discount-applied {
   flex-basis: 100%;

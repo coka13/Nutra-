@@ -942,3 +942,101 @@ html[data-theme='dark'] .food-icon {
     font-size: inherit;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Landing page: calmer layout. One price per plan, the trainer packages as a
+   quiet list under the benefits, and footer controls that all look alike.
+   -------------------------------------------------------------------------- */
+.public-plan .public-plan-price {
+  margin: 2px 0 14px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.public-plan .public-plan-price small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.public-plan .coach-package-options {
+  margin: -8px 0 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.public-plan ul.coach-packages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  flex: none;
+}
+.public-plan li.coach-package {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: start;
+}
+.public-plan .coach-package strong {
+  font-weight: 600;
+  margin-inline-end: 6px;
+}
+.public-plan .coach-package-capacity {
+  color: var(--muted);
+  font-size: 12px;
+}
+.public-plan .coach-package-price {
+  font-size: 13px;
+  color: var(--text);
+}
+.public-plan .coach-package-contact {
+  margin: 10px 0 0;
+  font-size: 12px;
+  text-align: start;
+}
+.landing-overview .hero-actions .store-links {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+.public-site > footer .text-button {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  padding: 0;
+  min-height: 24px;
+}
+@media (max-width: 860px) {
+  .landing-overview .public-plan .public-plan-price {
+    font-size: 15px;
+  }
+  .landing-overview .public-plan .coach-package-options {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin: 0;
+    padding-top: 6px;
+  }
+  .landing-overview .public-plan:has(.coach-package-options) .public-plan-benefits {
+    grid-row: 2;
+  }
+  .landing-overview .public-plan ul.coach-packages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 12px;
+  }
+  .landing-overview .public-plan li.coach-package,
+  .landing-overview .public-plan .coach-package-price {
+    font-size: 11px;
+  }
+  .landing-overview .public-plan .coach-package-capacity {
+    display: none;
+  }
+  .landing-overview .public-plan .coach-package-contact {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+}

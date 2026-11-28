@@ -1317,6 +1317,7 @@ export const messages = {
   coachProfessional: ['Professional', 'מקצועי'],
   coachPremium: ['Premium', 'פרימיום'],
   coachPackageCapacity: ['Up to {count} clients', 'עד {count} לקוחות'],
+  fromPrice: ['From', 'החל מ־'],
   coachCustomPackage: ['Need more? Contact us', 'צריכים יותר מזה? צרו איתנו קשר'],
   comingSoon: ['Coming soon', 'בקרוב'],
   planFree1: ['Workout logging, set by set', 'תיעוד אימונים, סט אחרי סט'],

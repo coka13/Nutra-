@@ -21,6 +21,7 @@ import {
   termsVersion,
 } from '@/lib/legal';
 import { openCookieSettings } from '@/lib/cookie-consent';
+import { safeNext } from '@/lib/safe-next';
 import { APP_STORE_URL, GOOGLE_PLAY_URL, isStorePlaceholder } from '@/lib/app-stores';
 const privacySections = [
   'privacyCollect',
@@ -78,7 +79,14 @@ export function PublicPageClient({
         : t(mode === 'coach-login' ? 'coachLogin' : mode);
   const verificationToken =
     typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('token');
-  const authUrl = (screen: string) => (account ? `/auth/${account}/${screen}` : `/${screen}`);
+  // Where to land after signing in (e.g. the billing page from a pricing card).
+  const [next, setNext] = useState<string | null>(null);
+  useEffect(() => {
+    setNext(safeNext(new URLSearchParams(window.location.search).get('next')));
+  }, []);
+  const nextQuery = next ? `?next=${encodeURIComponent(next)}` : '';
+  const authUrl = (screen: string) =>
+    (account ? `/auth/${account}/${screen}` : `/${screen}`) + nextQuery;
   useEffect(() => {
     if (!initialLanguage) {
       try {
@@ -100,11 +108,18 @@ export function PublicPageClient({
     if (mode === 'pricing' || mode === 'features')
       document.getElementById('pricing')?.scrollIntoView({ block: 'start' });
   }, [mode]);
+  // Store badges stay hidden until the listings are published.
+  const storeLinks = (
+    [
+      [APP_STORE_URL, 'appStoreTop', 'App Store', 'apple'],
+      [GOOGLE_PLAY_URL, 'googlePlayTop', 'Google Play', 'play'],
+    ] as const
+  ).filter(([href]) => !isStorePlaceholder(href));
   const plans = [
     {
       key: 'free',
       price: 0,
-      points: ['planFree1', 'planFree2', 'planFree3', 'planAiCoached', 'planFree4'],
+      points: ['planFree1', 'planFree2', 'planFree3', 'planFree4'],
       cta: 'getStarted',
       href: '/auth',
       featured: false,
@@ -114,7 +129,7 @@ export function PublicPageClient({
       price: PLAN_PRICE_USD.PREMIUM,
       points: ['planPremium1', 'planPremium2'],
       cta: 'upgradePlus',
-      href: '/auth/user/login',
+      href: '/auth/user/login?next=/app/billing',
       featured: false,
     },
     {
@@ -122,7 +137,7 @@ export function PublicPageClient({
       price: PLAN_PRICE_USD.COACH,
       points: ['planCoach2', 'planCoach5', 'planCoach3', 'planCoach4', 'planCoach6'],
       cta: 'upgradeCoach',
-      href: '/auth/coach/login',
+      href: '/auth/coach/login?next=/app/billing',
       featured: true,
     },
   ];
@@ -140,42 +155,12 @@ export function PublicPageClient({
             {plan.featured && (
               <span className="public-plan-flag">{t('recommendedForCoaches')}</span>
             )}
-            <span className="public-plan-icon">
-              {plan.key === 'coachTier' ? <Users size={22} /> : <Dumbbell size={22} />}
-            </span>
-            <h3>
-              {t(plan.key)}
-              {plan.key === 'coachTier' && (
-                <small className="coach-monthly"> {t('perMonth')}</small>
-              )}
-            </h3>
-            {plan.key === 'coachTier' ? (
-              <div className="coach-package-options">
-                <div className="coach-packages">
-                  {COACH_PACKAGES.map((offer) => (
-                    <div className="coach-package" key={offer.key}>
-                      <strong>{t(offer.key)}</strong>
-                      <span className="coach-package-price">${offer.price}</span>
-                      <span className="coach-package-capacity">
-                        {t('coachPackageCapacity').replace('{count}', String(offer.clientLimit))}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="coach-package-contact">{t('coachCustomPackage')}</p>
-              </div>
-            ) : (
-              <p className="public-plan-price">
-                {plan.price ? (
-                  <>
-                    ${plan.price}
-                    <small> {t('perMonth')}</small>
-                  </>
-                ) : (
-                  t('free')
-                )}
-              </p>
-            )}
+            <h3>{t(plan.key)}</h3>
+            <p className="public-plan-price">
+              {plan.key === 'coachTier' && <small>{t('fromPrice')} </small>}$
+              {plan.key === 'coachTier' ? COACH_PACKAGES[0].price : plan.price}
+              <small> {t('perMonth')}</small>
+            </p>
             <ul className="public-plan-benefits">
               {plan.points.map((point) => (
                 <li key={point}>
@@ -184,7 +169,25 @@ export function PublicPageClient({
                 </li>
               ))}
             </ul>
-            {/* Plus opens the trainee login, Trainer the trainer login. */}
+            {plan.key === 'coachTier' && (
+              <div className="coach-package-options">
+                <ul className="coach-packages">
+                  {COACH_PACKAGES.map((offer) => (
+                    <li className="coach-package" key={offer.key}>
+                      <span>
+                        <strong>{t(offer.key)}</strong>
+                        <span className="coach-package-capacity">
+                          {t('coachPackageCapacity').replace('{count}', String(offer.clientLimit))}
+                        </span>
+                      </span>
+                      <span className="coach-package-price">${offer.price}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="coach-package-contact">{t('coachCustomPackage')}</p>
+              </div>
+            )}
+            {/* Plus opens the trainee login, Trainer the trainer login; both continue to billing. */}
             <a
               className={`button ${plan.featured ? 'primary' : 'secondary'} full`}
               href={plan.href}
@@ -232,7 +235,9 @@ export function PublicPageClient({
         (mode === 'register' && data.verificationRequired)
       )
         setSuccess(true);
-      else location.href = mode === 'register' && account !== 'coach' ? '/app/onboarding' : '/app';
+      else
+        location.href =
+          next ?? (mode === 'register' && account !== 'coach' ? '/app/onboarding' : '/app');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'offline');
     } finally {
@@ -399,76 +404,63 @@ export function PublicPageClient({
                     {busy ? <Loader2 className="spin" size={18} /> : t('tryDemo')}
                   </button>
                 </div>
-                <div className="store-links">
-                  {(
-                    [
-                      [APP_STORE_URL, 'appStoreTop', 'App Store', 'apple'],
-                      [GOOGLE_PLAY_URL, 'googlePlayTop', 'Google Play', 'play'],
-                    ] as const
-                  ).map(([href, top, name, icon]) => (
-                    <a
-                      key={name}
-                      className="store-link"
-                      href={href}
-                      aria-label={`${t(top)} ${name}`}
-                      onClick={(e) => {
-                        // Listings aren't published yet.
-                        if (isStorePlaceholder(href)) e.preventDefault();
-                      }}
-                    >
-                      {icon === 'apple' ? (
-                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                          <path
-                            fill="currentColor"
-                            d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.15.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"
-                          />
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                          <path
-                            fill="#34a853"
-                            d="M3.6 2.2 13.5 12 3.6 21.8c-.36-.2-.6-.6-.6-1.1V3.3c0-.5.24-.9.6-1.1z"
-                          />
-                          <path
-                            fill="#fbbc04"
-                            d="m16.8 15.3-3.3-3.3 3.3-3.3 3.7 2.1c1 .6 1 1.8 0 2.4z"
-                          />
-                          <path
-                            fill="#4285f4"
-                            d="M13.5 12 3.6 2.2c.3-.17.7-.18 1.1.04l12.1 6.96z"
-                          />
-                          <path
-                            fill="#ea4335"
-                            d="m13.5 12 3.3 3.3-12.1 6.96c-.4.22-.8.21-1.1.04z"
-                          />
-                        </svg>
-                      )}
-                      <span>
-                        <small>{t(top)}</small>
-                        <strong>{name}</strong>
-                      </span>
-                    </a>
-                  ))}
-                </div>
+                {storeLinks.length > 0 && (
+                  <div className="store-links">
+                    {storeLinks.map(([href, top, name, icon]) => (
+                      <a
+                        key={name}
+                        className="store-link"
+                        href={href}
+                        aria-label={`${t(top)} ${name}`}
+                      >
+                        {icon === 'apple' ? (
+                          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                            <path
+                              fill="currentColor"
+                              d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.15.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"
+                            />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <path
+                              fill="#34a853"
+                              d="M3.6 2.2 13.5 12 3.6 21.8c-.36-.2-.6-.6-.6-1.1V3.3c0-.5.24-.9.6-1.1z"
+                            />
+                            <path
+                              fill="#fbbc04"
+                              d="m16.8 15.3-3.3-3.3 3.3-3.3 3.7 2.1c1 .6 1 1.8 0 2.4z"
+                            />
+                            <path
+                              fill="#4285f4"
+                              d="M13.5 12 3.6 2.2c.3-.17.7-.18 1.1.04l12.1 6.96z"
+                            />
+                            <path
+                              fill="#ea4335"
+                              d="m13.5 12 3.3 3.3-12.1 6.96c-.4.22-.8.21-1.1.04z"
+                            />
+                          </svg>
+                        )}
+                        <span>
+                          <small>{t(top)}</small>
+                          <strong>{name}</strong>
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
               {error && (
                 <p className="form-error" role="alert">
                   {t(error)}
                 </p>
               )}
-              <div className="hero-foot">
-                <span className="mini-mark">
-                  <Dumbbell size={17} />
-                </span>
-                <span>{t('tagline')}</span>
-              </div>
             </div>
             <div className="hero-art-frame">
               <img
                 className="home-art"
                 src="/nutri-home-hero-1000.webp"
-            srcSet="/nutri-home-hero-640.webp 640w, /nutri-home-hero-1000.webp 1000w"
-            sizes="(max-width: 520px) 320px, 470px"
+                srcSet="/nutri-home-hero-640.webp 640w, /nutri-home-hero-1000.webp 1000w"
+                sizes="(max-width: 520px) 320px, 470px"
                 width={1000}
                 height={1094}
                 alt=""

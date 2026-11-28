@@ -40,7 +40,7 @@ export function proxy(req: NextRequest) {
       if (path === '/robots.txt')
         return new NextResponse('User-agent: *\nDisallow: /\n', { headers: { 'Content-Type': 'text/plain' } });
       if (path === '/') return NextResponse.redirect(new URL(signedIn(req) ? '/admin' : '/admin/login', req.url));
-      const asset = path.startsWith('/_next/') || path === '/icon.svg' || path === '/favicon.ico' || path.startsWith('/exercise-thumbnails/');
+      const asset = path.startsWith('/_next/') || path === '/icon.svg' || path === '/favicon.ico' || path === '/apple-icon.png' || path.startsWith('/exercise-thumbnails/');
       if (!adminPath && !asset) return notFound();
     } else if (adminPath) return notFound();
   } else if (production && adminPath && process.env.ADMIN_ALLOW_SHARED_HOST !== 'true') return notFound();

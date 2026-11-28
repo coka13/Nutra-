@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   title: 'Fitura+ · A healthier rhythm',
   description: 'Your workouts, nutrition and progress. Beautifully connected.',
   manifest: '/manifest.webmanifest',
+  // app/favicon.ico is picked up by file convention; this adds the crisp vector mark for
+  // browsers that support SVG favicons, and the home-screen icon (app/apple-icon.png).
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   // AdSense site ownership; verifies without loading any ad code.
   ...(adsenseClient() && {
     verification: { other: { 'google-adsense-account': adsenseClient()! } },
