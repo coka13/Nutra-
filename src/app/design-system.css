@@ -1003,6 +1003,14 @@ html[data-theme='dark'] .food-icon {
   padding-inline-start: 0;
   border-inline-start: 0;
 }
+.landing-overview .hero-demo {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.landing-overview .hero-demo:hover:not(:disabled) {
+  color: var(--green);
+}
 .public-site > footer .text-button {
   font-size: inherit;
   font-weight: inherit;
@@ -1077,15 +1085,19 @@ html[data-theme='dark'] .food-icon {
     max-width: 620px;
     margin-bottom: clamp(12px, 2vh, 28px);
   }
-  /* CTAs on one line, store badges quietly on the next. */
+  /* Main CTA and store badges share one row at the same height; the demo is a quiet link below. */
   .landing-overview .hero-actions {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: clamp(10px, 1.4vh, 18px);
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
   }
   .landing-overview .hero-actions .store-links {
     padding-inline-start: 0;
     border-inline-start: 0;
+  }
+  .landing-overview .hero-actions .store-link {
+    min-height: clamp(38px, 5vh, 48px);
+    padding-inline: 14px 16px;
   }
   .landing-overview .landing-hero .button.large {
     min-height: clamp(38px, 5vh, 48px);

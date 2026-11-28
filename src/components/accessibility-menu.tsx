@@ -38,6 +38,8 @@ import {
 
 /** Pointer travel (px) before a press on the button counts as a drag instead of a click. */
 const DRAG_THRESHOLD = 6;
+/** Dragging the pointer to within this many px of the left or right edge (or past it) tucks the button away. */
+const TUCK_EDGE = 12;
 
 type ToggleKey = 'contrast' | 'links' | 'font' | 'motion' | 'grayscale';
 const toggles: readonly [ToggleKey, string, LucideIcon][] = [
@@ -172,7 +174,8 @@ export function AccessibilityMenu() {
     e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus();
   };
   const StatementArrow = lang === 'he' ? ChevronLeft : ChevronRight;
-  // Drag the button up and down either edge; letting go on the other half switches sides.
+  // Drag the button up and down either edge; letting go on the other half switches sides,
+  // and dragging it out past the edge tucks it away.
   const onPointerDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
     suppressClick.current = false;
@@ -188,10 +191,13 @@ export function AccessibilityMenu() {
       d.moved = true;
       setOpen(false);
     }
+    // Pushing it off the side previews the slim tab; pulling it back in restores the button.
+    const offEdge = e.clientX <= TUCK_EDGE || e.clientX >= window.innerWidth - TUCK_EDGE;
     setButton((b) => ({
       ...b,
       side: e.clientX < window.innerWidth / 2 ? 'left' : 'right',
       y: Math.max(0, Math.min(1, e.clientY / window.innerHeight)),
+      hidden: offEdge,
     }));
   };
   const onPointerEnd = (e: ReactPointerEvent<HTMLButtonElement>) => {

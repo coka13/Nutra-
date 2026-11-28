@@ -142,7 +142,7 @@ Register a **Trainer** account (or sign in as `coach@nutri.local`):
 
 ### Language, theme and accessibility
 
-Use the globe button for **English / עברית** (the whole layout flips to RTL) and the moon button for dark mode. Both are saved to your account. The accessibility button on the side of every page has switches for text zoom, high contrast, highlighted links, a readable font, reduced motion and grayscale. Drag the button up or down either edge of the screen (or press Alt + arrow keys while it has focus) to move it, and use **Hide button** in the menu to tuck it into a slim tab on the edge; press the tab to bring it back. Its position is remembered in your browser.
+Use the globe button for **English / עברית** (the whole layout flips to RTL) and the moon button for dark mode. Both are saved to your account. The accessibility button on the side of every page has switches for text zoom, high contrast, highlighted links, a readable font, reduced motion and grayscale. Drag the button up or down either edge of the screen (or press Alt + arrow keys while it has focus) to move it, and drag it out past the edge (or use **Hide button** in the menu) to tuck it into a slim tab; press the tab to bring it back. Its position is remembered in your browser.
 
 <p align="center"><img src="docs/images/mobile-hebrew-dark.png" alt="Hebrew, dark mode, phone width" width="300"></p>
 

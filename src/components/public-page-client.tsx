@@ -116,7 +116,7 @@ export function PublicPageClient({
     {
       key: 'free',
       price: 0,
-      points: ['planFree1', 'planFree2', 'planFree3', 'planFree4'],
+      points: ['planFree1', 'planFree2', 'planFree3'],
       cta: 'getStarted',
       href: '/auth',
       featured: false,
@@ -132,7 +132,7 @@ export function PublicPageClient({
     {
       key: 'coachTier',
       price: PLAN_PRICE_USD.COACH,
-      points: ['planCoach2', 'planCoach5', 'planCoach3', 'planCoach4', 'planCoach6'],
+      points: ['planCoach2', 'planCoach5', 'planCoach4'],
       cta: 'upgradeCoach',
       href: '/auth/coach/login?next=/app/billing',
       featured: true,
@@ -381,10 +381,6 @@ export function PublicPageClient({
         <main className="landing-overview">
           <section className="landing-hero">
             <div>
-              <span className="eyebrow">
-                <span className="live-dot" />
-                {t('landingBadge')}
-              </span>
               <h1>{t('landingTitle')}</h1>
               <p>{t('landingSub')}</p>
               <div className="hero-actions">
@@ -393,13 +389,6 @@ export function PublicPageClient({
                     {t('getStarted')}
                     <ArrowRight size={18} />
                   </a>
-                  <button
-                    className="button secondary large"
-                    onClick={demo}
-                    disabled={!ready || busy}
-                  >
-                    {busy ? <Loader2 className="spin" size={18} /> : t('tryDemo')}
-                  </button>
                 </div>
                 {storeLinks.length > 0 && (
                   <div className="store-links">
@@ -450,6 +439,14 @@ export function PublicPageClient({
                   </div>
                 )}
               </div>
+              <button
+                className="text-button hero-demo"
+                onClick={demo}
+                disabled={!ready || busy}
+              >
+                {busy ? <Loader2 className="spin" size={16} /> : t('tryDemo')}
+                {!busy && <ArrowRight size={14} aria-hidden="true" />}
+              </button>
               {error && (
                 <p className="form-error" role="alert">
                   {t(error)}
