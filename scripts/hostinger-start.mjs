@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -27,6 +27,14 @@ process.env.DEMO_ENABLED ||= 'true';
 process.env.ENFORCE_HTTPS = 'true';
 process.env.BACKUP_DIR ||= path.join(dataDir, 'backups');
 process.env.ADMIN_ENCRYPTION_KEY ||= persistentSecret('.admin-encryption-key', 32);
+// The app and the admin console run as separate deployments over the same database and data
+// directory, each with its own key. Each registers its key in a shared keyring so either can
+// decrypt what the other wrote (AI provider keys, 2-step seeds, progress photos).
+const keyring = path.join(dataDir, '.encryption-keyring');
+const knownKeys = existsSync(keyring) ? readFileSync(keyring, 'utf8').split(/\r?\n/).map((k) => k.trim()) : [];
+if (!knownKeys.includes(process.env.ADMIN_ENCRYPTION_KEY.trim()))
+  appendFileSync(keyring, process.env.ADMIN_ENCRYPTION_KEY.trim() + '\n', { mode: 0o600 });
+process.env.ENCRYPTION_KEYRING_FILE = keyring;
 process.env.CRON_SECRET ||= persistentSecret('.cron-secret', 24);
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';

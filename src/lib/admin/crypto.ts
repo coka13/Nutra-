@@ -6,16 +6,21 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 /**
  * Server-only secrets at rest (TOTP seeds, AI provider keys) use AES-256-GCM with
  * ADMIN_ENCRYPTION_KEY (32 bytes, base64 or hex). Production refuses to run without it.
  */
+function parseKey(raw: string) {
+  const key = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'base64');
+  return key.length === 32 ? key : null;
+}
 function encryptionKey() {
   const raw = process.env.ADMIN_ENCRYPTION_KEY?.trim();
   if (raw) {
-    const key = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'base64');
-    if (key.length !== 32) throw new Error('ADMIN_ENCRYPTION_KEY must decode to 32 bytes');
+    const key = parseKey(raw);
+    if (!key) throw new Error('ADMIN_ENCRYPTION_KEY must decode to 32 bytes');
     return key;
   }
   if (process.env.NODE_ENV === 'production') throw new Error('ADMIN_ENCRYPTION_KEY is required');
@@ -23,6 +28,45 @@ function encryptionKey() {
   return createHash('sha256')
     .update('nutra-development-only:' + (process.env.DATABASE_URL || ''))
     .digest();
+}
+
+/**
+ * Keys other deployments sharing this database encrypt with. Production runs the app and the
+ * admin console as separate deployments, each with its own ADMIN_ENCRYPTION_KEY; each registers
+ * its key in a shared keyring file at startup (scripts/hostinger-start.mjs), so either one can
+ * read what the other wrote. New data is always sealed with this deployment's own key.
+ * ADMIN_ENCRYPTION_KEYS_PREVIOUS (comma-separated) adds keys by hand, e.g. after a rotation.
+ */
+let ring: { at: number; keys: Buffer[] } | null = null;
+function otherKeys(fresh = false) {
+  if (!fresh && ring && Date.now() - ring.at < 60_000) return ring.keys;
+  const raw = (process.env.ADMIN_ENCRYPTION_KEYS_PREVIOUS || '').split(',');
+  const file = process.env.ENCRYPTION_KEYRING_FILE;
+  if (file)
+    try {
+      raw.push(...readFileSync(file, 'utf8').split(/\r?\n/));
+    } catch {}
+  const own = encryptionKey();
+  const keys: Buffer[] = [];
+  for (const line of raw) {
+    const key = line.trim() && parseKey(line.trim());
+    if (key && !key.equals(own) && !keys.some((k) => k.equals(key))) keys.push(key);
+  }
+  ring = { at: Date.now(), keys };
+  return keys;
+}
+/** Opens with this deployment's key, then with the other known keys (re-reading them once). */
+function withAnyKey<T>(open: (key: Buffer) => T): T {
+  try {
+    return open(encryptionKey());
+  } catch (error) {
+    for (const fresh of [false, true])
+      for (const key of otherKeys(fresh))
+        try {
+          return open(key);
+        } catch {}
+    throw error;
+  }
 }
 
 export function encryptSecret(plain: string) {
@@ -35,9 +79,11 @@ export function encryptSecret(plain: string) {
 export function decryptSecret(sealed: string) {
   const [version, iv, tag, body] = sealed.split('.');
   if (version !== 'v1' || !iv || !tag || !body) throw new Error('invalid secret');
-  const decipher = createDecipheriv('aes-256-gcm', encryptionKey(), Buffer.from(iv, 'base64'));
-  decipher.setAuthTag(Buffer.from(tag, 'base64'));
-  return Buffer.concat([decipher.update(Buffer.from(body, 'base64')), decipher.final()]).toString('utf8');
+  return withAnyKey((key) => {
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64'));
+    decipher.setAuthTag(Buffer.from(tag, 'base64'));
+    return Buffer.concat([decipher.update(Buffer.from(body, 'base64')), decipher.final()]).toString('utf8');
+  });
 }
 
 /**
@@ -58,9 +104,11 @@ export function sealBytes(plain: Uint8Array): Uint8Array<ArrayBuffer> {
 export function openBytes(stored: Uint8Array): Buffer {
   if (!isSealedBytes(stored)) return Buffer.from(stored);
   const data = Buffer.from(stored);
-  const decipher = createDecipheriv('aes-256-gcm', encryptionKey(), data.subarray(4, 16));
-  decipher.setAuthTag(data.subarray(16, 32));
-  return Buffer.concat([decipher.update(data.subarray(32)), decipher.final()]);
+  return withAnyKey((key) => {
+    const decipher = createDecipheriv('aes-256-gcm', key, data.subarray(4, 16));
+    decipher.setAuthTag(data.subarray(16, 32));
+    return Buffer.concat([decipher.update(data.subarray(32)), decipher.final()]);
+  });
 }
 
 /** Shows only enough of a saved key to recognise it. */

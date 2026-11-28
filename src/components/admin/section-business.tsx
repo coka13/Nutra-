@@ -470,12 +470,12 @@ export function AiSection() {
           </div>
         </div>
       )}
-      {editing && <ProviderDialog provider={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); void reload(); }} />}
+      {editing && <ProviderDialog provider={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); void reload(); }} onTested={() => void reload()} />}
     </>
   );
 }
 
-function ProviderDialog({ provider, onClose, onSaved }: { provider: Provider; onClose: () => void; onSaved: () => void }) {
+function ProviderDialog({ provider, onClose, onSaved, onTested }: { provider: Provider; onClose: () => void; onSaved: () => void; onTested: () => void }) {
   const { t, api, toast, fail } = useAdmin();
   // A provider being connected for the first time starts switched on.
   const [form, setForm] = useState({ enabled: provider.enabled || !provider.configured, textModel: provider.textModel || provider.suggestedModel, visionModel: provider.visionModel, inputCostPerM: provider.inputCostPerM, outputCostPerM: provider.outputCostPerM, apiKey: '', clearKey: false }),
@@ -495,6 +495,8 @@ function ProviderDialog({ provider, onClose, onSaved }: { provider: Provider; on
               try {
                 const r = await api<{ ok: boolean; status: string; latencyMs: number }>(`ai/providers/${provider.id}/test`, {});
                 setProbe(r.ok ? `${t('available')} · ${r.latencyMs} ms` : `${t('unavailable')} · ${r.status}`);
+                // The test saved the provider's status; refresh the list so its badge shows it.
+                onTested();
               } catch (e) {
                 fail(e);
               } finally {
